@@ -88,6 +88,11 @@ class Labeler(QtGui.QApplication):
         pdf = canvas.Canvas("hello.pdf")
         for obj in self.objectCollection:
             font = obj.font()
+            x, y = obj.get_pos_mm()
+            textobj = pdf.beginText(x, y)
+            
+            
+            textobj.setStrokeColorCMYK(0, 0, 0, 1, None)
             try:
                 pdf.setFont(str(font.family()), font.pointSize(), font.kerning())
             except KeyError:
@@ -98,12 +103,11 @@ class Labeler(QtGui.QApplication):
                     pass
                 else:
                     pdfmetrics.registerFont(TTFont(str(font.family()),fontname[0]))
-                    pdf.setFont(str(font.family()), font.pointSize(), font.kerning())
-            pdf.setStrokeColorCMYK(0, 0, 0, 1, None)
-            x, y = obj.get_pos_mm()
-            pdf.drawString(x, y, str(obj.toPlainText()))
+                    textobj.setFont(str(font.family()), font.pointSize(), 2+font.pointSize())
+           
             
-            print obj.get_pos_mm(), obj.toPlainText()
+            textobj.textLines(str(obj.toPlainText()))
+            pdf.drawText(textobj)
         pdf.showPage()
         pdf.save()
             
