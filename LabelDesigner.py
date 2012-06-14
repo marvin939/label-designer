@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'LabelDesigner.ui'
+# Form implementation generated from reading ui file 'C:\Users\Captain\workspace\Labeler\LabelDesigner.ui'
 #
-# Created: Thu Jun 14 14:22:49 2012
+# Created: Thu Jun 14 18:28:49 2012
 #      by: PyQt4 UI code generator 4.8.5
 #
 # WARNING! All changes made in this file will be lost!
@@ -30,9 +30,13 @@ class Ui_MainWindow(object):
         self.addTextBtn.setGeometry(QtCore.QRect(50, 200, 75, 23))
         self.addTextBtn.setText(QtGui.QApplication.translate("MainWindow", "Add Text", None, QtGui.QApplication.UnicodeUTF8))
         self.addTextBtn.setObjectName(_fromUtf8("addTextBtn"))
+        self.createPdfBtn = QtGui.QPushButton(self.centralwidget)
+        self.createPdfBtn.setGeometry(QtCore.QRect(60, 240, 75, 23))
+        self.createPdfBtn.setText(QtGui.QApplication.translate("MainWindow", "Create PDF", None, QtGui.QApplication.UnicodeUTF8))
+        self.createPdfBtn.setObjectName(_fromUtf8("createPdfBtn"))
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtGui.QMenuBar(MainWindow)
-        self.menubar.setGeometry(QtCore.QRect(0, 0, 794, 20))
+        self.menubar.setGeometry(QtCore.QRect(0, 0, 794, 21))
         self.menubar.setObjectName(_fromUtf8("menubar"))
         MainWindow.setMenuBar(self.menubar)
         self.statusbar = QtGui.QStatusBar(MainWindow)

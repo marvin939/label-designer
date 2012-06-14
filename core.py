@@ -1,7 +1,11 @@
 import LabelDesigner
 import sys
+import _winreg
 from PyQt4 import QtCore, QtGui
-
+from reportlab.pdfgen import canvas
+from reportlab.lib.units import mm
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
 try:
     _fromUtf8 = QtCore.QString.fromUtf8
 except AttributeError:
@@ -17,9 +21,10 @@ class LabelerTextItem(QtGui.QGraphicsTextItem):
         self.dpi = MainApp.dpi
         self.dpmm = MainApp.dpmm
         self.set_pos_by_mm(50,40)
-    
+        self.setFont(QtGui.QFont("Harlow Solid Italic"))
+        
     def get_pos_mm(self):
-        """ returns position in milimeters """
+        """ returns position in millimeters """
         return self.x() / self.dpmm[0], self.y() / self.dpmm[1]
     
     def set_pos_by_mm(self, x, y):
@@ -59,6 +64,7 @@ class Labeler(QtGui.QApplication):
         
         
         self.connect(self.ui.addTextBtn, QtCore.SIGNAL('clicked()'), self.add_text_dialog)
+        self.connect(self.ui.createPdfBtn, QtCore.SIGNAL('clicked()'), self.create_pdf)
         
         self.MainWindow.show()
         
@@ -69,9 +75,6 @@ class Labeler(QtGui.QApplication):
         self.labelImage.addItem(obj)
         obj.setPlainText(text)
         obj.setPos(200,200)
-        #obj.setTextInteractionFlags(QtCore.Qt.TextEditorInteraction)
-        print obj.isVisible(), obj.x()
-        print [i.toPlainText() for i in self.labelImage.items()]
         self.objectCollection.append(obj)
         
         
@@ -80,6 +83,29 @@ class Labeler(QtGui.QApplication):
         if result[1] == True:
             text = result[0]
             self.add_text(text, 0, 0)
+            
+    def create_pdf(self):
+        pdf = canvas.Canvas("hello.pdf")
+        for obj in self.objectCollection:
+            font = obj.font()
+            try:
+                pdf.setFont(str(font.family()), font.pointSize(), font.kerning())
+            except KeyError:
+                key = _winreg.OpenKey(_winreg.HKEY_LOCAL_MACHINE, 'Software\\Microsoft\\Windows NT\\CurrentVersion\\Fonts', 0, _winreg.KEY_READ)
+                try:
+                    fontname = _winreg.QueryValueEx(key,  str(font.family()) + " (TrueType)")
+                except:
+                    pass
+                else:
+                    pdfmetrics.registerFont(TTFont(str(font.family()),fontname[0]))
+                    pdf.setFont(str(font.family()), font.pointSize(), font.kerning())
+            pdf.setStrokeColorCMYK(0, 0, 0, 1, None)
+            x, y = obj.get_pos_mm()
+            pdf.drawString(x, y, str(obj.toPlainText()))
+            
+            print obj.get_pos_mm(), obj.toPlainText()
+        pdf.showPage()
+        pdf.save()
             
         
 MainApp = Labeler(sys.argv)      
