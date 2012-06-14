@@ -6,12 +6,24 @@ try:
     _fromUtf8 = QtCore.QString.fromUtf8
 except AttributeError:
     _fromUtf8 = lambda s: s
-    
-    
+
+   
+ 
 class LabelerTextItem(QtGui.QGraphicsTextItem):
     def __init__(self, *args, **kwargs):
+        
         super(LabelerTextItem, self).__init__(*args, **kwargs)
         self.setFlags(self.ItemIsSelectable|self.ItemIsMovable|self.ItemIsFocusable)
+        self.dpi = MainApp.dpi
+        self.dpmm = MainApp.dpmm
+        self.set_pos_by_mm(50,40)
+    
+    def get_pos_mm(self):
+        """ returns position in milimeters """
+        return self.x() / self.dpmm[0], self.y() / self.dpmm[1]
+    
+    def set_pos_by_mm(self, x, y):
+        self.setPos(x*self.dpmm[0], y*self.dpmm[1])
     
     def mouseDoubleClickEvent(self, event):
         self.setTextInteractionFlags(QtCore.Qt.TextEditorInteraction)
@@ -33,9 +45,11 @@ class Labeler(QtGui.QApplication):
         self.objectCollection = []
         self.ui = LabelDesigner.Ui_MainWindow()
         self.MainWindow = QtGui.QMainWindow()
+        self.dpi  = ( self.MainWindow.logicalDpiX(), self.MainWindow.logicalDpiY())
+        self.dpmm = (self.dpi[0]/25.4, self.dpi[1]/25.4)
         self.ui.setupUi(self.MainWindow)
         
-        self.labelImage = QtGui.QGraphicsScene()
+        self.labelImage = QtGui.QGraphicsScene(0, 0, 400, 500)
         x = self.labelImage.addText("Hello")
         self.ui.imagePreview.setScene(self.labelImage)
         x.setFlags(x.ItemIsSelectable|x.ItemIsMovable|x.ItemIsFocusable)
@@ -68,10 +82,10 @@ class Labeler(QtGui.QApplication):
             self.add_text(text, 0, 0)
             
         
-        
+MainApp = Labeler(sys.argv)      
         
 if __name__ == '__main__':
     
-    app = Labeler(sys.argv)
     
-    sys.exit(app.exec_())
+    
+    sys.exit(MainApp.exec_())

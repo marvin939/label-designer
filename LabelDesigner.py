@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'LabelDesigner.ui'
 #
-# Created: Wed Jun 13 17:28:15 2012
+# Created: Thu Jun 14 14:22:49 2012
 #      by: PyQt4 UI code generator 4.8.5
 #
 # WARNING! All changes made in this file will be lost!
@@ -22,7 +22,7 @@ class Ui_MainWindow(object):
         self.centralwidget = QtGui.QWidget(MainWindow)
         self.centralwidget.setObjectName(_fromUtf8("centralwidget"))
         self.imagePreview = QtGui.QGraphicsView(self.centralwidget)
-        self.imagePreview.setGeometry(QtCore.QRect(450, 190, 256, 192))
+        self.imagePreview.setGeometry(QtCore.QRect(370, 40, 400, 500))
         self.imagePreview.setInteractive(True)
         self.imagePreview.setDragMode(QtGui.QGraphicsView.RubberBandDrag)
         self.imagePreview.setObjectName(_fromUtf8("imagePreview"))
