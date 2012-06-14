@@ -21,7 +21,11 @@ class LabelerTextItem(QtGui.QGraphicsTextItem):
         self.dpi = MainApp.dpi
         self.dpmm = MainApp.dpmm
         self.set_pos_by_mm(50,40)
-        self.setFont(QtGui.QFont("Harlow Solid Italic"))
+        font = QtGui.QFont("Helvetica")
+        font.setPointSize(50)
+        self.setFont(font)
+        
+        
         
     def get_pos_mm(self):
         """ returns position in millimeters """
