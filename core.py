@@ -30,11 +30,11 @@ class ZoomGraphicsView(QtGui.QGraphicsView):
             offset = pointBeforeScale - pointAfterScale
             
             print screenCenter, pointBeforeScale
-            
-            newcenter = screenCenter + offset
-            newrect  = self.sceneRect()
-            newrect.moveCenter(newcenter)
-            self.updateSceneRect(newrect)
+            self.centerOn(pointAfterScale)
+            #newcenter = screenCenter + offset
+            #newrect  = self.sceneRect()
+            #newrect.moveCenter(pointAfterScale)
+            #self.updateSceneRect(newrect)
  
 class LabelerTextItem(QtGui.QGraphicsTextItem):
     def __init__(self, *args, **kwargs):
@@ -84,6 +84,7 @@ class Labeler(QtGui.QApplication):
         
         self.labelImage = QtGui.QGraphicsScene(0, 0, self.dpmm[0]*90, self.dpmm[1]*45)
         self.labelView = ZoomGraphicsView()
+        self.labelView.setBackgroundBrush(QtGui.QBrush('grey'))
         self.ui.previewLayout.addWidget(self.labelView)
         self.labelView.setScene(self.labelImage)
         self.labelView.setDragMode(QtGui.QGraphicsView.RubberBandDrag)
@@ -119,12 +120,11 @@ class Labeler(QtGui.QApplication):
             self.add_text(text, 0, 0)
             
     def create_pdf(self):
-        print mm
         pdf = canvas.Canvas("hello.pdf", (mm*90, mm*45))
         for obj in self.objectCollection:
             font = obj.font()
             x, y = obj.get_pos_mm()
-            textobj = pdf.beginText(x, y)
+            textobj = pdf.beginText(x, 45-y)
             
             
             textobj.setStrokeColorCMYK(0, 0, 0, 1, None)
