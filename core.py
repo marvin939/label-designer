@@ -1,6 +1,7 @@
 import LabelDesigner
 import sys
 import _winreg
+import math
 from PyQt4 import QtCore, QtGui
 from reportlab.pdfgen import canvas
 from reportlab.lib.units import mm
@@ -29,7 +30,6 @@ class ZoomGraphicsView(QtGui.QGraphicsView):
             
             offset = pointBeforeScale - pointAfterScale
             
-            print screenCenter, pointBeforeScale
             self.centerOn(pointAfterScale)
             #newcenter = screenCenter + offset
             #newrect  = self.sceneRect()
@@ -43,23 +43,32 @@ class LabelerTextItem(QtGui.QGraphicsTextItem):
         self.setFlags(self.ItemIsSelectable|self.ItemIsMovable|self.ItemIsFocusable)
         self.dpi = MainApp.dpi
         self.dpmm = MainApp.dpmm
-        self.set_pos_by_mm(50,40)
-        font = QtGui.QFont("Helvetica")
-        font.setPointSize(50)
-        self.setFont(font)
+        self.set_pos_by_mm(5,4)
+        self.lineSpacing = 1.2
         
+        font = QtGui.QFont("Helvetica")
+        font.setPointSize(9)
+        self.setFont(font)
         
         
     def get_pos_mm(self):
         """ returns position in millimeters """
-        return self.x() / self.dpmm[0], self.y() / self.dpmm[1]
+        return self.pos().x() / self.dpmm[0], self.pos().y() / self.dpmm[1]
     
     def set_pos_by_mm(self, x, y):
         self.setPos(x*self.dpmm[0], y*self.dpmm[1])
-    
+        
+    def get_pos_for_pdf(self):
+        y = self.y() + self.boundingRect().height()
+        return self.x()/self.dpmm[0], (self.y()/self.dpmm[1]) 
+        
     def mouseDoubleClickEvent(self, event):
         self.setTextInteractionFlags(QtCore.Qt.TextEditorInteraction)
         self.setFocus(True)
+        
+    def setFont(self, *args, **kwargs):
+        super(LabelerTextItem, self).setFont(*args, **kwargs)
+        self.leading = self.font().pointSize()*self.lineSpacing
         
         
     def itemChange(self, change, value):
@@ -84,7 +93,7 @@ class Labeler(QtGui.QApplication):
         
         self.labelImage = QtGui.QGraphicsScene(0, 0, self.dpmm[0]*90, self.dpmm[1]*45)
         self.labelView = ZoomGraphicsView()
-        self.labelView.setBackgroundBrush(QtGui.QBrush('grey'))
+        self.labelView.setMaximumSize(int(math.ceil(self.dpmm[0]*90)+5), int(math.ceil(self.dpmm[1]*45)+5))
         self.ui.previewLayout.addWidget(self.labelView)
         self.labelView.setScene(self.labelImage)
         self.labelView.setDragMode(QtGui.QGraphicsView.RubberBandDrag)
@@ -102,7 +111,6 @@ class Labeler(QtGui.QApplication):
         
         self.labelImage.addItem(obj)
         obj.setPlainText(text)
-        obj.setPos(200,200)
         self.objectCollection.append(obj)
         
     def zoom_changed(self):
@@ -123,13 +131,14 @@ class Labeler(QtGui.QApplication):
         pdf = canvas.Canvas("hello.pdf", (mm*90, mm*45))
         for obj in self.objectCollection:
             font = obj.font()
-            x, y = obj.get_pos_mm()
-            textobj = pdf.beginText(x, 45-y)
-            
+            #x, y = obj.get_pos_mm()
+            x, y = obj.get_pos_for_pdf()
+            print x,y 
+            textobj = pdf.beginText(x*mm, ((45-y)*mm) - obj.leading)
             
             textobj.setStrokeColorCMYK(0, 0, 0, 1, None)
             try:
-                pdf.setFont(str(font.family()), font.pointSize(), font.kerning())
+                pdf.setFont(str(font.family()), font.pointSize(), obj.leading)
             except KeyError:
                 key = _winreg.OpenKey(_winreg.HKEY_LOCAL_MACHINE, 'Software\\Microsoft\\Windows NT\\CurrentVersion\\Fonts', 0, _winreg.KEY_READ)
                 try:
@@ -138,7 +147,7 @@ class Labeler(QtGui.QApplication):
                     pass
                 else:
                     pdfmetrics.registerFont(TTFont(str(font.family()),fontname[0]))
-                    textobj.setFont(str(font.family()), font.pointSize(), 2+font.pointSize())
+                    pdf.setFont(str(font.family()), font.pointSize(), obj.leading)
            
             
             textobj.textLines(str(obj.toPlainText()))

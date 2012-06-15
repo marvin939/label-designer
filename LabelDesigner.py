@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'LabelDesigner.ui'
+# Form implementation generated from reading ui file 'C:\Users\Captain\workspace\Labeler\LabelDesigner.ui'
 #
-# Created: Fri Jun 15 17:58:22 2012
-#      by: PyQt4 UI code generator 4.8.5
+# Created: Fri Jun 15 19:55:08 2012
+#      by: PyQt4 UI code generator 4.9.1
 #
 # WARNING! All changes made in this file will be lost!
 
@@ -17,8 +17,7 @@ except AttributeError:
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName(_fromUtf8("MainWindow"))
-        MainWindow.resize(794, 600)
-        MainWindow.setWindowTitle(QtGui.QApplication.translate("MainWindow", "MainWindow", None, QtGui.QApplication.UnicodeUTF8))
+        MainWindow.resize(1240, 684)
         self.centralwidget = QtGui.QWidget(MainWindow)
         self.centralwidget.setObjectName(_fromUtf8("centralwidget"))
         self.gridLayout_2 = QtGui.QGridLayout(self.centralwidget)
@@ -26,17 +25,14 @@ class Ui_MainWindow(object):
         self.gridLayout = QtGui.QGridLayout()
         self.gridLayout.setObjectName(_fromUtf8("gridLayout"))
         self.addTextBtn = QtGui.QPushButton(self.centralwidget)
-        self.addTextBtn.setText(QtGui.QApplication.translate("MainWindow", "Add Text", None, QtGui.QApplication.UnicodeUTF8))
         self.addTextBtn.setObjectName(_fromUtf8("addTextBtn"))
         self.gridLayout.addWidget(self.addTextBtn, 2, 0, 1, 1)
         self.createPdfBtn = QtGui.QPushButton(self.centralwidget)
-        self.createPdfBtn.setText(QtGui.QApplication.translate("MainWindow", "Create PDF", None, QtGui.QApplication.UnicodeUTF8))
         self.createPdfBtn.setObjectName(_fromUtf8("createPdfBtn"))
         self.gridLayout.addWidget(self.createPdfBtn, 1, 0, 1, 1)
         self.horizontalLayout = QtGui.QHBoxLayout()
         self.horizontalLayout.setObjectName(_fromUtf8("horizontalLayout"))
         self.label = QtGui.QLabel(self.centralwidget)
-        self.label.setText(QtGui.QApplication.translate("MainWindow", "Zoom:", None, QtGui.QApplication.UnicodeUTF8))
         self.label.setObjectName(_fromUtf8("label"))
         self.horizontalLayout.addWidget(self.label)
         self.zoomLevel = QtGui.QDoubleSpinBox(self.centralwidget)
@@ -51,7 +47,7 @@ class Ui_MainWindow(object):
         self.objDetailsArea.setWidgetResizable(True)
         self.objDetailsArea.setObjectName(_fromUtf8("objDetailsArea"))
         self.detailsContents = QtGui.QWidget()
-        self.detailsContents.setGeometry(QtCore.QRect(0, 0, 383, 454))
+        self.detailsContents.setGeometry(QtCore.QRect(0, 0, 606, 535))
         self.detailsContents.setObjectName(_fromUtf8("detailsContents"))
         self.formLayout = QtGui.QFormLayout(self.detailsContents)
         self.formLayout.setFieldGrowthPolicy(QtGui.QFormLayout.AllNonFixedFieldsGrow)
@@ -66,7 +62,7 @@ class Ui_MainWindow(object):
         self.gridLayout_2.addLayout(self.previewLayout, 1, 1, 1, 1)
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtGui.QMenuBar(MainWindow)
-        self.menubar.setGeometry(QtCore.QRect(0, 0, 794, 20))
+        self.menubar.setGeometry(QtCore.QRect(0, 0, 1240, 21))
         self.menubar.setObjectName(_fromUtf8("menubar"))
         MainWindow.setMenuBar(self.menubar)
         self.statusbar = QtGui.QStatusBar(MainWindow)
@@ -77,7 +73,10 @@ class Ui_MainWindow(object):
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
     def retranslateUi(self, MainWindow):
-        pass
+        MainWindow.setWindowTitle(QtGui.QApplication.translate("MainWindow", "MainWindow", None, QtGui.QApplication.UnicodeUTF8))
+        self.addTextBtn.setText(QtGui.QApplication.translate("MainWindow", "Add Text", None, QtGui.QApplication.UnicodeUTF8))
+        self.createPdfBtn.setText(QtGui.QApplication.translate("MainWindow", "Create PDF", None, QtGui.QApplication.UnicodeUTF8))
+        self.label.setText(QtGui.QApplication.translate("MainWindow", "Zoom:", None, QtGui.QApplication.UnicodeUTF8))
 
 
 if __name__ == "__main__":
