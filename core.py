@@ -11,7 +11,30 @@ try:
 except AttributeError:
     _fromUtf8 = lambda s: s
 
-   
+class ZoomGraphicsView(QtGui.QGraphicsView):
+    def wheelEvent(self, event):
+        if event.modifiers() == QtCore.Qt.ControlModifier:
+            pointBeforeScale =  QtCore.QPointF(self.mapToScene(event.pos()))
+            
+            screenCenter = QtCore.QPointF(self.sceneRect().center())
+            
+            scaleFactor = 1.15
+            
+            if event.delta() > 0:
+                self.scale(scaleFactor, scaleFactor)
+            else:
+                self.scale(1.0/scaleFactor, 1.0/scaleFactor)
+                
+            pointAfterScale = QtCore.QPointF(self.mapToScene(event.pos()))
+            
+            offset = pointBeforeScale - pointAfterScale
+            
+            print screenCenter, pointBeforeScale
+            
+            newcenter = screenCenter + offset
+            newrect  = self.sceneRect()
+            newrect.moveCenter(newcenter)
+            self.updateSceneRect(newrect)
  
 class LabelerTextItem(QtGui.QGraphicsTextItem):
     def __init__(self, *args, **kwargs):
@@ -57,19 +80,19 @@ class Labeler(QtGui.QApplication):
         self.dpi  = ( self.MainWindow.logicalDpiX(), self.MainWindow.logicalDpiY())
         self.dpmm = (self.dpi[0]/25.4, self.dpi[1]/25.4)
         self.ui.setupUi(self.MainWindow)
+        self.scaleFactor = self.ui.zoomLevel.value()
         
-        self.labelImage = QtGui.QGraphicsScene(0, 0, 400, 500)
-        x = self.labelImage.addText("Hello")
-        self.ui.imagePreview.setScene(self.labelImage)
-        x.setFlags(x.ItemIsSelectable|x.ItemIsMovable|x.ItemIsFocusable)
-        x.setSelected(True)
-        x.setTextInteractionFlags(QtCore.Qt.TextEditorInteraction)
-        self.ui.imagePreview.setDragMode(QtGui.QGraphicsView.RubberBandDrag)
+        self.labelImage = QtGui.QGraphicsScene(0, 0, self.dpmm[0]*90, self.dpmm[1]*45)
+        self.labelView = ZoomGraphicsView()
+        self.ui.previewLayout.addWidget(self.labelView)
+        self.labelView.setScene(self.labelImage)
+        self.labelView.setDragMode(QtGui.QGraphicsView.RubberBandDrag)
         
         
         self.connect(self.ui.addTextBtn, QtCore.SIGNAL('clicked()'), self.add_text_dialog)
         self.connect(self.ui.createPdfBtn, QtCore.SIGNAL('clicked()'), self.create_pdf)
-        
+        self.connect(self.ui.zoomLevel, QtCore.SIGNAL('editingFinished()'), self.zoom_changed)
+    
         self.MainWindow.show()
         
 
@@ -81,6 +104,13 @@ class Labeler(QtGui.QApplication):
         obj.setPos(200,200)
         self.objectCollection.append(obj)
         
+    def zoom_changed(self):
+        scale = ((100.0/self.scaleFactor) * self.ui.zoomLevel.value()) / 100
+        self.scaleFactor = self.ui.zoomLevel.value()
+        
+        self.ui.imagePreview.scale(scale, scale)
+        
+        
         
     def add_text_dialog(self):
         result = QtGui.QInputDialog.getText(self.MainWindow, 'What text to add?', "Enter text")
@@ -89,7 +119,8 @@ class Labeler(QtGui.QApplication):
             self.add_text(text, 0, 0)
             
     def create_pdf(self):
-        pdf = canvas.Canvas("hello.pdf")
+        print mm
+        pdf = canvas.Canvas("hello.pdf", (mm*90, mm*45))
         for obj in self.objectCollection:
             font = obj.font()
             x, y = obj.get_pos_mm()
