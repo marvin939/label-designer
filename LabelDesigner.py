@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'C:\Users\Captain\workspace\Labeler\LabelDesigner.ui'
 #
-# Created: Fri Jun 15 19:55:08 2012
+# Created: Sat Jun 16 18:52:13 2012
 #      by: PyQt4 UI code generator 4.9.1
 #
 # WARNING! All changes made in this file will be lost!
@@ -47,19 +47,26 @@ class Ui_MainWindow(object):
         self.objDetailsArea.setWidgetResizable(True)
         self.objDetailsArea.setObjectName(_fromUtf8("objDetailsArea"))
         self.detailsContents = QtGui.QWidget()
-        self.detailsContents.setGeometry(QtCore.QRect(0, 0, 606, 535))
+        self.detailsContents.setGeometry(QtCore.QRect(0, 0, 606, 263))
         self.detailsContents.setObjectName(_fromUtf8("detailsContents"))
         self.formLayout = QtGui.QFormLayout(self.detailsContents)
         self.formLayout.setFieldGrowthPolicy(QtGui.QFormLayout.AllNonFixedFieldsGrow)
         self.formLayout.setObjectName(_fromUtf8("formLayout"))
         self.objDetailsArea.setWidget(self.detailsContents)
-        self.gridLayout_2.addWidget(self.objDetailsArea, 1, 0, 1, 1)
+        self.gridLayout_2.addWidget(self.objDetailsArea, 2, 0, 1, 1)
         self.previewLayout = QtGui.QVBoxLayout()
         self.previewLayout.setSizeConstraint(QtGui.QLayout.SetNoConstraint)
         self.previewLayout.setObjectName(_fromUtf8("previewLayout"))
+        self.graphicsView = ZoomGraphicsView(self.centralwidget)
+        self.graphicsView.setObjectName(_fromUtf8("graphicsView"))
+        self.previewLayout.addWidget(self.graphicsView)
         spacerItem = QtGui.QSpacerItem(40, 20, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Minimum)
         self.previewLayout.addItem(spacerItem)
-        self.gridLayout_2.addLayout(self.previewLayout, 1, 1, 1, 1)
+        self.gridLayout_2.addLayout(self.previewLayout, 1, 1, 2, 1)
+        self.itemList = QtGui.QTreeWidget(self.centralwidget)
+        self.itemList.setObjectName(_fromUtf8("itemList"))
+        self.itemList.headerItem().setText(0, _fromUtf8("1"))
+        self.gridLayout_2.addWidget(self.itemList, 1, 0, 1, 1)
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtGui.QMenuBar(MainWindow)
         self.menubar.setGeometry(QtCore.QRect(0, 0, 1240, 21))
@@ -78,6 +85,7 @@ class Ui_MainWindow(object):
         self.createPdfBtn.setText(QtGui.QApplication.translate("MainWindow", "Create PDF", None, QtGui.QApplication.UnicodeUTF8))
         self.label.setText(QtGui.QApplication.translate("MainWindow", "Zoom:", None, QtGui.QApplication.UnicodeUTF8))
 
+from zoomgraphicsview import ZoomGraphicsView
 
 if __name__ == "__main__":
     import sys
