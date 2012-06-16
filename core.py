@@ -145,32 +145,34 @@ class Labeler(QtGui.QApplication):
             text = result[0]
             self.add_text(text, 0, 0)
             
+    def retrieve_font_filename(self, font):
+        """ Returns a font's filename """
+        key = _winreg.OpenKey(_winreg.HKEY_LOCAL_MACHINE, 'Software\\Microsoft\\Windows NT\\CurrentVersion\\Fonts', 0, _winreg.KEY_READ)
+        fontname = _winreg.QueryValueEx(key,  str(font.family()) + " (TrueType)")
+        return fontname
+            
     def create_pdf(self):
         pdf = canvas.Canvas("hello.pdf", (mm*90, mm*45))
-        for i in range(20000):
-            for obj in self.objectCollection:
-                font = obj.font()
-                x, y = obj.get_pos_for_pdf()
-                print x,y 
-                textobj = pdf.beginText(x*mm, ((45-y)*mm) - obj.leading)
-                
-                textobj.setStrokeColorCMYK(0, 0, 0, 1, None)
-                try:
-                    pdf.setFont(str(font.family()), font.pointSize(), obj.leading)
-                except KeyError:
-                    key = _winreg.OpenKey(_winreg.HKEY_LOCAL_MACHINE, 'Software\\Microsoft\\Windows NT\\CurrentVersion\\Fonts', 0, _winreg.KEY_READ)
-                    try:
-                        fontname = _winreg.QueryValueEx(key,  str(font.family()) + " (TrueType)")
-                    except:
-                        pass
-                    else:
-                        pdfmetrics.registerFont(TTFont(str(font.family()),fontname[0]))
-                        pdf.setFont(str(font.family()), font.pointSize(), obj.leading)
-               
-                
-                textobj.textLines(str(obj.toPlainText()))
-                pdf.drawText(textobj)
-            pdf.showPage()
+        for obj in self.objectCollection:
+            font = obj.font()
+            x, y = obj.get_pos_for_pdf()
+            
+            
+            textobj = pdf.beginText(x*mm, ((45-y)*mm) - obj.leading)
+            
+            
+            try:
+                pdf.setFont(str(font.family()), font.pointSize(), obj.leading)
+            except KeyError:
+                # font not loaded, request it
+                fontname = self.retrieve_font_filename(font.family())
+                pdfmetrics.registerFont(TTFont(str(font.family()),fontname[0]))
+                pdf.setFont(str(font.family()), font.pointSize(), obj.leading)
+           
+            #pdf.drawImage("permitpostscaled.png", mm*25, mm*25)
+            textobj.textLines(str(obj.toPlainText()))
+            pdf.drawText(textobj)
+        pdf.showPage()
         pdf.save()
             
         
