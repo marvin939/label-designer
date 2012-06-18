@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'C:\Users\Captain\workspace\Labeler\LabelDesigner.ui'
 #
-# Created: Sat Jun 16 18:52:13 2012
+# Created: Mon Jun 18 18:04:52 2012
 #      by: PyQt4 UI code generator 4.9.1
 #
 # WARNING! All changes made in this file will be lost!
@@ -24,12 +24,6 @@ class Ui_MainWindow(object):
         self.gridLayout_2.setObjectName(_fromUtf8("gridLayout_2"))
         self.gridLayout = QtGui.QGridLayout()
         self.gridLayout.setObjectName(_fromUtf8("gridLayout"))
-        self.addTextBtn = QtGui.QPushButton(self.centralwidget)
-        self.addTextBtn.setObjectName(_fromUtf8("addTextBtn"))
-        self.gridLayout.addWidget(self.addTextBtn, 2, 0, 1, 1)
-        self.createPdfBtn = QtGui.QPushButton(self.centralwidget)
-        self.createPdfBtn.setObjectName(_fromUtf8("createPdfBtn"))
-        self.gridLayout.addWidget(self.createPdfBtn, 1, 0, 1, 1)
         self.horizontalLayout = QtGui.QHBoxLayout()
         self.horizontalLayout.setObjectName(_fromUtf8("horizontalLayout"))
         self.label = QtGui.QLabel(self.centralwidget)
@@ -42,18 +36,27 @@ class Ui_MainWindow(object):
         self.zoomLevel.setObjectName(_fromUtf8("zoomLevel"))
         self.horizontalLayout.addWidget(self.zoomLevel)
         self.gridLayout.addLayout(self.horizontalLayout, 0, 0, 1, 1)
+        self.createPdfBtn = QtGui.QPushButton(self.centralwidget)
+        self.createPdfBtn.setObjectName(_fromUtf8("createPdfBtn"))
+        self.gridLayout.addWidget(self.createPdfBtn, 1, 0, 1, 1)
+        self.addTextBtn = QtGui.QPushButton(self.centralwidget)
+        self.addTextBtn.setObjectName(_fromUtf8("addTextBtn"))
+        self.gridLayout.addWidget(self.addTextBtn, 2, 0, 1, 1)
+        self.loadData = QtGui.QPushButton(self.centralwidget)
+        self.loadData.setObjectName(_fromUtf8("loadData"))
+        self.gridLayout.addWidget(self.loadData, 3, 0, 1, 1)
         self.gridLayout_2.addLayout(self.gridLayout, 0, 0, 1, 1)
         self.objDetailsArea = QtGui.QScrollArea(self.centralwidget)
         self.objDetailsArea.setWidgetResizable(True)
         self.objDetailsArea.setObjectName(_fromUtf8("objDetailsArea"))
         self.detailsContents = QtGui.QWidget()
-        self.detailsContents.setGeometry(QtCore.QRect(0, 0, 606, 263))
+        self.detailsContents.setGeometry(QtCore.QRect(0, 0, 606, 237))
         self.detailsContents.setObjectName(_fromUtf8("detailsContents"))
         self.formLayout = QtGui.QFormLayout(self.detailsContents)
         self.formLayout.setFieldGrowthPolicy(QtGui.QFormLayout.AllNonFixedFieldsGrow)
         self.formLayout.setObjectName(_fromUtf8("formLayout"))
         self.objDetailsArea.setWidget(self.detailsContents)
-        self.gridLayout_2.addWidget(self.objDetailsArea, 2, 0, 1, 1)
+        self.gridLayout_2.addWidget(self.objDetailsArea, 3, 0, 1, 1)
         self.previewLayout = QtGui.QVBoxLayout()
         self.previewLayout.setSizeConstraint(QtGui.QLayout.SetNoConstraint)
         self.previewLayout.setObjectName(_fromUtf8("previewLayout"))
@@ -62,11 +65,15 @@ class Ui_MainWindow(object):
         self.previewLayout.addWidget(self.graphicsView)
         spacerItem = QtGui.QSpacerItem(40, 20, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Minimum)
         self.previewLayout.addItem(spacerItem)
-        self.gridLayout_2.addLayout(self.previewLayout, 1, 1, 2, 1)
+        self.gridLayout_2.addLayout(self.previewLayout, 2, 1, 2, 1)
         self.itemList = QtGui.QTreeWidget(self.centralwidget)
         self.itemList.setObjectName(_fromUtf8("itemList"))
         self.itemList.headerItem().setText(0, _fromUtf8("1"))
-        self.gridLayout_2.addWidget(self.itemList, 1, 0, 1, 1)
+        self.gridLayout_2.addWidget(self.itemList, 2, 0, 1, 1)
+        self.headersCheck = QtGui.QCheckBox(self.centralwidget)
+        self.headersCheck.setLayoutDirection(QtCore.Qt.LeftToRight)
+        self.headersCheck.setObjectName(_fromUtf8("headersCheck"))
+        self.gridLayout_2.addWidget(self.headersCheck, 1, 0, 1, 1)
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtGui.QMenuBar(MainWindow)
         self.menubar.setGeometry(QtCore.QRect(0, 0, 1240, 21))
@@ -81,9 +88,11 @@ class Ui_MainWindow(object):
 
     def retranslateUi(self, MainWindow):
         MainWindow.setWindowTitle(QtGui.QApplication.translate("MainWindow", "MainWindow", None, QtGui.QApplication.UnicodeUTF8))
-        self.addTextBtn.setText(QtGui.QApplication.translate("MainWindow", "Add Text", None, QtGui.QApplication.UnicodeUTF8))
-        self.createPdfBtn.setText(QtGui.QApplication.translate("MainWindow", "Create PDF", None, QtGui.QApplication.UnicodeUTF8))
         self.label.setText(QtGui.QApplication.translate("MainWindow", "Zoom:", None, QtGui.QApplication.UnicodeUTF8))
+        self.createPdfBtn.setText(QtGui.QApplication.translate("MainWindow", "Create PDF", None, QtGui.QApplication.UnicodeUTF8))
+        self.addTextBtn.setText(QtGui.QApplication.translate("MainWindow", "Add Text", None, QtGui.QApplication.UnicodeUTF8))
+        self.loadData.setText(QtGui.QApplication.translate("MainWindow", "Load Data", None, QtGui.QApplication.UnicodeUTF8))
+        self.headersCheck.setText(QtGui.QApplication.translate("MainWindow", "Has Headers?", None, QtGui.QApplication.UnicodeUTF8))
 
 from zoomgraphicsview import ZoomGraphicsView
 

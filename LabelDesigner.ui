@@ -17,20 +17,6 @@
    <layout class="QGridLayout" name="gridLayout_2">
     <item row="0" column="0">
      <layout class="QGridLayout" name="gridLayout">
-      <item row="2" column="0">
-       <widget class="QPushButton" name="addTextBtn">
-        <property name="text">
-         <string>Add Text</string>
-        </property>
-       </widget>
-      </item>
-      <item row="1" column="0">
-       <widget class="QPushButton" name="createPdfBtn">
-        <property name="text">
-         <string>Create PDF</string>
-        </property>
-       </widget>
-      </item>
       <item row="0" column="0">
        <layout class="QHBoxLayout" name="horizontalLayout">
         <item>
@@ -55,9 +41,30 @@
         </item>
        </layout>
       </item>
+      <item row="1" column="0">
+       <widget class="QPushButton" name="createPdfBtn">
+        <property name="text">
+         <string>Create PDF</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="0">
+       <widget class="QPushButton" name="addTextBtn">
+        <property name="text">
+         <string>Add Text</string>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="0">
+       <widget class="QPushButton" name="loadData">
+        <property name="text">
+         <string>Load Data</string>
+        </property>
+       </widget>
+      </item>
      </layout>
     </item>
-    <item row="2" column="0">
+    <item row="3" column="0">
      <widget class="QScrollArea" name="objDetailsArea">
       <property name="widgetResizable">
        <bool>true</bool>
@@ -68,7 +75,7 @@
          <x>0</x>
          <y>0</y>
          <width>606</width>
-         <height>263</height>
+         <height>237</height>
         </rect>
        </property>
        <layout class="QFormLayout" name="formLayout">
@@ -79,7 +86,7 @@
       </widget>
      </widget>
     </item>
-    <item row="1" column="1" rowspan="2">
+    <item row="2" column="1" rowspan="2">
      <layout class="QVBoxLayout" name="previewLayout">
       <property name="sizeConstraint">
        <enum>QLayout::SetNoConstraint</enum>
@@ -102,13 +109,23 @@
       </item>
      </layout>
     </item>
-    <item row="1" column="0">
+    <item row="2" column="0">
      <widget class="QTreeWidget" name="itemList">
       <column>
        <property name="text">
         <string notr="true">1</string>
        </property>
       </column>
+     </widget>
+    </item>
+    <item row="1" column="0">
+     <widget class="QCheckBox" name="headersCheck">
+      <property name="layoutDirection">
+       <enum>Qt::LeftToRight</enum>
+      </property>
+      <property name="text">
+       <string>Has Headers?</string>
+      </property>
      </widget>
     </item>
    </layout>
