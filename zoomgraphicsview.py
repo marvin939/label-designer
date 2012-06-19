@@ -24,7 +24,6 @@ class ZoomGraphicsView(QtGui.QGraphicsView):
     def keyPressEvent(self, event):
         super(ZoomGraphicsView, self).keyPressEvent(event)
         if event.key() == QtCore.Qt.Key_Delete:
-            print self.scene().focusItem().isActive()
             for i in self.scene().selectedItems():
                 QtGui.QApplication.instance().remove_object(i)
                 

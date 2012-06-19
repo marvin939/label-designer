@@ -29,7 +29,7 @@ class LabelerTextItem(QtGui.QGraphicsTextItem):
         self.set_pos_by_mm(5,4)
         self.lineSpacing = 1.2
         
-        font = QtGui.QFont("Helvetica")
+        font = QtGui.QFont("Arial")
         font.setPointSize(9)
         self.setFont(font)
         
@@ -226,7 +226,7 @@ class Labeler(QtGui.QApplication):
                     if x.strip("0123456789") <> "field":
                         print "error, missing heading %s, check spelling" % i
                         headersMatched = False
-                if not x in headers:
+                elif not x in headers:
                     print "error, missing heading %s, check spelling" % i
                     headersMatched = False
         if not headersMatched:
@@ -251,7 +251,7 @@ class Labeler(QtGui.QApplication):
                     pdf.setFont(str(font.family()), font.pointSize(), obj.leading)
                 except KeyError:
                     # font not loaded, request it
-                    fontname = self.retrieve_font_filename(font.family())
+                    fontname = self.retrieve_font_filename(font)
                     pdfmetrics.registerFont(TTFont(str(font.family()),fontname[0]))
                     pdf.setFont(str(font.family()), font.pointSize(), obj.leading)
                
