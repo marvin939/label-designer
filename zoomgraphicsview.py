@@ -41,6 +41,7 @@ class ZoomGraphicsView(QtGui.QGraphicsView):
         self.update()
         
     def set_permit_number(self, val):
+        """ sets the permit label to val """
         if str(val).isdigit():
             self.permitNo = str(val)
         else:
@@ -65,12 +66,14 @@ class ZoomGraphicsView(QtGui.QGraphicsView):
                 
         
     def scale(self, x, y):
+        """ Overridden to keep count of what magnifications we're at """
         assert x == y
         super(ZoomGraphicsView, self).scale(x, y)
         self.zoomLevel *= x
         print self.zoomLevel
         
     def setPageSize(self, pagesize):
+        """ sets up the page border, setting current pagesize to pagesize """
         self.pageSize = pagesize
         for i in self.pageSizeRects:
             self.scene().removeItem(i)
@@ -91,6 +94,7 @@ class ZoomGraphicsView(QtGui.QGraphicsView):
         
     
     def wheelEvent(self, event):
+        """ Overridden to allow for zooming when holding down ctrl """
         if event.modifiers() == QtCore.Qt.ControlModifier:
         
             

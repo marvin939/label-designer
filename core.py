@@ -39,23 +39,27 @@ class LabelerTextItem(QtGui.QGraphicsTextItem):
         return self.pos().x() / self.dpmm[0], self.pos().y() / self.dpmm[1]
     
     def set_pos_by_mm(self, x, y):
+        """ sets position in mm """
         self.setPos(x*self.dpmm[0], y*self.dpmm[1])
         
     def get_pos_for_pdf(self):
+        """ same as get pos by mm? """
         y = self.y() + self.boundingRect().height()
         return self.x()/self.dpmm[0], (self.y()/self.dpmm[1]) 
         
     def mouseDoubleClickEvent(self, event):
+        """ Overrided to make text editable after being double clicked TODO make sure cursor is showing """
         self.setTextInteractionFlags(QtCore.Qt.TextEditorInteraction)
         self.setFocus(True)
-        print self.textCursor().document().parent()
         
     def setFont(self, *args, **kwargs):
+        """ Overrided to add calc for leading/line spacing """
         super(LabelerTextItem, self).setFont(*args, **kwargs)
         self.leading = self.font().pointSize()*self.lineSpacing
         
         
     def itemChange(self, change, value):
+        """ Overrided to stop editing after losing selection: TODO clear selection """
         super(LabelerTextItem,self).itemChange(change, value)
         if change == QtGui.QGraphicsItem.ItemSelectedChange:
             if value == False:
@@ -76,6 +80,7 @@ class Labeler(QtGui.QApplication):
         self.currentDirectory = "C:\\"
         self.currentFile = None
         
+        #set up funcs to load in different file formats
         self.fileLoaders = {}
         self.fileLoaders[".csv"] = self.load_csv
         self.fileLoaders[".xls"] = self.load_xls
@@ -88,19 +93,24 @@ class Labeler(QtGui.QApplication):
         DPMM.append(self.dpi[1]/25.4)
         
         self.ui.setupUi(self.MainWindow)
-        self.scaleFactor = self.ui.zoomLevel.value()
-        self.hasHeaders  = self.ui.headersCheck.isChecked()
         
-        #self.labelView = ZoomGraphicsView((self.dpmm[0]*90, self.dpmm[1]*45))
+        #make sure scale factor and header state are correct
+        self.scaleFactor = self.ui.zoomLevel.value()
+        self.header_check(self.ui.headersCheck.isChecked())
+        
+        
         self.labelView = self.ui.graphicsView
         self.labelView.setPageSize((self.dpmm[0]*90, self.dpmm[1]*45))
         self.itemList = self.ui.itemList
         
         
+        # make sure the correct permit state is set
         self.toggle_permit(self.ui.permitCheck.isChecked())
+        self.labelView.set_permit_number(self.ui.permitEntry.text())
+        
         self.headerRE = re.compile('<<.*?>>')
         
-        self.labelView.set_permit_number(self.ui.permitEntry.text())
+        
         
         self.connect(self.ui.loadData, QtCore.SIGNAL('clicked()'), self.open_file)
         self.connect(self.ui.addTextBtn, QtCore.SIGNAL('clicked()'), self.add_text_dialog)
@@ -110,8 +120,7 @@ class Labeler(QtGui.QApplication):
         self.connect(self.ui.headersCheck, QtCore.SIGNAL('toggled(bool)'), self.header_check)
         self.connect(self.ui.permitCheck, QtCore.SIGNAL('toggled(bool)'), self.toggle_permit)
         self.connect(self.ui.permitEntry, QtCore.SIGNAL('textChanged(QString)'), self.permit_number_changed)
-    
-        self.labelView.permitImage.setSelected(True)
+
         self.MainWindow.show()
         
     def toggle_permit(self, toggle):
@@ -157,6 +166,7 @@ class Labeler(QtGui.QApplication):
             
         
     def load_xls(self, filename):
+        """ loads XLS only, not xlsx, uses xlrd TODO use win32com for xlsx and others """
         xlfile = xlrd.open_workbook(filename)
         sheets = xlfile.sheet_names()
         name, result = QtGui.QInputDialog.getItem(self.MainWindow, "Select which sheet you would like to use", "Which sheet would you like to use?", sheets, editable=False)
@@ -180,6 +190,7 @@ class Labeler(QtGui.QApplication):
         
 
     def add_text(self, text, x, y):
+        """ add a text item at x, y """
         obj = LabelerTextItem()
         
         self.labelView.scene().addItem(obj)
@@ -195,6 +206,7 @@ class Labeler(QtGui.QApplication):
         self.itemListObjects[obj] = item
         
     def item_selected(self, currentItem, previousItem):
+        """ sets selection in the graphicsview/scene when chosen from treeview """
         if currentItem <> None:
             obj = currentItem.data(1,0).toPyObject()
             obj.scene().clearSelection()
@@ -202,6 +214,7 @@ class Labeler(QtGui.QApplication):
         
         
     def zoom_changed(self):
+        """ TODO Needs fixing, to account for scroll zooming """
         scale = ((100.0/self.scaleFactor) * self.ui.zoomLevel.value()) / 100
         self.scaleFactor = self.ui.zoomLevel.value()
         
@@ -210,18 +223,20 @@ class Labeler(QtGui.QApplication):
         
         
     def add_text_dialog(self):
+        """ Gets input from the user to add a text item """
         result = QtGui.QInputDialog.getText(self.MainWindow, 'What text to add?', "Enter text")
         if result[1] == True:
             text = result[0]
             self.add_text(text, 0, 0)
             
     def retrieve_font_filename(self, font):
-        """ Returns a font's filename """
+        """ Returns a font's system filename, for use with reportlab to embed/link in fonts """
         key = _winreg.OpenKey(_winreg.HKEY_LOCAL_MACHINE, 'Software\\Microsoft\\Windows NT\\CurrentVersion\\Fonts', 0, _winreg.KEY_READ)
         fontname = _winreg.QueryValueEx(key,  str(font) + " (TrueType)")
         return fontname
             
     def create_pdf(self):
+        """ Generates a pdf file based on data and layup """
         if self.hasHeaders:
             headers = [i.lower() for i in self.dataSet[0]]
         else:
@@ -254,6 +269,7 @@ class Labeler(QtGui.QApplication):
             rowrange = self.dataSet
         for row in rowrange:
             if self.ui.permitCheck.isChecked():
+                #displays permit impression TODO add centering, base on page size
                 try:
                     pdf.setFont('Arial Narrow', 8, 10)
                 except KeyError:
