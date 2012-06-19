@@ -100,6 +100,7 @@ class Labeler(QtGui.QApplication):
         self.toggle_permit(self.ui.permitCheck.isChecked())
         self.headerRE = re.compile('<<.*?>>')
         
+        self.labelView.set_permit_number(self.ui.permitEntry.text())
         
         self.connect(self.ui.loadData, QtCore.SIGNAL('clicked()'), self.open_file)
         self.connect(self.ui.addTextBtn, QtCore.SIGNAL('clicked()'), self.add_text_dialog)
@@ -108,7 +109,9 @@ class Labeler(QtGui.QApplication):
         self.connect(self.itemList, QtCore.SIGNAL('currentItemChanged(QTreeWidgetItem*,QTreeWidgetItem*)'), self.item_selected)
         self.connect(self.ui.headersCheck, QtCore.SIGNAL('toggled(bool)'), self.header_check)
         self.connect(self.ui.permitCheck, QtCore.SIGNAL('toggled(bool)'), self.toggle_permit)
+        self.connect(self.ui.permitEntry, QtCore.SIGNAL('textChanged(QString)'), self.permit_number_changed)
     
+        self.labelView.permitImage.setSelected(True)
         self.MainWindow.show()
         
     def toggle_permit(self, toggle):
@@ -116,6 +119,9 @@ class Labeler(QtGui.QApplication):
         self.ui.permitPosition.setEnabled(toggle)
         self.ui.permitEntry.setEnabled(toggle)
         self.labelView.toggle_permit(toggle)
+        
+    def permit_number_changed(self, text):
+        self.labelView.set_permit_number(str(text))
         
         
     def header_check(self, toggle):
@@ -212,7 +218,7 @@ class Labeler(QtGui.QApplication):
     def retrieve_font_filename(self, font):
         """ Returns a font's filename """
         key = _winreg.OpenKey(_winreg.HKEY_LOCAL_MACHINE, 'Software\\Microsoft\\Windows NT\\CurrentVersion\\Fonts', 0, _winreg.KEY_READ)
-        fontname = _winreg.QueryValueEx(key,  str(font.family()) + " (TrueType)")
+        fontname = _winreg.QueryValueEx(key,  str(font) + " (TrueType)")
         return fontname
             
     def create_pdf(self):
@@ -247,7 +253,22 @@ class Labeler(QtGui.QApplication):
         else:
             rowrange = self.dataSet
         for row in rowrange:
+            if self.ui.permitCheck.isChecked():
+                try:
+                    pdf.setFont('Arial Narrow', 8, 10)
+                except KeyError:
+                    # font not loaded, request it
+                    fontname = self.retrieve_font_filename("Arial Narrow")
+                    pdfmetrics.registerFont(TTFont("Arial Narrow",fontname[0]))
+                    pdf.setFont('Arial Narrow', 8, 10)
+                
+                pdf.drawImage("PermitPost.png", mm*46, mm*34, mm*43, mm*10)
+                permitTextObj = pdf.beginText(46.6*mm, ((45-.9)*mm-13))
+                permitTextObj.textLines(self.labelView.permitPlainText)
+                pdf.drawText(permitTextObj)
             for obj in self.objectCollection:
+                
+                
                 font = obj.font()
                 x, y = obj.get_pos_for_pdf()
                 
@@ -259,11 +280,11 @@ class Labeler(QtGui.QApplication):
                     pdf.setFont(str(font.family()), font.pointSize(), obj.leading)
                 except KeyError:
                     # font not loaded, request it
-                    fontname = self.retrieve_font_filename(font)
+                    fontname = self.retrieve_font_filename(font.family())
                     pdfmetrics.registerFont(TTFont(str(font.family()),fontname[0]))
                     pdf.setFont(str(font.family()), font.pointSize(), obj.leading)
                
-                pdf.drawImage("NZ Post Permit_M.wmf", mm*44, mm*33, mm*43, mm*10)
+                
                 text = str(obj.toPlainText())
                 matches = self.headerRE.findall(text)
                 matches = set(matches)
@@ -274,10 +295,10 @@ class Labeler(QtGui.QApplication):
                 
                 
             
-            textobj.textLines(text)
+                textobj.textLines(text)
             
             
-            pdf.drawText(textobj)
+                pdf.drawText(textobj)
             pdf.showPage()
         pdf.save()
             
