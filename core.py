@@ -76,7 +76,6 @@ class Labeler(QtGui.QApplication):
         self.currentDirectory = "C:\\"
         self.currentFile = None
         
-        
         self.fileLoaders = {}
         self.fileLoaders[".csv"] = self.load_csv
         self.fileLoaders[".xls"] = self.load_xls
@@ -98,6 +97,7 @@ class Labeler(QtGui.QApplication):
         self.itemList = self.ui.itemList
         
         
+        self.toggle_permit(self.ui.permitCheck.isChecked())
         self.headerRE = re.compile('<<.*?>>')
         
         
@@ -107,11 +107,19 @@ class Labeler(QtGui.QApplication):
         self.connect(self.ui.zoomLevel, QtCore.SIGNAL('editingFinished()'), self.zoom_changed)
         self.connect(self.itemList, QtCore.SIGNAL('currentItemChanged(QTreeWidgetItem*,QTreeWidgetItem*)'), self.item_selected)
         self.connect(self.ui.headersCheck, QtCore.SIGNAL('toggled(bool)'), self.header_check)
+        self.connect(self.ui.permitCheck, QtCore.SIGNAL('toggled(bool)'), self.toggle_permit)
     
         self.MainWindow.show()
         
-    def header_check(self, toggled):
-        self.hasHeaders = toggled
+    def toggle_permit(self, toggle):
+        self.showPermit = toggle
+        self.ui.permitPosition.setEnabled(toggle)
+        self.ui.permitEntry.setEnabled(toggle)
+        self.labelView.toggle_permit(toggle)
+        
+        
+    def header_check(self, toggle):
+        self.hasHeaders = toggle
         
     def remove_object(self, obj):
         self.labelView.scene().removeItem(obj)

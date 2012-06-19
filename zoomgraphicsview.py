@@ -8,6 +8,12 @@ class ZoomGraphicsView(QtGui.QGraphicsView):
         self.setBackgroundBrush(QtGui.QBrush(QtCore.Qt.lightGray))
         self.setDragMode(QtGui.QGraphicsView.RubberBandDrag)
         self.setScene(QtGui.QGraphicsScene(0, 0, 0, 0))
+        self.permitImage = self.scene().addPixmap(QtGui.QPixmap("NZ Post Permit_M.png"))
+        print self.permitImage.pixmap().height()
+        print self.permitImage.isObscured()
+        #self.permitImage.setPos(self.dpmm[0]*44, self.dpmm[1]*3)
+        #self.scene().update()
+        
         self.pageSizeRects = []
         
         if "pagesize" in kwargs:
@@ -19,9 +25,14 @@ class ZoomGraphicsView(QtGui.QGraphicsView):
         self.zoomLevel = 1
         
         
-        self.update()
+        #self.update()
+        
+    def toggle_permit(self, toggle):
+        #self.permitImage.setVisible(toggle)
+        pass
         
     def keyPressEvent(self, event):
+        print self.permitImage.width()
         super(ZoomGraphicsView, self).keyPressEvent(event)
         if event.key() == QtCore.Qt.Key_Delete:
             for i in self.scene().selectedItems():
