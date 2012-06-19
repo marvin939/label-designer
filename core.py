@@ -255,7 +255,7 @@ class Labeler(QtGui.QApplication):
                     pdfmetrics.registerFont(TTFont(str(font.family()),fontname[0]))
                     pdf.setFont(str(font.family()), font.pointSize(), obj.leading)
                
-                #pdf.drawImage("permitpostscaled.png", mm*25, mm*25)
+                pdf.drawImage("NZ Post Permit_M.wmf", mm*44, mm*33, mm*43, mm*10)
                 text = str(obj.toPlainText())
                 matches = self.headerRE.findall(text)
                 matches = set(matches)
@@ -263,7 +263,6 @@ class Labeler(QtGui.QApplication):
                     x = i.replace("<<", "").replace(">>","").lower()
                     index = headers.index(x)
                     text = text.replace(i, row[index])
-                    print "replacing"
                 
                 
             
