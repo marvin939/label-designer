@@ -58,11 +58,16 @@ class ZoomGraphicsView(QtGui.QGraphicsView):
         self.permitText.setVisible(toggle)
         
     def keyPressEvent(self, event):
-        print self.permitImage.width()
         super(ZoomGraphicsView, self).keyPressEvent(event)
         if event.key() == QtCore.Qt.Key_Delete:
+            dontDelete = False
             for i in self.scene().selectedItems():
-                QtGui.QApplication.instance().remove_object(i)
+                if QtCore.Qt.TextEditorInteraction == i.textInteractionFlags():
+                    dontDelete = True
+                    break
+            if not dontDelete:
+                for i in self.scene().selectedItems():
+                    QtGui.QApplication.instance().remove_object(i)
                 
         
     def scale(self, x, y):
