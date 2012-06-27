@@ -94,14 +94,14 @@ class Labeler(QtGui.QApplication):
         
         self.ui.setupUi(self.MainWindow)
         
-        #make sure scale factor and header state are correct
-        self.scaleFactor = self.ui.zoomLevel.value()
+        
         self.header_check(self.ui.headersCheck.isChecked())
         
         
         self.labelView = self.ui.graphicsView
         self.labelView.setPageSize((self.dpmm[0]*90, self.dpmm[1]*45))
         self.itemList = self.ui.itemList
+        
         
         
         # make sure the correct permit state is set
@@ -115,11 +115,18 @@ class Labeler(QtGui.QApplication):
         self.connect(self.ui.loadData, QtCore.SIGNAL('clicked()'), self.open_file)
         self.connect(self.ui.addTextBtn, QtCore.SIGNAL('clicked()'), self.add_text_dialog)
         self.connect(self.ui.createPdfBtn, QtCore.SIGNAL('clicked()'), self.create_pdf)
-        self.connect(self.ui.zoomLevel, QtCore.SIGNAL('editingFinished()'), self.zoom_changed)
+        self.connect(self.ui.zoomLevel, QtCore.SIGNAL('valueChanged(double)'), self.zoom_spin_changed)
+        self.connect(self.labelView, QtCore.SIGNAL("zoomUpdated(PyQt_PyObject)"), self.zoom_from_mouse)
         self.connect(self.itemList, QtCore.SIGNAL('currentItemChanged(QTreeWidgetItem*,QTreeWidgetItem*)'), self.item_selected)
         self.connect(self.ui.headersCheck, QtCore.SIGNAL('toggled(bool)'), self.header_check)
         self.connect(self.ui.permitCheck, QtCore.SIGNAL('toggled(bool)'), self.toggle_permit)
         self.connect(self.ui.permitEntry, QtCore.SIGNAL('textChanged(QString)'), self.permit_number_changed)
+        
+        #make sure scale factor and header state are correct
+        #self.scaleFactor = self.ui.zoomLevel.value()
+        #self.zoom_changed()
+        self.ui.zoomLevel.setValue(250.0)
+        #self.labelView.zoom_to(200.0)
 
         self.MainWindow.show()
         
@@ -213,12 +220,16 @@ class Labeler(QtGui.QApplication):
             obj.setSelected(True)
         
         
-    def zoom_changed(self):
+    def zoom_spin_changed(self, zoom):
         """ TODO Needs fixing, to account for scroll zooming """
-        scale = ((100.0/self.scaleFactor) * self.ui.zoomLevel.value()) / 100
-        self.scaleFactor = self.ui.zoomLevel.value()
-        
+        #scale = ((100.0/self.scaleFactor) * self.ui.zoomLevel.value()) / 100
+        #self.scaleFactor = self.ui.zoomLevel.value()
+        self.labelView.zoom_to(zoom)
         #self.ui.imagePreview.scale(scale, scale)
+        
+    def zoom_from_mouse(self, zoom):
+        print zoom
+        self.ui.zoomLevel.setValue(zoom)
         
         
         

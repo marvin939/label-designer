@@ -31,6 +31,7 @@ class ZoomGraphicsView(QtGui.QGraphicsView):
         self.permitText.setFont(font)
         self.permitText.setTextWidth(self.dpmm[0]*24)
         self.permitText.setPos(self.dpmm[0]*46.2, self.dpmm[1]*0.9)
+        self.zoomUpdate = QtCore.SIGNAL("zoomUpdated(PyQt_PyObject)")
         
         print self.dpmm[0]*43
         self.permitImage.setSelected(True)
@@ -75,7 +76,17 @@ class ZoomGraphicsView(QtGui.QGraphicsView):
         assert x == y
         super(ZoomGraphicsView, self).scale(x, y)
         self.zoomLevel *= x
-        print self.zoomLevel
+        
+    def zoom_by(self, percentage):
+        """ Increments the zoom level of the view by percentage """
+        z = self.zoomLevel + (percentage/100.0)
+        zoom = z / self.zoomLevel
+        self.scale(zoom, zoom) 
+        
+    def zoom_to(self, percentage):
+        """ Sets the zoom level of the view to percentage """
+        zoom = (percentage/100.0)/ self.zoomLevel
+        self.scale(zoom, zoom) 
         
     def setPageSize(self, pagesize):
         """ sets up the page border, setting current pagesize to pagesize """
@@ -102,13 +113,20 @@ class ZoomGraphicsView(QtGui.QGraphicsView):
         """ Overridden to allow for zooming when holding down ctrl """
         if event.modifiers() == QtCore.Qt.ControlModifier:
         
+            pointBeforeScale = QtCore.QPointF(self.mapToScene(event.pos()))
+            org = QtCore.QPointF(self.mapToScene(self.viewport().rect()).boundingRect().center())
             
             if event.delta() > 0:
-                self.scale(self.scaleFactor, self.scaleFactor)
+                #self.scale(self.scaleFactor, self.scaleFactor)
+                self.zoom_by(15)
             else:
-                self.scale(1.0/self.scaleFactor, 1.0/self.scaleFactor)
+                #self.scale(1.0/self.scaleFactor, 1.0/self.scaleFactor)
+                self.zoom_by(-15)
+            self.emit(self.zoomUpdate, self.zoomLevel*100)
                 
             pointAfterScale = QtCore.QPointF(self.mapToScene(event.pos()))
+            offset =  pointBeforeScale - pointAfterScale
             
-            self.centerOn(pointAfterScale)
+            
+            self.centerOn(org + offset)
             self.update()

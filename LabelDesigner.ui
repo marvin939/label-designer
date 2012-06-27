@@ -14,7 +14,7 @@
    <string>MainWindow</string>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <layout class="QGridLayout" name="gridLayout_2">
+   <layout class="QGridLayout" name="gridLayout_2" columnstretch="0,1">
     <item row="1" column="0">
      <widget class="QCheckBox" name="headersCheck">
       <property name="layoutDirection">
@@ -62,11 +62,17 @@
         </item>
         <item>
          <widget class="QDoubleSpinBox" name="zoomLevel">
+          <property name="buttonSymbols">
+           <enum>QAbstractSpinBox::UpDownArrows</enum>
+          </property>
           <property name="minimum">
            <double>10.000000000000000</double>
           </property>
           <property name="maximum">
            <double>1000.000000000000000</double>
+          </property>
+          <property name="singleStep">
+           <double>5.000000000000000</double>
           </property>
           <property name="value">
            <double>100.000000000000000</double>
@@ -108,7 +114,7 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>606</width>
+         <width>254</width>
          <height>209</height>
         </rect>
        </property>

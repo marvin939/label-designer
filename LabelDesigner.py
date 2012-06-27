@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'C:\Users\Captain\workspace\Labeler\LabelDesigner.ui'
 #
-# Created: Tue Jun 19 20:33:14 2012
+# Created: Thu Jun 28 00:42:04 2012
 #      by: PyQt4 UI code generator 4.9.1
 #
 # WARNING! All changes made in this file will be lost!
@@ -47,8 +47,10 @@ class Ui_MainWindow(object):
         self.label.setObjectName(_fromUtf8("label"))
         self.horizontalLayout.addWidget(self.label)
         self.zoomLevel = QtGui.QDoubleSpinBox(self.centralwidget)
+        self.zoomLevel.setButtonSymbols(QtGui.QAbstractSpinBox.UpDownArrows)
         self.zoomLevel.setMinimum(10.0)
         self.zoomLevel.setMaximum(1000.0)
+        self.zoomLevel.setSingleStep(5.0)
         self.zoomLevel.setProperty("value", 100.0)
         self.zoomLevel.setObjectName(_fromUtf8("zoomLevel"))
         self.horizontalLayout.addWidget(self.zoomLevel)
@@ -67,7 +69,7 @@ class Ui_MainWindow(object):
         self.objDetailsArea.setWidgetResizable(True)
         self.objDetailsArea.setObjectName(_fromUtf8("objDetailsArea"))
         self.detailsContents = QtGui.QWidget()
-        self.detailsContents.setGeometry(QtCore.QRect(0, 0, 606, 209))
+        self.detailsContents.setGeometry(QtCore.QRect(0, 0, 254, 209))
         self.detailsContents.setObjectName(_fromUtf8("detailsContents"))
         self.formLayout = QtGui.QFormLayout(self.detailsContents)
         self.formLayout.setFieldGrowthPolicy(QtGui.QFormLayout.AllNonFixedFieldsGrow)
@@ -104,6 +106,7 @@ class Ui_MainWindow(object):
         spacerItem1 = QtGui.QSpacerItem(40, 20, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Minimum)
         self.horizontalLayout_3.addItem(spacerItem1)
         self.gridLayout_2.addLayout(self.horizontalLayout_3, 3, 0, 1, 1)
+        self.gridLayout_2.setColumnStretch(1, 1)
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtGui.QMenuBar(MainWindow)
         self.menubar.setGeometry(QtCore.QRect(0, 0, 1240, 21))
