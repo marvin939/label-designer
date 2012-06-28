@@ -9,8 +9,8 @@ class ZoomGraphicsView(QtGui.QGraphicsView):
         self.setDragMode(QtGui.QGraphicsView.RubberBandDrag)
         self.setScene(QtGui.QGraphicsScene(0, 0, 0, 0))
         self.setRenderHint(QtGui.QPainter.HighQualityAntialiasing, True)
-        
-
+        self.setResizeAnchor(QtGui.QGraphicsView.AnchorUnderMouse)
+        self.setTransformationAnchor(QtGui.QGraphicsView.AnchorUnderMouse)
         #self.permitImage.setPos(self.dpmm[0]*44, self.dpmm[1]*3)
         #self.scene().update()
         
@@ -74,8 +74,14 @@ class ZoomGraphicsView(QtGui.QGraphicsView):
     def scale(self, x, y):
         """ Overridden to keep count of what magnifications we're at """
         assert x == y
-        super(ZoomGraphicsView, self).scale(x, y)
+        oldzoom = self.zoomLevel
+        
         self.zoomLevel *= x
+        if self.zoomLevel > 16:
+            self.zoomLevel = 16.0
+            x = y = 16.0 / oldzoom
+            
+        super(ZoomGraphicsView, self).scale(x, y)
         
     def zoom_by(self, percentage):
         """ Increments the zoom level of the view by percentage """
@@ -97,6 +103,7 @@ class ZoomGraphicsView(QtGui.QGraphicsView):
         self.pageSizeRects = []
         
         pageRect = QtCore.QRectF(0, 0, self.pageSize[0], self.pageSize[1])
+
         blackBoxRect = QtCore.QRectF(3, 3, self.pageSize[0], self.pageSize[1])
         greyBorderRect = QtCore.QRectF(-1, -1, self.pageSize[0] + 2, self.pageSize[1] + 2)
         self.scene().setSceneRect(pageRect)
@@ -113,8 +120,8 @@ class ZoomGraphicsView(QtGui.QGraphicsView):
         """ Overridden to allow for zooming when holding down ctrl """
         if event.modifiers() == QtCore.Qt.ControlModifier:
         
-            pointBeforeScale = QtCore.QPointF(self.mapToScene(event.pos()))
-            org = QtCore.QPointF(self.mapToScene(self.viewport().rect()).boundingRect().center())
+            #pointBeforeScale = QtCore.QPointF(self.mapToScene(event.pos()))
+            #org = QtCore.QPointF(self.mapToScene(self.viewport().rect()).boundingRect().center())
             
             if event.delta() > 0:
                 #self.scale(self.scaleFactor, self.scaleFactor)
@@ -124,9 +131,13 @@ class ZoomGraphicsView(QtGui.QGraphicsView):
                 self.zoom_by(-15)
             self.emit(self.zoomUpdate, self.zoomLevel*100)
                 
-            pointAfterScale = QtCore.QPointF(self.mapToScene(event.pos()))
-            offset =  pointBeforeScale - pointAfterScale
+            #pointAfterScale = QtCore.QPointF(self.mapToScene(event.pos()))
+            #print "Before:", pointBeforeScale
+            #print "After:", pointAfterScale
+            #print "Offset:", pointBeforeScale - pointAfterScale
+            #print "Origin:", org
+            #offset =  pointBeforeScale - pointAfterScale
             
             
-            self.centerOn(org + offset)
-            self.update()
+            #self.centerOn(org + offset)
+            #self.update()

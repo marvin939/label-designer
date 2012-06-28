@@ -156,7 +156,6 @@ class Labeler(QtGui.QApplication):
         filename = str(QtGui.QFileDialog.getOpenFileName(self.MainWindow, "Select File", self.currentDirectory))
         if filename <> "":
             self.currentDirectory = os.path.split(filename)[0]
-            print filename
             self.load_dataset(filename)
         
     def load_dataset(self, filename):
@@ -228,7 +227,6 @@ class Labeler(QtGui.QApplication):
         #self.ui.imagePreview.scale(scale, scale)
         
     def zoom_from_mouse(self, zoom):
-        print zoom
         self.ui.zoomLevel.setValue(zoom)
         
         
