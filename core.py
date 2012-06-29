@@ -1,7 +1,7 @@
 import LabelDesigner
 from zoomgraphicsview import ZoomGraphicsView
 import sys, os, csv
-import xlrd, xlwt
+import xlrd#, xlwt
 import _winreg
 import math
 import re
@@ -217,14 +217,14 @@ class Labeler(QtGui.QApplication):
             obj = currentItem.data(1,0).toPyObject()
             obj.scene().clearSelection()
             obj.setSelected(True)
+            
+    def item_selection_cleared(self):
+        self.ui.itemDetails.clear()
+        self.ui.itemDetails.setEnabled(False)
         
         
     def zoom_spin_changed(self, zoom):
-        """ TODO Needs fixing, to account for scroll zooming """
-        #scale = ((100.0/self.scaleFactor) * self.ui.zoomLevel.value()) / 100
-        #self.scaleFactor = self.ui.zoomLevel.value()
         self.labelView.zoom_to(zoom)
-        #self.ui.imagePreview.scale(scale, scale)
         
     def zoom_from_mouse(self, zoom):
         self.ui.zoomLevel.setValue(zoom)

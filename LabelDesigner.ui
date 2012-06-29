@@ -15,6 +15,9 @@
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QGridLayout" name="gridLayout_2" columnstretch="0,1">
+    <property name="spacing">
+     <number>0</number>
+    </property>
     <item row="1" column="0">
      <widget class="QCheckBox" name="headersCheck">
       <property name="layoutDirection">
@@ -104,48 +107,13 @@
       </item>
      </layout>
     </item>
-    <item row="5" column="0">
-     <widget class="QScrollArea" name="objDetailsArea">
-      <property name="widgetResizable">
-       <bool>true</bool>
-      </property>
-      <widget class="QWidget" name="detailsContents">
-       <property name="geometry">
-        <rect>
-         <x>0</x>
-         <y>0</y>
-         <width>254</width>
-         <height>211</height>
-        </rect>
-       </property>
-       <layout class="QFormLayout" name="formLayout">
-        <property name="fieldGrowthPolicy">
-         <enum>QFormLayout::AllNonFixedFieldsGrow</enum>
-        </property>
-       </layout>
-      </widget>
-     </widget>
-    </item>
-    <item row="4" column="1" rowspan="2">
+    <item row="4" column="1" rowspan="3">
      <layout class="QVBoxLayout" name="previewLayout">
       <property name="sizeConstraint">
        <enum>QLayout::SetNoConstraint</enum>
       </property>
       <item>
        <widget class="ZoomGraphicsView" name="graphicsView"/>
-      </item>
-      <item>
-       <spacer name="horizontalSpacer">
-        <property name="orientation">
-         <enum>Qt::Horizontal</enum>
-        </property>
-        <property name="sizeHint" stdset="0">
-         <size>
-          <width>40</width>
-          <height>20</height>
-         </size>
-        </property>
-       </spacer>
       </item>
      </layout>
     </item>
@@ -171,7 +139,7 @@
        <widget class="QLineEdit" name="permitEntry">
         <property name="sizePolicy">
          <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
-          <horstretch>0</horstretch>
+          <horstretch>1</horstretch>
           <verstretch>0</verstretch>
          </sizepolicy>
         </property>
@@ -180,20 +148,17 @@
         </property>
        </widget>
       </item>
-      <item>
-       <spacer name="horizontalSpacer_2">
-        <property name="orientation">
-         <enum>Qt::Horizontal</enum>
-        </property>
-        <property name="sizeHint" stdset="0">
-         <size>
-          <width>40</width>
-          <height>20</height>
-         </size>
-        </property>
-       </spacer>
-      </item>
      </layout>
+    </item>
+    <item row="5" column="0">
+     <widget class="QListWidget" name="itemDetails">
+      <property name="enabled">
+       <bool>true</bool>
+      </property>
+      <property name="modelColumn">
+       <number>0</number>
+      </property>
+     </widget>
     </item>
    </layout>
   </widget>
