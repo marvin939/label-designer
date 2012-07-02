@@ -17,6 +17,16 @@ except AttributeError:
     
 DPMM = []
 
+fontDB = QtGui.QFontDatabase()
+
+propertyTypes = {'string':(QtGui.QLineEdit, QtCore.SIGNAL('textChanged(QString)')),
+                 'text':(QtGui.QTextEdit, QtCore.SIGNAL('textChanged()')), 
+                 'integer':(QtGui.QSpinBox, QtCore.SIGNAL('valueChanged(int)')), 
+                 'float':(QtGui.QDoubleSpinBox, QtCore.SIGNAL('valueChanged(double)')), 
+                 'list':(QtGui.QComboBox, QtCore.SIGNAL('currentIndexChanged(int)')), 
+                 'boolean':(QtGui.QCheckBox, QtCore.SIGNAL('toggled(bool)')),
+                 'font':(QtGui.QFontComboBox, QtCore.SIGNAL('currentFontChanged(QFont)'))}
+
 
  
 class LabelerTextItem(QtGui.QGraphicsTextItem):
@@ -24,6 +34,7 @@ class LabelerTextItem(QtGui.QGraphicsTextItem):
         
         super(LabelerTextItem, self).__init__(*args, **kwargs)
         self.setFlags(self.ItemIsSelectable|self.ItemIsMovable|self.ItemIsFocusable)
+        
         self.dpi = MainApp.dpi
         self.dpmm = MainApp.dpmm
         self.set_pos_by_mm(5,4)
@@ -32,7 +43,64 @@ class LabelerTextItem(QtGui.QGraphicsTextItem):
         font = QtGui.QFont("Arial")
         font.setPointSize(9)
         self.setFont(font)
+        self.properties = {'Value':('text','', self.text_changed), 
+                           'Skip Blanks':('boolean', False, None),
+                           'Font Size':('float', 9.0, self.set_font_size),
+                           'Font':('font', (self.font().family(),self.font().styleName(), self.font().pointSizeF()), self.set_font_family),
+                           'Font Bold':('boolean', self.font().bold(), self.set_font_bold),
+                           'Font Italic':('boolean', self.font().italic(), self.set_font_italic),
+                           'X Coord':('float', self.scenePos().x(), self.setX),
+                           'Y Coord':('float', self.scenePos().y(), self.setY)}
+        self.propOrder = ['Value', 'Skip Blanks', 'Font', 'Font Size', 'Font Bold', 'Font Italic', 'X Coord', 'Y Coord']
+        self.propWidgets = {}
+        self.skipBlanks = False
+        self.create_property_widgets()
         
+    def text_changed(self):
+        string = self.propWidgets['Value'].toPlainText()
+        if string <> self.toPlainText():
+            self.setPlainText(string)
+            
+    def set_font_size(self, size):
+        font = self.font()
+        font.setPointSizeF(size)
+        self.setFont(font)
+        
+    def set_font_family(self, newFont):
+        font = self.font()
+        font.setFamily(newFont.family())
+        self.setFont(font)
+        
+    def set_font_bold(self, toggle):
+        font = self.font()
+        font.setBold(toggle)
+        self.setFont(font)
+        
+    def set_font_italic(self, toggle):
+        font = self.font()
+        font.setItalic(toggle)
+        self.setFont(font)
+        
+            
+    def create_property_widgets(self):
+        for field in self.propOrder:
+            propertyType, value, slot = self.properties[field]
+            widget, signal = propertyTypes[propertyType]
+            if propertyType == 'boolean':
+                editor = widget()
+                editor.setCheckState(value)
+            elif propertyType == 'float':
+                editor = widget()
+                editor.setValue(value)
+            elif propertyType == 'font':
+                editor = widget()
+                editor.setCurrentFont(fontDB.font(*value))
+            else:
+                editor = widget(value)
+            editor.setVisible(False)
+            if slot <> None:
+                editor.connect(editor, signal, slot)
+            self.propWidgets[field] = editor
         
     def get_pos_mm(self):
         """ returns position in millimeters """
@@ -52,10 +120,20 @@ class LabelerTextItem(QtGui.QGraphicsTextItem):
         self.setTextInteractionFlags(QtCore.Qt.TextEditorInteraction)
         self.setFocus(True)
         
+    def keyReleaseEvent(self, event):
+        super(LabelerTextItem, self).keyReleaseEvent(event)
+        self.propWidgets['Value'].setPlainText(self.toPlainText())
+        
     def setFont(self, *args, **kwargs):
         """ Overrided to add calc for leading/line spacing """
         super(LabelerTextItem, self).setFont(*args, **kwargs)
         self.leading = self.font().pointSize()*self.lineSpacing
+        
+    def setPlainText(self, text):
+        super(LabelerTextItem, self).setPlainText(text)
+        string = self.toPlainText()
+        if string <> self.propWidgets['Value'].toPlainText():
+            self.propWidgets['Value'].setPlainText(self.toPlainText())
         
         
     def itemChange(self, change, value):
@@ -117,6 +195,7 @@ class Labeler(QtGui.QApplication):
         self.connect(self.ui.createPdfBtn, QtCore.SIGNAL('clicked()'), self.create_pdf)
         self.connect(self.ui.zoomLevel, QtCore.SIGNAL('valueChanged(double)'), self.zoom_spin_changed)
         self.connect(self.labelView, QtCore.SIGNAL("zoomUpdated(PyQt_PyObject)"), self.zoom_from_mouse)
+        self.connect(self.labelView.scene(), QtCore.SIGNAL("selectionChanged()"), self.scene_selection_changed)
         self.connect(self.itemList, QtCore.SIGNAL('currentItemChanged(QTreeWidgetItem*,QTreeWidgetItem*)'), self.item_selected)
         self.connect(self.ui.headersCheck, QtCore.SIGNAL('toggled(bool)'), self.header_check)
         self.connect(self.ui.permitCheck, QtCore.SIGNAL('toggled(bool)'), self.toggle_permit)
@@ -129,6 +208,11 @@ class Labeler(QtGui.QApplication):
         #self.labelView.zoom_to(200.0)
 
         self.MainWindow.show()
+        
+    def scene_selection_changed(self):
+        items = self.labelView.scene().selectedItems()
+        if len(items) == 1:
+            self.itemList.setCurrentItem(self.itemListObjects[items[0]])
         
     def toggle_permit(self, toggle):
         self.showPermit = toggle
@@ -214,9 +298,20 @@ class Labeler(QtGui.QApplication):
     def item_selected(self, currentItem, previousItem):
         """ sets selection in the graphicsview/scene when chosen from treeview """
         if currentItem <> None:
+            for i in range(self.ui.objectProperties.rowCount()):
+                widgetItem = self.ui.objectProperties.takeAt(0)
+                if widgetItem <> None:
+                    widget = widgetItem.widget()
+                    widget.setVisible(False)
+                else:
+                    break
             obj = currentItem.data(1,0).toPyObject()
             obj.scene().clearSelection()
             obj.setSelected(True)
+            for field in obj.propOrder:
+                widget = obj.propWidgets[field]
+                self.ui.objectProperties.addRow(field, widget)
+                widget.setVisible(True)
             
     def item_selection_cleared(self):
         self.ui.itemDetails.clear()
@@ -250,6 +345,21 @@ class Labeler(QtGui.QApplication):
             headers = [i.lower() for i in self.dataSet[0]]
         else:
             headers = None
+            
+        self.labelView.hide_bg()
+        pp = QtGui.QPrinter()
+        pp.setPaperSize(QtCore.QSizeF(45, 90), QtGui.QPrinter.Millimeter)
+        pp.setOutputFileName("Testing.pdf")
+        pp.setOrientation(QtGui.QPrinter.Landscape)
+        pp.setFullPage(True)
+        
+        painter = QtGui.QPainter()
+        painter.begin(pp)
+        
+        self.labelView.scene().render(painter)
+        painter.end()
+        
+        self.labelView.show_bg()
             
         ## test text objects for header names
         headersMatched = True
@@ -298,17 +408,21 @@ class Labeler(QtGui.QApplication):
                 x, y = obj.get_pos_for_pdf()
                 
                 
-                textobj = pdf.beginText(x*mm, ((45-y)*mm) - obj.leading)
-                
-                
+                if str(fontDB.styleString(font)) <> "" and str(fontDB.styleString(font)) <> "Normal" :
+                    fullFontName = str(font.family())+" "+str(fontDB.styleString(font))
+                else:
+                    fullFontName = str(font.family())
+                print fullFontName
                 try:
-                    pdf.setFont(str(font.family()), font.pointSize(), obj.leading)
+                    pdf.setFont(fullFontName, font.pointSize(), obj.leading)
                 except KeyError:
                     # font not loaded, request it
-                    fontname = self.retrieve_font_filename(font.family())
-                    pdfmetrics.registerFont(TTFont(str(font.family()),fontname[0]))
-                    pdf.setFont(str(font.family()), font.pointSize(), obj.leading)
-               
+                    fontname = self.retrieve_font_filename(fullFontName)
+                    pdfmetrics.registerFont(TTFont(fullFontName,fontname[0]))
+                    pdf.setFont(fullFontName, font.pointSize(), obj.leading)
+                    print font.rawName()
+                    
+                textobj = pdf.beginText(x*mm, ((45-y)*mm) - obj.leading)
                 
                 text = str(obj.toPlainText())
                 matches = self.headerRE.findall(text)
@@ -319,8 +433,15 @@ class Labeler(QtGui.QApplication):
                     text = text.replace(i, row[index])
                 
                 
-            
-                textobj.textLines(text)
+                finalText = ""
+                if obj.propWidgets['Skip Blanks'].isChecked():
+                    for line in text.split("\n"):
+                        if line.strip() <> "":
+                            finalText += line +"\n"
+                    finalText = finalText.rstrip("\n")
+                else:
+                    finalText = text
+                textobj.textLines(finalText)
             
             
                 pdf.drawText(textobj)

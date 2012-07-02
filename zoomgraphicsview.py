@@ -53,6 +53,15 @@ class ZoomGraphicsView(QtGui.QGraphicsView):
         
         
         
+    def hide_bg(self):
+        for i in self.pageSizeRects:
+            i.setVisible(False)
+            
+            
+    def show_bg(self):
+        for i in self.pageSizeRects:
+            i.setVisible(True)
+        
         
     def toggle_permit(self, toggle):
         self.permitImage.setVisible(toggle)
