@@ -33,11 +33,10 @@ class LabelerTextItem(QtGui.QGraphicsTextItem):
     def __init__(self, *args, **kwargs):
         
         super(LabelerTextItem, self).__init__(*args, **kwargs)
-        self.setFlags(self.ItemIsSelectable|self.ItemIsMovable|self.ItemIsFocusable)
+        self.setFlags(self.ItemIsSelectable|self.ItemIsMovable|self.ItemIsFocusable|self.ItemSendsGeometryChanges)
         
         self.dpi = MainApp.dpi
         self.dpmm = MainApp.dpmm
-        self.set_pos_by_mm(5,4)
         self.lineSpacing = 1.2
         
         font = QtGui.QFont("Arial")
@@ -55,6 +54,8 @@ class LabelerTextItem(QtGui.QGraphicsTextItem):
         self.propWidgets = {}
         self.skipBlanks = False
         self.create_property_widgets()
+        
+        self.set_pos_by_mm(5,4)
         
     def text_changed(self):
         string = self.propWidgets['Value'].toPlainText()
@@ -89,9 +90,11 @@ class LabelerTextItem(QtGui.QGraphicsTextItem):
             if propertyType == 'boolean':
                 editor = widget()
                 editor.setCheckState(value)
-            elif propertyType == 'float':
+            elif propertyType == 'float' or propertyType == 'integer':
                 editor = widget()
                 editor.setValue(value)
+                editor.setMinimum(-1000)
+                editor.setMaximum(1000)
             elif propertyType == 'font':
                 editor = widget()
                 editor.setCurrentFont(fontDB.font(*value))
@@ -144,6 +147,9 @@ class LabelerTextItem(QtGui.QGraphicsTextItem):
                 self.setTextInteractionFlags(QtCore.Qt.NoTextInteraction)
                 self.textCursor().clearSelection()
                 self.clearFocus()
+        elif change == QtGui.QGraphicsItem.ItemPositionHasChanged:
+            self.propWidgets['X Coord'].setValue(self.x())
+            self.propWidgets['Y Coord'].setValue(self.y())
         return value
     
     
