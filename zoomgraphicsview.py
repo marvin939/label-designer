@@ -52,6 +52,16 @@ class ZoomGraphicsView(QtGui.QGraphicsView):
         self.permitText.setPlainText(self.permitPlainText)
         
         
+    def start_merge(self):
+        self.hide_bg()
+        
+    def end_merge(self):
+        self.show_bg()
+        
+    
+    def refresh_preview(self):
+        pass
+        
         
     def hide_bg(self):
         for i in self.pageSizeRects:

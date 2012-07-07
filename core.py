@@ -38,6 +38,8 @@ class LabelerTextItem(QtGui.QGraphicsTextItem):
         self.dpi = MainApp.dpi
         self.dpmm = MainApp.dpmm
         self.lineSpacing = 1.2
+        self.merging = False
+        self.mergeText = self.toPlainText()
         
         font = QtGui.QFont("Arial")
         font.setPointSize(9)
@@ -55,7 +57,40 @@ class LabelerTextItem(QtGui.QGraphicsTextItem):
         self.skipBlanks = False
         self.create_property_widgets()
         
+        self.headerRE = re.compile('<<.*?>>')
+        
         self.set_pos_by_mm(5,4)
+        
+    def start_merge(self):
+        self.mergeText = self.toPlainText()
+        self.merging = True
+        
+        
+    def end_merge(self):
+        self.setPlainText(self.mergeText)
+        self.merging = False
+        
+    def merge_row(self, row):
+        text = str(self.mergeText)
+        matches = self.headerRE.findall(text)
+        matches = set(matches)
+        for i in matches:
+            field = i.replace("<<", "").replace(">>","").lower()
+            text = text.replace(i, row[field])
+        
+        
+        finalText = ""
+        if self.propWidgets['Skip Blanks'].isChecked():
+            for line in text.split("\n"):
+                if line.strip() <> "":
+                    finalText += line +"\n"
+            finalText = finalText.rstrip("\n")
+        else:
+            finalText = text
+            
+        self.setPlainText(finalText)
+            
+        
         
     def text_changed(self):
         string = self.propWidgets['Value'].toPlainText()
@@ -135,8 +170,9 @@ class LabelerTextItem(QtGui.QGraphicsTextItem):
     def setPlainText(self, text):
         super(LabelerTextItem, self).setPlainText(text)
         string = self.toPlainText()
-        if string <> self.propWidgets['Value'].toPlainText():
-            self.propWidgets['Value'].setPlainText(self.toPlainText())
+        if not self.merging:
+            if string <> self.propWidgets['Value'].toPlainText():
+                self.propWidgets['Value'].setPlainText(self.toPlainText())
         
         
     def itemChange(self, change, value):
@@ -163,6 +199,9 @@ class Labeler(QtGui.QApplication):
         self.dataSet = []
         self.currentDirectory = "C:\\"
         self.currentFile = None
+        self.headers = []
+        self.previewMode = False
+        self.previewRow = 0
         
         #set up funcs to load in different file formats
         self.fileLoaders = {}
@@ -232,6 +271,7 @@ class Labeler(QtGui.QApplication):
         
     def header_check(self, toggle):
         self.hasHeaders = toggle
+        self.setup_data()
         
     def remove_object(self, obj):
         self.labelView.scene().removeItem(obj)
@@ -251,11 +291,46 @@ class Labeler(QtGui.QApplication):
     def load_dataset(self, filename):
         self.currentFile = filename
         ext = os.path.splitext(filename)[1].lower()
+        self.rawData = []
         try:
-            self.dataSet = self.fileLoaders[ext](filename)
+            self.rawData = self.fileLoaders[ext](filename)
         except KeyError:
             print 'unknown format %s' % ext
-        
+        else:
+            maxLen = 0
+            for row in self.rawData:
+                maxLen = max(maxLen,len(row))
+            for row in self.rawData:
+                if len(row) < maxLen:
+                    row += [""] * (maxLen-len(row))
+                    
+    def setup_data(self):
+        self.dataSet = []
+        if self.hasHeaders:
+            
+            emptyFieldCount = 0
+            self.headers = self.rawData[0]
+            
+            headEnum = []
+            for i in range(len(self.headers)):
+                if self.headers[i].strip() == "":
+                    emptyFieldCount += 1
+                    self.headers[i] = "Field%d" % emptyFieldCount
+                headEnum.append((i,self.headers[i]))
+            for row in self.rawData[1:]:
+                newrow = {}
+                rowLength = len(row)
+                headerLength = len(self.headers)
+                if  rowLength < headerLength:
+                    row += [""] * (headerLength - rowLength)
+                for col, field in headEnum:
+                    newrow[field] = row[col]
+                self.dataSet.append(newrow)
+        else:
+            self.headers = []
+            
+                
+                    
         
     def load_csv(self, filename):
         return [row for row in csv.reader(open(filename, "rb"))]
@@ -300,6 +375,22 @@ class Labeler(QtGui.QApplication):
         item.setText(0, "TextObj1")
         item.setData(1,0, obj)
         self.itemListObjects[obj] = item
+        
+    
+    def start_merge(self):
+        self.labelView.start_merge()
+        for obj in self.objectCollection:
+            obj.start_merge()
+        
+    def end_merge(self):
+        self.labelView.end_merge()
+        for obj in self.objectCollection:
+            obj.end_merge()
+        
+    def merge_row(self, row):
+        for obj in self.objectCollection:
+            obj.merge_row(row)
+    
         
     def item_selected(self, currentItem, previousItem):
         """ sets selection in the graphicsview/scene when chosen from treeview """
@@ -352,6 +443,31 @@ class Labeler(QtGui.QApplication):
         else:
             headers = None
             
+            
+            
+        
+            
+        ## test text objects for header names
+        headersMatched = True
+        errorMessage = ""
+        for obj in self.objectCollection:
+            # if obj is type text
+            text = str(obj.toPlainText())
+            matches = self.headerRE.findall(text)
+            matches = set(matches)
+            for i in matches:
+                x = i.replace("<<", "").replace(">>","").lower()
+                #if headers == None:
+                #    if x.strip("0123456789") <> "field":
+                #        errorMessage += "Error, could not find header %s, please check your spelling.\n" % i
+                #        headersMatched = False
+                if not x in self.headers:
+                    errorMessage += "Error, could not find header %s, please check your spelling.\n" % i
+                    headersMatched = False
+        if not headersMatched:
+            QtGui.QMessageBox.critical(self.MainWindow, "Error Header Not Found", errorMessage)
+            return
+        
         self.labelView.hide_bg()
         pp = QtGui.QPrinter()
         pp.setPaperSize(QtCore.QSizeF(45, 90), QtGui.QPrinter.Millimeter)
@@ -361,98 +477,87 @@ class Labeler(QtGui.QApplication):
         
         painter = QtGui.QPainter()
         painter.begin(pp)
-        
-        self.labelView.scene().render(painter)
+        self.start_merge()
+        first = True
+        for row in self.dataSet:
+            if first:
+                first = False
+            else:
+                pp.newPage()
+            self.merge_row(row)
+            self.labelView.scene().render(painter)
+        self.end_merge()
         painter.end()
         
         self.labelView.show_bg()
             
-        ## test text objects for header names
-        headersMatched = True
-        for obj in self.objectCollection:
-            # if obj is type text
-            text = str(obj.toPlainText())
-            matches = self.headerRE.findall(text)
-            matches = set(matches)
-            for i in matches:
-                x = i.replace("<<", "").replace(">>","").lower()
-                if headers == None:
-                    if x.strip("0123456789") <> "field":
-                        print "error, missing heading %s, check spelling" % i
-                        headersMatched = False
-                elif not x in headers:
-                    print "error, missing heading %s, check spelling" % i
-                    headersMatched = False
-        if not headersMatched:
-            return
-            
-        pdf = canvas.Canvas("hello.pdf", (mm*90, mm*45))
-        
-        if headers:
-            rowrange = self.dataSet[1:]
-        else:
-            rowrange = self.dataSet
-        for row in rowrange:
-            if self.ui.permitCheck.isChecked():
-                #displays permit impression TODO add centering, base on page size
-                try:
-                    pdf.setFont('Arial Narrow', 8, 10)
-                except KeyError:
-                    # font not loaded, request it
-                    fontname = self.retrieve_font_filename("Arial Narrow")
-                    pdfmetrics.registerFont(TTFont("Arial Narrow",fontname[0]))
-                    pdf.setFont('Arial Narrow', 8, 10)
-                
-                pdf.drawImage("PermitPost.png", mm*46, mm*34, mm*43, mm*10)
-                permitTextObj = pdf.beginText(46.6*mm, ((45-.9)*mm-13))
-                permitTextObj.textLines(self.labelView.permitPlainText)
-                pdf.drawText(permitTextObj)
-            for obj in self.objectCollection:
-                
-                
-                font = obj.font()
-                x, y = obj.get_pos_for_pdf()
-                
-                
-                if str(fontDB.styleString(font)) <> "" and str(fontDB.styleString(font)) <> "Normal" :
-                    fullFontName = str(font.family())+" "+str(fontDB.styleString(font))
-                else:
-                    fullFontName = str(font.family())
-                print fullFontName
-                try:
-                    pdf.setFont(fullFontName, font.pointSize(), obj.leading)
-                except KeyError:
-                    # font not loaded, request it
-                    fontname = self.retrieve_font_filename(fullFontName)
-                    pdfmetrics.registerFont(TTFont(fullFontName,fontname[0]))
-                    pdf.setFont(fullFontName, font.pointSize(), obj.leading)
-                    print font.rawName()
-                    
-                textobj = pdf.beginText(x*mm, ((45-y)*mm) - obj.leading)
-                
-                text = str(obj.toPlainText())
-                matches = self.headerRE.findall(text)
-                matches = set(matches)
-                for i in matches:
-                    x = i.replace("<<", "").replace(">>","").lower()
-                    index = headers.index(x)
-                    text = text.replace(i, row[index])
-                
-                
-                finalText = ""
-                if obj.propWidgets['Skip Blanks'].isChecked():
-                    for line in text.split("\n"):
-                        if line.strip() <> "":
-                            finalText += line +"\n"
-                    finalText = finalText.rstrip("\n")
-                else:
-                    finalText = text
-                textobj.textLines(finalText)
-            
-            
-                pdf.drawText(textobj)
-            pdf.showPage()
-        pdf.save()
+#        pdf = canvas.Canvas("hello.pdf", (mm*90, mm*45))
+#        
+#        if headers:
+#            rowrange = self.dataSet[1:]
+#        else:
+#            rowrange = self.dataSet
+#        for row in rowrange:
+#            if self.ui.permitCheck.isChecked():
+#                #displays permit impression TODO add centering, base on page size
+#                try:
+#                    pdf.setFont('Arial Narrow', 8, 10)
+#                except KeyError:
+#                    # font not loaded, request it
+#                    fontname = self.retrieve_font_filename("Arial Narrow")
+#                    pdfmetrics.registerFont(TTFont("Arial Narrow",fontname[0]))
+#                    pdf.setFont('Arial Narrow', 8, 10)
+#                
+#                pdf.drawImage("PermitPost.png", mm*46, mm*34, mm*43, mm*10)
+#                permitTextObj = pdf.beginText(46.6*mm, ((45-.9)*mm-13))
+#                permitTextObj.textLines(self.labelView.permitPlainText)
+#                pdf.drawText(permitTextObj)
+#            for obj in self.objectCollection:
+#                
+#                
+#                font = obj.font()
+#                x, y = obj.get_pos_for_pdf()
+#                
+#                
+#                if str(fontDB.styleString(font)) <> "" and str(fontDB.styleString(font)) <> "Normal" :
+#                    fullFontName = str(font.family())+" "+str(fontDB.styleString(font))
+#                else:
+#                    fullFontName = str(font.family())
+#                print fullFontName
+#                try:
+#                    pdf.setFont(fullFontName, font.pointSize(), obj.leading)
+#                except KeyError:
+#                    # font not loaded, request it
+#                    fontname = self.retrieve_font_filename(fullFontName)
+#                    pdfmetrics.registerFont(TTFont(fullFontName,fontname[0]))
+#                    pdf.setFont(fullFontName, font.pointSize(), obj.leading)
+#                    print font.rawName()
+#                    
+#                textobj = pdf.beginText(x*mm, ((45-y)*mm) - obj.leading)
+#                
+#                text = str(obj.toPlainText())
+#                matches = self.headerRE.findall(text)
+#                matches = set(matches)
+#                for i in matches:
+#                    x = i.replace("<<", "").replace(">>","").lower()
+#                    index = headers.index(x)
+#                    text = text.replace(i, row[index])
+#                
+#                
+#                finalText = ""
+#                if obj.propWidgets['Skip Blanks'].isChecked():
+#                    for line in text.split("\n"):
+#                        if line.strip() <> "":
+#                            finalText += line +"\n"
+#                    finalText = finalText.rstrip("\n")
+#                else:
+#                    finalText = text
+#                textobj.textLines(finalText)
+#            
+#            
+#                pdf.drawText(textobj)
+#            pdf.showPage()
+#        pdf.save()
             
         
 MainApp = Labeler(sys.argv)      
