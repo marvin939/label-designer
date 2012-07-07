@@ -286,11 +286,11 @@
             </size>
            </property>
            <property name="currentIndex">
-            <number>0</number>
+            <number>1</number>
            </property>
            <widget class="QWidget" name="detailsTab">
             <attribute name="title">
-             <string>Object Details Tab</string>
+             <string>Object Details</string>
             </attribute>
             <layout class="QVBoxLayout" name="verticalLayout">
              <property name="spacing">
@@ -332,6 +332,23 @@
                  </item>
                 </layout>
                </widget>
+              </widget>
+             </item>
+            </layout>
+           </widget>
+           <widget class="QWidget" name="headersTab">
+            <attribute name="title">
+             <string>Headers</string>
+            </attribute>
+            <layout class="QHBoxLayout" name="horizontalLayout_5">
+             <item>
+              <widget class="QListWidget" name="headerList">
+               <property name="editTriggers">
+                <set>QAbstractItemView::EditKeyPressed</set>
+               </property>
+               <property name="selectionBehavior">
+                <enum>QAbstractItemView::SelectRows</enum>
+               </property>
               </widget>
              </item>
             </layout>

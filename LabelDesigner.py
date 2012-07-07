@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'C:\Users\Captain\workspace\Labeler\LabelDesigner.ui'
 #
-# Created: Sun Jul 08 01:04:14 2012
+# Created: Sun Jul 08 01:30:51 2012
 #      by: PyQt4 UI code generator 4.9.1
 #
 # WARNING! All changes made in this file will be lost!
@@ -184,6 +184,16 @@ class Ui_MainWindow(object):
         self.scrollArea.setWidget(self.scrollAreaWidgetContents)
         self.verticalLayout.addWidget(self.scrollArea)
         self.tabWidget.addTab(self.detailsTab, _fromUtf8(""))
+        self.headersTab = QtGui.QWidget()
+        self.headersTab.setObjectName(_fromUtf8("headersTab"))
+        self.horizontalLayout_5 = QtGui.QHBoxLayout(self.headersTab)
+        self.horizontalLayout_5.setObjectName(_fromUtf8("horizontalLayout_5"))
+        self.headerList = QtGui.QListWidget(self.headersTab)
+        self.headerList.setEditTriggers(QtGui.QAbstractItemView.EditKeyPressed)
+        self.headerList.setSelectionBehavior(QtGui.QAbstractItemView.SelectRows)
+        self.headerList.setObjectName(_fromUtf8("headerList"))
+        self.horizontalLayout_5.addWidget(self.headerList)
+        self.tabWidget.addTab(self.headersTab, _fromUtf8(""))
         self.verticalLayout_3.addWidget(self.splitter)
         self.graphicsView = ZoomGraphicsView(self.splitter_2)
         sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding)
@@ -203,7 +213,7 @@ class Ui_MainWindow(object):
         MainWindow.setStatusBar(self.statusbar)
 
         self.retranslateUi(MainWindow)
-        self.tabWidget.setCurrentIndex(0)
+        self.tabWidget.setCurrentIndex(1)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
     def retranslateUi(self, MainWindow):
@@ -217,7 +227,8 @@ class Ui_MainWindow(object):
         self.permitCheck.setText(QtGui.QApplication.translate("MainWindow", "Add Permit", None, QtGui.QApplication.UnicodeUTF8))
         self.label_2.setText(QtGui.QApplication.translate("MainWindow", "Position", None, QtGui.QApplication.UnicodeUTF8))
         self.label_3.setText(QtGui.QApplication.translate("MainWindow", "Permit No.", None, QtGui.QApplication.UnicodeUTF8))
-        self.tabWidget.setTabText(self.tabWidget.indexOf(self.detailsTab), QtGui.QApplication.translate("MainWindow", "Object Details Tab", None, QtGui.QApplication.UnicodeUTF8))
+        self.tabWidget.setTabText(self.tabWidget.indexOf(self.detailsTab), QtGui.QApplication.translate("MainWindow", "Object Details", None, QtGui.QApplication.UnicodeUTF8))
+        self.tabWidget.setTabText(self.tabWidget.indexOf(self.headersTab), QtGui.QApplication.translate("MainWindow", "Headers", None, QtGui.QApplication.UnicodeUTF8))
 
 from zoomgraphicsview import ZoomGraphicsView
 

@@ -221,6 +221,7 @@ class Labeler(QtGui.QApplication):
         self.headers = []
         self.previewMode = False
         self.previewRow = 0
+        self.rawData = [[]]
         
         #set up funcs to load in different file formats
         self.fileLoaders = {}
@@ -271,6 +272,7 @@ class Labeler(QtGui.QApplication):
         self.connect(self.ui.headersCheck, QtCore.SIGNAL('toggled(bool)'), self.header_check)
         self.connect(self.ui.permitCheck, QtCore.SIGNAL('toggled(bool)'), self.toggle_permit)
         self.connect(self.ui.permitEntry, QtCore.SIGNAL('textChanged(QString)'), self.permit_number_changed)
+        self.connect(self.ui.headerList, QtCore.SIGNAL('itemDoubleClicked(QListWidgetItem)'), self.add_header_text)
         
         #make sure scale factor and header state are correct
         #self.scaleFactor = self.ui.zoomLevel.value()
@@ -329,34 +331,38 @@ class Labeler(QtGui.QApplication):
             for row in self.rawData:
                 if len(row) < maxLen:
                     row += [""] * (maxLen-len(row))
+            self.setup_data()
                     
     def setup_data(self):
         self.dataSet = []
+        offset = 0
         if self.hasHeaders:
-            
-            emptyFieldCount = 0
+            offset = 1
             self.headers = self.rawData[0]
-            
-            headEnum = []
-            for i in range(len(self.headers)):
-                if self.headers[i].strip() == "":
-                    emptyFieldCount += 1
-                    self.headers[i] = "Field%d" % emptyFieldCount
-                headEnum.append((i,self.headers[i]))
-            for row in self.rawData[1:]:
-                newrow = {}
-                rowLength = len(row)
-                headerLength = len(self.headers)
-                if  rowLength < headerLength:
-                    row += [""] * (headerLength - rowLength)
-                for col, field in headEnum:
-                    newrow[field] = row[col]
-                self.dataSet.append(newrow)
         else:
-            self.headers = []
+            self.headers = [""] * len(self.rawData[0])
             
-                
-                    
+        emptyFieldCount = 0
+        headEnum = []
+        self.ui.headerList.clear()
+        for i in range(len(self.headers)):
+            if self.headers[i].strip() == "":
+                emptyFieldCount += 1
+                self.headers[i] = "Field%d" % emptyFieldCount
+            headEnum.append((i,self.headers[i]))
+            self.ui.headerList.addItem(self.headers[i])
+        for row in self.rawData[offset:]:
+            newrow = {}
+            for col, field in headEnum:
+                newrow[field] = row[col]
+            self.dataSet.append(newrow)
+            
+        
+    def add_header_text(self, item):
+        itemSelection = self.labelView.scene().selectedItems()
+        print itemSelection
+        if len(itemSelection) == 1:
+            itemSelection[0].textCursor().insertText("<<%s>>" % str(item.text()))
         
     def load_csv(self, filename):
         return [row for row in csv.reader(open(filename, "rb"))]
