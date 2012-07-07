@@ -33,13 +33,17 @@ class ZoomGraphicsView(QtGui.QGraphicsView):
         self.permitText.setPos(self.dpmm[0]*46.2, self.dpmm[1]*0.9)
         self.zoomUpdate = QtCore.SIGNAL("zoomUpdated(PyQt_PyObject)")
         
-        print self.dpmm[0]*43
         self.permitImage.setSelected(True)
         self.scaleFactor = 1.15
         self.zoomLevel = 1
         
+        self.addItemList = None
+        
         
         self.update()
+        
+    def set_add_item_list(self, itemList):
+        self.addItemList = itemList
         
     def set_permit_number(self, val):
         """ sets the permit label to val """
@@ -88,6 +92,18 @@ class ZoomGraphicsView(QtGui.QGraphicsView):
             if not dontDelete:
                 for i in self.scene().selectedItems():
                     QtGui.QApplication.instance().remove_object(i)
+                    
+    def mousePressEvent(self, event):
+        adding = False
+        for item, caller in self.addItemList:
+            if item.isChecked():
+                adding = True
+                caller(event.pos())
+                item.toggle()
+                break
+            
+        if not adding:
+            super(ZoomGraphicsView, self).mousePressEvent(event)
                 
         
     def scale(self, x, y):

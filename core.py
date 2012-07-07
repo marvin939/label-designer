@@ -61,6 +61,17 @@ class LabelerTextItem(QtGui.QGraphicsTextItem):
         
         self.set_pos_by_mm(5,4)
         
+    def start_edit(self):
+        self.setTextInteractionFlags(QtCore.Qt.TextEditorInteraction)
+        self.setFocus(True)
+        self.setSelected(True)
+        
+    def end_edit(self):
+        self.setTextInteractionFlags(QtCore.Qt.NoTextInteraction)
+        cursor = self.textCursor()
+        cursor.clearSelection()
+        self.setTextCursor(cursor)
+        
     def start_merge(self):
         self.mergeText = self.toPlainText()
         self.merging = True
@@ -155,12 +166,21 @@ class LabelerTextItem(QtGui.QGraphicsTextItem):
         
     def mouseDoubleClickEvent(self, event):
         """ Overrided to make text editable after being double clicked TODO make sure cursor is showing """
-        self.setTextInteractionFlags(QtCore.Qt.TextEditorInteraction)
-        self.setFocus(True)
+        self.start_edit()
         
     def keyReleaseEvent(self, event):
         super(LabelerTextItem, self).keyReleaseEvent(event)
         self.propWidgets['Value'].setPlainText(self.toPlainText())
+        
+    def keyPressEvent(self, event):
+        if event.key() in (QtCore.Qt.Key_Return, QtCore.Qt.Key_Enter):
+            print event.modifiers(), QtCore.Qt.NoModifier
+            if event.modifiers() in (QtCore.Qt.NoModifier, QtCore.Qt.KeypadModifier):
+                self.end_edit()
+            elif event.modifiers() == QtCore.Qt.CTRL:
+                self.textCursor().insertText("\n")
+        else:
+            super(LabelerTextItem, self).keyPressEvent(event)
         
     def setFont(self, *args, **kwargs):
         """ Overrided to add calc for leading/line spacing """
@@ -180,8 +200,7 @@ class LabelerTextItem(QtGui.QGraphicsTextItem):
         super(LabelerTextItem,self).itemChange(change, value)
         if change == QtGui.QGraphicsItem.ItemSelectedChange:
             if value == False:
-                self.setTextInteractionFlags(QtCore.Qt.NoTextInteraction)
-                self.textCursor().clearSelection()
+                self.end_edit()
                 self.clearFocus()
         elif change == QtGui.QGraphicsItem.ItemPositionHasChanged:
             self.propWidgets['X Coord'].setValue(self.x())
@@ -218,6 +237,9 @@ class Labeler(QtGui.QApplication):
         self.ui.setupUi(self.MainWindow)
         
         
+       
+        
+        
         self.header_check(self.ui.headersCheck.isChecked())
         
         
@@ -225,6 +247,10 @@ class Labeler(QtGui.QApplication):
         self.labelView.setPageSize((self.dpmm[0]*90, self.dpmm[1]*45))
         self.itemList = self.ui.itemList
         
+        #set up list of add item buttons
+        self.addItemList = []
+        self.addItemList.append((self.ui.addText, self.add_text))
+        self.labelView.set_add_item_list(self.addItemList)
         
         
         # make sure the correct permit state is set
@@ -236,7 +262,7 @@ class Labeler(QtGui.QApplication):
         
         
         self.connect(self.ui.loadData, QtCore.SIGNAL('clicked()'), self.open_file)
-        self.connect(self.ui.addTextBtn, QtCore.SIGNAL('clicked()'), self.add_text_dialog)
+        #self.connect(self.ui.addTextBtn, QtCore.SIGNAL('clicked()'), self.add_text_dialog)
         self.connect(self.ui.createPdfBtn, QtCore.SIGNAL('clicked()'), self.create_pdf)
         self.connect(self.ui.zoomLevel, QtCore.SIGNAL('valueChanged(double)'), self.zoom_spin_changed)
         self.connect(self.labelView, QtCore.SIGNAL("zoomUpdated(PyQt_PyObject)"), self.zoom_from_mouse)
@@ -360,7 +386,7 @@ class Labeler(QtGui.QApplication):
             
         
 
-    def add_text(self, text, x, y):
+    def add_text(self, pos):#text, x, y):
         """ add a text item at x, y """
         obj = LabelerTextItem()
         
@@ -368,7 +394,10 @@ class Labeler(QtGui.QApplication):
         
         
         
-        obj.setPlainText(text)
+        obj.setPos(self.labelView.mapToScene(pos))
+        obj.setPlainText("Enter Text")
+        
+        
         self.objectCollection.append(obj)
         
         item = QtGui.QTreeWidgetItem(self.itemList)
@@ -376,6 +405,13 @@ class Labeler(QtGui.QApplication):
         item.setData(1,0, obj)
         self.itemListObjects[obj] = item
         
+        
+        obj.start_edit()
+        cursor = obj.textCursor()
+        
+        cursor.movePosition(QtGui.QTextCursor.Start)
+        cursor.movePosition(QtGui.QTextCursor.End, QtGui.QTextCursor.KeepAnchor)
+        obj.setTextCursor(cursor)
     
     def start_merge(self):
         self.labelView.start_merge()
@@ -403,8 +439,9 @@ class Labeler(QtGui.QApplication):
                 else:
                     break
             obj = currentItem.data(1,0).toPyObject()
-            obj.scene().clearSelection()
-            obj.setSelected(True)
+            if not obj.isSelected():
+                obj.scene().clearSelection()
+                obj.setSelected(True)
             for field in obj.propOrder:
                 widget = obj.propWidgets[field]
                 self.ui.objectProperties.addRow(field, widget)
