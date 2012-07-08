@@ -31,10 +31,10 @@ propertyTypes = {'string':(QtGui.QLineEdit, QtCore.SIGNAL('textChanged(QString)'
  
 class LabelerTextItem(QtGui.QGraphicsTextItem):
     def __init__(self, *args, **kwargs):
-        
+        self.editing = False
         super(LabelerTextItem, self).__init__(*args, **kwargs)
         self.setFlags(self.ItemIsSelectable|self.ItemIsMovable|self.ItemIsFocusable|self.ItemSendsGeometryChanges)
-        
+        self.setAcceptHoverEvents(True)
         self.dpi = MainApp.dpi
         self.dpmm = MainApp.dpmm
         self.lineSpacing = 1.2
@@ -62,11 +62,14 @@ class LabelerTextItem(QtGui.QGraphicsTextItem):
         self.set_pos_by_mm(5,4)
         
     def start_edit(self):
+        self.editing = True
+        self.scene().clearSelection()
         self.setTextInteractionFlags(QtCore.Qt.TextEditorInteraction)
         self.setFocus(True)
         self.setSelected(True)
         
     def end_edit(self):
+        self.editing = False
         self.setTextInteractionFlags(QtCore.Qt.NoTextInteraction)
         cursor = self.textCursor()
         cursor.clearSelection()
@@ -86,7 +89,7 @@ class LabelerTextItem(QtGui.QGraphicsTextItem):
         matches = self.headerRE.findall(text)
         matches = set(matches)
         for i in matches:
-            field = i.replace("<<", "").replace(">>","").lower()
+            field = i.replace("<<", "").replace(">>","")
             text = text.replace(i, row[field])
         
         
@@ -164,20 +167,50 @@ class LabelerTextItem(QtGui.QGraphicsTextItem):
         y = self.y() + self.boundingRect().height()
         return self.x()/self.dpmm[0], (self.y()/self.dpmm[1]) 
         
-    def mouseDoubleClickEvent(self, event):
-        """ Overrided to make text editable after being double clicked TODO make sure cursor is showing """
-        self.start_edit()
+    #def mouseDoubleClickEvent(self, event):
+    #    """ Overrided to make text editable after being double clicked TODO make sure cursor is showing """
+    #    self.start_edit()
+    
+    def mousePressEvent(self, event):
+        if self.isSelected():
+            if event.modifiers() == QtCore.Qt.ControlModifier:
+                self.end_edit()
+            else:
+                self.start_edit()
+            
+        super(LabelerTextItem, self).mousePressEvent(event)
         
     def keyReleaseEvent(self, event):
         super(LabelerTextItem, self).keyReleaseEvent(event)
+        if event.key() == QtCore.Qt.Key_Control:
+                self.setCursor(QtCore.Qt.ArrowCursor)
         self.propWidgets['Value'].setPlainText(self.toPlainText())
         
+#    def hoverLeaveEvent(self, event):
+#        self.setCursor(QtCore.Qt.ArrowCursor)
+#        super(LabelerTextItem, self).hoverLeaveEvent(event)
+#        
+    def hoverEnterEvent(self, event):
+        if event.modifiers() == QtCore.Qt.ControlModifier:
+            self.setCursor(QtCore.Qt.SizeAllCursor)
+        else:
+            self.setCursor(QtCore.Qt.ArrowCursor)
+#            
+#    def hoverMoveEvent(self, event):
+#        if event.modifiers() == QtCore.Qt.ControlModifier:
+#            self.setCursor(QtCore.Qt.SizeAllCursor)
+#        else:
+#            self.setCursor(QtCore.Qt.ArrowCursor)
+        
     def keyPressEvent(self, event):
+        if event.key() == QtCore.Qt.Key_Control:
+            self.setCursor(QtCore.Qt.SizeAllCursor)
+            self.update()
+        
         if event.key() in (QtCore.Qt.Key_Return, QtCore.Qt.Key_Enter):
-            print event.modifiers(), QtCore.Qt.NoModifier
             if event.modifiers() in (QtCore.Qt.NoModifier, QtCore.Qt.KeypadModifier):
                 self.end_edit()
-            elif event.modifiers() == QtCore.Qt.CTRL:
+            elif event.modifiers() in (QtCore.Qt.ControlModifier, QtCore.Qt.ControlModifier|QtCore.Qt.KeypadModifier):
                 self.textCursor().insertText("\n")
         else:
             super(LabelerTextItem, self).keyPressEvent(event)
@@ -196,7 +229,7 @@ class LabelerTextItem(QtGui.QGraphicsTextItem):
         
         
     def itemChange(self, change, value):
-        """ Overrided to stop editing after losing selection: TODO clear selection """
+        """ Overrided to stop editing after losing selection """
         super(LabelerTextItem,self).itemChange(change, value)
         if change == QtGui.QGraphicsItem.ItemSelectedChange:
             if value == False:
@@ -216,14 +249,14 @@ class Labeler(QtGui.QApplication):
         self.MainWindow = QtGui.QMainWindow()
         self.itemListObjects = {}
         self.dataSet = []
-        self.currentDirectory = "C:\\"
+        self.currentDirectory = os.getcwd()
         self.currentFile = None
         self.headers = []
         self.previewMode = False
         self.previewRow = 0
         self.rawData = [[]]
         
-        #set up funcs to load in different file formats
+        # Maps file extensions to functions for decoding them
         self.fileLoaders = {}
         self.fileLoaders[".csv"] = self.load_csv
         self.fileLoaders[".xls"] = self.load_xls
@@ -244,6 +277,7 @@ class Labeler(QtGui.QApplication):
         self.header_check(self.ui.headersCheck.isChecked())
         
         
+        # Sets up the base widget for the layup
         self.labelView = self.ui.graphicsView
         self.labelView.setPageSize((self.dpmm[0]*90, self.dpmm[1]*45))
         self.itemList = self.ui.itemList
@@ -258,6 +292,8 @@ class Labeler(QtGui.QApplication):
         self.toggle_permit(self.ui.permitCheck.isChecked())
         self.labelView.set_permit_number(self.ui.permitEntry.text())
         
+        
+        # A RegEx for looking for headers in items
         self.headerRE = re.compile('<<.*?>>')
         
         
@@ -272,51 +308,55 @@ class Labeler(QtGui.QApplication):
         self.connect(self.ui.headersCheck, QtCore.SIGNAL('toggled(bool)'), self.header_check)
         self.connect(self.ui.permitCheck, QtCore.SIGNAL('toggled(bool)'), self.toggle_permit)
         self.connect(self.ui.permitEntry, QtCore.SIGNAL('textChanged(QString)'), self.permit_number_changed)
-        self.connect(self.ui.headerList, QtCore.SIGNAL('itemDoubleClicked(QListWidgetItem)'), self.add_header_text)
+        self.connect(self.ui.headerList, QtCore.SIGNAL('itemDoubleClicked(QListWidgetItem*)'), self.add_header_text)
         
-        #make sure scale factor and header state are correct
-        #self.scaleFactor = self.ui.zoomLevel.value()
-        #self.zoom_changed()
+        
         self.ui.zoomLevel.setValue(250.0)
         #self.labelView.zoom_to(200.0)
 
         self.MainWindow.show()
         
     def scene_selection_changed(self):
+        """ Called when the selection of the scene has changed, to select the correct item in the object list """
         items = self.labelView.scene().selectedItems()
         if len(items) == 1:
             self.itemList.setCurrentItem(self.itemListObjects[items[0]])
         
     def toggle_permit(self, toggle):
+        """ Called to toggle the on/off status of the permit label """
         self.showPermit = toggle
         self.ui.permitPosition.setEnabled(toggle)
         self.ui.permitEntry.setEnabled(toggle)
         self.labelView.toggle_permit(toggle)
         
     def permit_number_changed(self, text):
+        """ Called when the permit number is updated in the text field """
         self.labelView.set_permit_number(str(text))
         
         
     def header_check(self, toggle):
+        """ Called when the header checkbox is toggled to set headers on/off in the dataset """
         self.hasHeaders = toggle
         self.setup_data()
         
     def remove_object(self, obj):
+        """ Removes an item from the layup """
         self.labelView.scene().removeItem(obj)
         self.objectCollection.remove(obj)
-        #self.itemList.removeItemWidget(self.itemListObjects[obj], 1)
         self.itemList.takeTopLevelItem(self.itemList.indexOfTopLevelItem(self.itemListObjects[obj]))
 
         del self.itemListObjects[obj]
         del obj
         
     def open_file(self):
+        """ Shows an open file dialog, then proceeds to load the file as data """
         filename = str(QtGui.QFileDialog.getOpenFileName(self.MainWindow, "Select File", self.currentDirectory))
         if filename <> "":
             self.currentDirectory = os.path.split(filename)[0]
             self.load_dataset(filename)
         
     def load_dataset(self, filename):
+        """ Loads the file, datatype determined by extension """
         self.currentFile = filename
         ext = os.path.splitext(filename)[1].lower()
         self.rawData = []
@@ -334,6 +374,7 @@ class Labeler(QtGui.QApplication):
             self.setup_data()
                     
     def setup_data(self):
+        """ Takes the raw data and arranges it into a dict, based on whether or not it has headers """
         self.dataSet = []
         offset = 0
         if self.hasHeaders:
@@ -360,9 +401,10 @@ class Labeler(QtGui.QApplication):
         
     def add_header_text(self, item):
         itemSelection = self.labelView.scene().selectedItems()
-        print itemSelection
         if len(itemSelection) == 1:
             itemSelection[0].textCursor().insertText("<<%s>>" % str(item.text()))
+            self.labelView.setFocus(True)
+            itemSelection[0].setFocus(True)
         
     def load_csv(self, filename):
         return [row for row in csv.reader(open(filename, "rb"))]
@@ -464,14 +506,6 @@ class Labeler(QtGui.QApplication):
     def zoom_from_mouse(self, zoom):
         self.ui.zoomLevel.setValue(zoom)
         
-        
-        
-    def add_text_dialog(self):
-        """ Gets input from the user to add a text item """
-        result = QtGui.QInputDialog.getText(self.MainWindow, 'What text to add?', "Enter text")
-        if result[1] == True:
-            text = result[0]
-            self.add_text(text, 0, 0)
             
     def retrieve_font_filename(self, font):
         """ Returns a font's system filename, for use with reportlab to embed/link in fonts """
@@ -481,29 +515,18 @@ class Labeler(QtGui.QApplication):
             
     def create_pdf(self):
         """ Generates a pdf file based on data and layup """
-        if self.hasHeaders:
-            headers = [i.lower() for i in self.dataSet[0]]
-        else:
-            headers = None
             
-            
-            
-        
-            
-        ## test text objects for header names
+        ## test text objects for header names as well as unselect everything
         headersMatched = True
         errorMessage = ""
         for obj in self.objectCollection:
             # if obj is type text
+            obj.setSelected(False)
             text = str(obj.toPlainText())
             matches = self.headerRE.findall(text)
             matches = set(matches)
             for i in matches:
-                x = i.replace("<<", "").replace(">>","").lower()
-                #if headers == None:
-                #    if x.strip("0123456789") <> "field":
-                #        errorMessage += "Error, could not find header %s, please check your spelling.\n" % i
-                #        headersMatched = False
+                x = i.replace("<<", "").replace(">>","")
                 if not x in self.headers:
                     errorMessage += "Error, could not find header %s, please check your spelling.\n" % i
                     headersMatched = False
@@ -533,75 +556,7 @@ class Labeler(QtGui.QApplication):
         painter.end()
         
         self.labelView.show_bg()
-            
-#        pdf = canvas.Canvas("hello.pdf", (mm*90, mm*45))
-#        
-#        if headers:
-#            rowrange = self.dataSet[1:]
-#        else:
-#            rowrange = self.dataSet
-#        for row in rowrange:
-#            if self.ui.permitCheck.isChecked():
-#                #displays permit impression TODO add centering, base on page size
-#                try:
-#                    pdf.setFont('Arial Narrow', 8, 10)
-#                except KeyError:
-#                    # font not loaded, request it
-#                    fontname = self.retrieve_font_filename("Arial Narrow")
-#                    pdfmetrics.registerFont(TTFont("Arial Narrow",fontname[0]))
-#                    pdf.setFont('Arial Narrow', 8, 10)
-#                
-#                pdf.drawImage("PermitPost.png", mm*46, mm*34, mm*43, mm*10)
-#                permitTextObj = pdf.beginText(46.6*mm, ((45-.9)*mm-13))
-#                permitTextObj.textLines(self.labelView.permitPlainText)
-#                pdf.drawText(permitTextObj)
-#            for obj in self.objectCollection:
-#                
-#                
-#                font = obj.font()
-#                x, y = obj.get_pos_for_pdf()
-#                
-#                
-#                if str(fontDB.styleString(font)) <> "" and str(fontDB.styleString(font)) <> "Normal" :
-#                    fullFontName = str(font.family())+" "+str(fontDB.styleString(font))
-#                else:
-#                    fullFontName = str(font.family())
-#                print fullFontName
-#                try:
-#                    pdf.setFont(fullFontName, font.pointSize(), obj.leading)
-#                except KeyError:
-#                    # font not loaded, request it
-#                    fontname = self.retrieve_font_filename(fullFontName)
-#                    pdfmetrics.registerFont(TTFont(fullFontName,fontname[0]))
-#                    pdf.setFont(fullFontName, font.pointSize(), obj.leading)
-#                    print font.rawName()
-#                    
-#                textobj = pdf.beginText(x*mm, ((45-y)*mm) - obj.leading)
-#                
-#                text = str(obj.toPlainText())
-#                matches = self.headerRE.findall(text)
-#                matches = set(matches)
-#                for i in matches:
-#                    x = i.replace("<<", "").replace(">>","").lower()
-#                    index = headers.index(x)
-#                    text = text.replace(i, row[index])
-#                
-#                
-#                finalText = ""
-#                if obj.propWidgets['Skip Blanks'].isChecked():
-#                    for line in text.split("\n"):
-#                        if line.strip() <> "":
-#                            finalText += line +"\n"
-#                    finalText = finalText.rstrip("\n")
-#                else:
-#                    finalText = text
-#                textobj.textLines(finalText)
-#            
-#            
-#                pdf.drawText(textobj)
-#            pdf.showPage()
-#        pdf.save()
-            
+
         
 MainApp = Labeler(sys.argv)      
         

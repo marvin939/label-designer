@@ -81,6 +81,7 @@ class ZoomGraphicsView(QtGui.QGraphicsView):
         self.permitImage.setVisible(toggle)
         self.permitText.setVisible(toggle)
         
+        
     def keyPressEvent(self, event):
         super(ZoomGraphicsView, self).keyPressEvent(event)
         if event.key() == QtCore.Qt.Key_Delete:
@@ -92,6 +93,17 @@ class ZoomGraphicsView(QtGui.QGraphicsView):
             if not dontDelete:
                 for i in self.scene().selectedItems():
                     QtGui.QApplication.instance().remove_object(i)
+        elif event.key() == QtCore.Qt.Key_Control:
+            item = self.itemAt(self.mapFromGlobal(self.cursor().pos()))
+            if item <> None:
+                item.keyPressEvent(event)
+                
+    def keyReleaseEvent(self, event):
+        super(ZoomGraphicsView, self).keyPressEvent(event)
+        if event.key() == QtCore.Qt.Key_Control:
+            item = self.itemAt(self.mapFromGlobal(self.cursor().pos()))
+            if item <> None:
+                item.keyReleaseEvent(event)
                     
     def mousePressEvent(self, event):
         adding = False
@@ -107,7 +119,7 @@ class ZoomGraphicsView(QtGui.QGraphicsView):
                 
         
     def scale(self, x, y):
-        """ Overridden to keep count of what magnifications we're at """
+        """ Overridden to keep count of what magnification we're at """
         assert x == y
         oldzoom = self.zoomLevel
         
@@ -155,24 +167,10 @@ class ZoomGraphicsView(QtGui.QGraphicsView):
         """ Overridden to allow for zooming when holding down ctrl """
         if event.modifiers() == QtCore.Qt.ControlModifier:
         
-            #pointBeforeScale = QtCore.QPointF(self.mapToScene(event.pos()))
-            #org = QtCore.QPointF(self.mapToScene(self.viewport().rect()).boundingRect().center())
             
             if event.delta() > 0:
-                #self.scale(self.scaleFactor, self.scaleFactor)
                 self.zoom_by(15)
             else:
-                #self.scale(1.0/self.scaleFactor, 1.0/self.scaleFactor)
                 self.zoom_by(-15)
             self.emit(self.zoomUpdate, self.zoomLevel*100)
                 
-            #pointAfterScale = QtCore.QPointF(self.mapToScene(event.pos()))
-            #print "Before:", pointBeforeScale
-            #print "After:", pointAfterScale
-            #print "Offset:", pointBeforeScale - pointAfterScale
-            #print "Origin:", org
-            #offset =  pointBeforeScale - pointAfterScale
-            
-            
-            #self.centerOn(org + offset)
-            #self.update()
