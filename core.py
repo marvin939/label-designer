@@ -1,15 +1,8 @@
 import LabelDesigner
-#from zoomgraphicsview import ZoomGraphicsView
 import sys, os, csv
-import xlrd#, xlwt
-import _winreg
-#import math
+import xlrd
 import re
 from PyQt4 import QtCore, QtGui
-#from reportlab.pdfgen import canvas
-#from reportlab.lib.units import mm
-#from reportlab.pdfbase import pdfmetrics
-#from reportlab.pdfbase.ttfonts import TTFont
 try:
     _fromUtf8 = QtCore.QString.fromUtf8
 except AttributeError:
@@ -516,13 +509,6 @@ class Labeler(QtGui.QApplication):
     def zoom_from_mouse(self, zoom):
         self.ui.zoomLevel.setValue(zoom)
         
-            
-    def retrieve_font_filename(self, font):
-        """ Returns a font's system filename, for use with reportlab to embed/link in fonts """
-        key = _winreg.OpenKey(_winreg.HKEY_LOCAL_MACHINE, 'Software\\Microsoft\\Windows NT\\CurrentVersion\\Fonts', 0, _winreg.KEY_READ)
-        fontname = _winreg.QueryValueEx(key,  str(font) + " (TrueType)")
-        return fontname
-            
     def create_pdf(self):
         """ Generates a pdf file based on data and layup """
             
