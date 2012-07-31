@@ -27,7 +27,6 @@ class ReturnText(QtGui.QGraphicsTextItem):
         height = self.boundingRect().height()
         
         
-        print self.pos().x(), self.pos().y(), self.toPlainText(), self.isVisible()
         if self.alignment_ == QtCore.Qt.AlignRight:
             self.setPos(self.pos() + (topRightPrev - topRight))
         elif self.alignment_ == QtCore.Qt.AlignCenter:
