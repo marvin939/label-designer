@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'C:\Users\Captain\workspace\Labeler\LabelDesigner.ui'
 #
-# Created: Mon Jul 09 00:30:35 2012
+# Created: Tue Jul 31 21:20:21 2012
 #      by: PyQt4 UI code generator 4.9.1
 #
 # WARNING! All changes made in this file will be lost!
@@ -148,6 +148,20 @@ class Ui_MainWindow(object):
         self.permitEntry.setObjectName(_fromUtf8("permitEntry"))
         self.horizontalLayout_3.addWidget(self.permitEntry)
         self.verticalLayout_3.addLayout(self.horizontalLayout_3)
+        self.returnCheck = QtGui.QCheckBox(self.layoutWidget)
+        self.returnCheck.setObjectName(_fromUtf8("returnCheck"))
+        self.verticalLayout_3.addWidget(self.returnCheck)
+        self.returnAddress = QtGui.QTextEdit(self.layoutWidget)
+        self.returnAddress.setEnabled(False)
+        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Preferred)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.returnAddress.sizePolicy().hasHeightForWidth())
+        self.returnAddress.setSizePolicy(sizePolicy)
+        self.returnAddress.setMinimumSize(QtCore.QSize(0, 75))
+        self.returnAddress.setMaximumSize(QtCore.QSize(16777215, 75))
+        self.returnAddress.setObjectName(_fromUtf8("returnAddress"))
+        self.verticalLayout_3.addWidget(self.returnAddress)
         self.splitter = QtGui.QSplitter(self.layoutWidget)
         sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Preferred, QtGui.QSizePolicy.Preferred)
         sizePolicy.setHorizontalStretch(0)
@@ -189,7 +203,7 @@ class Ui_MainWindow(object):
         self.scrollArea.setWidgetResizable(True)
         self.scrollArea.setObjectName(_fromUtf8("scrollArea"))
         self.scrollAreaWidgetContents = QtGui.QWidget()
-        self.scrollAreaWidgetContents.setGeometry(QtCore.QRect(0, 0, 292, 251))
+        self.scrollAreaWidgetContents.setGeometry(QtCore.QRect(0, 0, 292, 147))
         self.scrollAreaWidgetContents.setObjectName(_fromUtf8("scrollAreaWidgetContents"))
         self.verticalLayout_2 = QtGui.QVBoxLayout(self.scrollAreaWidgetContents)
         self.verticalLayout_2.setObjectName(_fromUtf8("verticalLayout_2"))
@@ -250,6 +264,7 @@ class Ui_MainWindow(object):
         self.permitCheck.setText(QtGui.QApplication.translate("MainWindow", "Add Permit", None, QtGui.QApplication.UnicodeUTF8))
         self.label_2.setText(QtGui.QApplication.translate("MainWindow", "Position", None, QtGui.QApplication.UnicodeUTF8))
         self.label_3.setText(QtGui.QApplication.translate("MainWindow", "Permit No.", None, QtGui.QApplication.UnicodeUTF8))
+        self.returnCheck.setText(QtGui.QApplication.translate("MainWindow", "Add Return Address?", None, QtGui.QApplication.UnicodeUTF8))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.detailsTab), QtGui.QApplication.translate("MainWindow", "Object Details", None, QtGui.QApplication.UnicodeUTF8))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.headersTab), QtGui.QApplication.translate("MainWindow", "Headers", None, QtGui.QApplication.UnicodeUTF8))
 

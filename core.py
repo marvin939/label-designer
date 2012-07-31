@@ -308,6 +308,8 @@ class Labeler(QtGui.QApplication):
         self.connect(self.ui.headersCheck, QtCore.SIGNAL('toggled(bool)'), self.header_check)
         self.connect(self.ui.permitCheck, QtCore.SIGNAL('toggled(bool)'), self.toggle_permit)
         self.connect(self.ui.permitEntry, QtCore.SIGNAL('textChanged(QString)'), self.permit_number_changed)
+        self.connect(self.ui.returnCheck, QtCore.SIGNAL('toggled(bool)'), self.toggle_return_address)
+        self.connect(self.ui.returnAddress, QtCore.SIGNAL('textChanged()'), self.return_address_changed)
         self.connect(self.ui.headerList, QtCore.SIGNAL('itemDoubleClicked(QListWidgetItem*)'), self.add_header_text)
         
         
@@ -315,6 +317,11 @@ class Labeler(QtGui.QApplication):
         #self.labelView.zoom_to(200.0)
 
         self.MainWindow.show()
+        
+    def toggle_return_address(self, toggle):
+        self.showReturn = toggle
+        self.ui.returnAddress.setEnabled(toggle)
+        self.labelView.toggle_return_address(toggle)
         
     def scene_selection_changed(self):
         """ Called when the selection of the scene has changed, to select the correct item in the object list """
@@ -332,6 +339,9 @@ class Labeler(QtGui.QApplication):
     def permit_number_changed(self, text):
         """ Called when the permit number is updated in the text field """
         self.labelView.set_permit_number(str(text))
+        
+    def return_address_changed(self):
+        self.labelView.set_return_address(self.ui.returnAddress.toPlainText())
         
         
     def header_check(self, toggle):

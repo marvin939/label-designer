@@ -296,6 +296,38 @@
          </layout>
         </item>
         <item>
+         <widget class="QCheckBox" name="returnCheck">
+          <property name="text">
+           <string>Add Return Address?</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QTextEdit" name="returnAddress">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="minimumSize">
+           <size>
+            <width>0</width>
+            <height>75</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>16777215</width>
+            <height>75</height>
+           </size>
+          </property>
+         </widget>
+        </item>
+        <item>
          <widget class="QSplitter" name="splitter">
           <property name="sizePolicy">
            <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
@@ -375,7 +407,7 @@
                   <x>0</x>
                   <y>0</y>
                   <width>292</width>
-                  <height>251</height>
+                  <height>147</height>
                  </rect>
                 </property>
                 <layout class="QVBoxLayout" name="verticalLayout_2">

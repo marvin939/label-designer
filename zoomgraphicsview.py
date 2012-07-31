@@ -1,4 +1,5 @@
 from PyQt4 import QtCore, QtGui
+from returntext import ReturnText
 
 class ZoomGraphicsView(QtGui.QGraphicsView):
     def __init__(self, *args, **kwargs):
@@ -21,6 +22,8 @@ class ZoomGraphicsView(QtGui.QGraphicsView):
         pix = QtGui.QPixmap("PermitPost.png")
         #self.permitImage = self.scene().addPixmap(pix.scaledToWidth(self.dpmm[0]*43))
         # setup permit image
+        
+        
         self.permitImage = self.scene().addPixmap(pix)
         self.permitImage.setTransformationMode(QtCore.Qt.SmoothTransformation)
         self.permitImage.scale((self.dpmm[0]*43)/self.permitImage.boundingRect().width(), (self.dpmm[1]*10)/self.permitImage.boundingRect().height())
@@ -39,6 +42,12 @@ class ZoomGraphicsView(QtGui.QGraphicsView):
         
         self.addItemList = None
         
+        self.returnAddress = ReturnText()
+        font = self.returnAddress.font()
+        font.setPointSize(6)
+        self.returnAddress.setFont(font)
+        self.returnAddress.setPos(45*self.dpmm[0], 40*self.dpmm[1])
+        self.scene().addItem(self.returnAddress)
         
         self.update()
         
@@ -54,6 +63,9 @@ class ZoomGraphicsView(QtGui.QGraphicsView):
             
         self.permitPlainText = "New Zealand\nPermit No.  %s" % self.permitNo
         self.permitText.setPlainText(self.permitPlainText)
+        
+    def set_return_address(self, text):
+        self.returnAddress.setPlainText(text)
         
         
     def start_merge(self):
@@ -80,6 +92,9 @@ class ZoomGraphicsView(QtGui.QGraphicsView):
     def toggle_permit(self, toggle):
         self.permitImage.setVisible(toggle)
         self.permitText.setVisible(toggle)
+        
+    def toggle_return_address(self, toggle):
+        self.returnAddress.setVisible(toggle)
         
         
     def keyPressEvent(self, event):
