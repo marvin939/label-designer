@@ -1,15 +1,15 @@
 import LabelDesigner
-from zoomgraphicsview import ZoomGraphicsView
+#from zoomgraphicsview import ZoomGraphicsView
 import sys, os, csv
 import xlrd#, xlwt
 import _winreg
-import math
+#import math
 import re
 from PyQt4 import QtCore, QtGui
-from reportlab.pdfgen import canvas
-from reportlab.lib.units import mm
-from reportlab.pdfbase import pdfmetrics
-from reportlab.pdfbase.ttfonts import TTFont
+#from reportlab.pdfgen import canvas
+#from reportlab.lib.units import mm
+#from reportlab.pdfbase import pdfmetrics
+#from reportlab.pdfbase.ttfonts import TTFont
 try:
     _fromUtf8 = QtCore.QString.fromUtf8
 except AttributeError:

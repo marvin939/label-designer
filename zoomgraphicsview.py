@@ -44,7 +44,7 @@ class ZoomGraphicsView(QtGui.QGraphicsView):
         
         self.returnAddress = ReturnText()
         font = self.returnAddress.font()
-        font.setPointSize(6)
+        font.setPointSize(5)
         self.returnAddress.setFont(font)
         self.returnAddress.setPos(45*self.dpmm[0], 40*self.dpmm[1])
         self.scene().addItem(self.returnAddress)
