@@ -20,7 +20,34 @@ propertyTypes = {'string':(QtGui.QLineEdit, QtCore.SIGNAL('textChanged(QString)'
                  'boolean':(QtGui.QCheckBox, QtCore.SIGNAL('toggled(bool)')),
                  'font':(QtGui.QFontComboBox, QtCore.SIGNAL('currentFontChanged(QFont)'))}
 
-
+class PDFThread(QtCore.QThread):
+    pdfprogress = QtCore.SIGNAL('pdfprogress()')
+    mergerow = QtCore.SIGNAL('mergerow(PyQt_PyObject)')
+    render = QtCore.SIGNAL('render()')
+    def __init__(self, app, *args, **kwargs):
+        super(PDFThread, self).__init__(*args, **kwargs)
+        self.app = app
+        
+        
+    def run(self, *args, **kwargs):
+        super(PDFThread, self).__init__(*args, **kwargs)
+        
+        first = True
+        for row in self.app.dataSet:
+            if first:
+                first = False
+            else:
+                self.app.pdfprinter.newPage()
+            #self.app.merge_row(row)
+            self.emit(self.mergerow, row)
+            
+            #self.app.labelView.scene().render(self.app.scenepainter)
+            self.emit(self.render)
+            self.emit(self.pdfprogress)
+        
+        return
+        
+        
  
 class LabelerTextItem(QtGui.QGraphicsTextItem):
     def __init__(self, *args, **kwargs):
@@ -157,7 +184,7 @@ class LabelerTextItem(QtGui.QGraphicsTextItem):
         
     def get_pos_for_pdf(self):
         """ same as get pos by mm? """
-        y = self.y() + self.boundingRect().height()
+        #y = self.y() + self.boundingRect().height()
         return self.x()/self.dpmm[0], (self.y()/self.dpmm[1]) 
         
     #def mouseDoubleClickEvent(self, event):
@@ -304,6 +331,11 @@ class Labeler(QtGui.QApplication):
         self.connect(self.ui.returnCheck, QtCore.SIGNAL('toggled(bool)'), self.toggle_return_address)
         self.connect(self.ui.returnAddress, QtCore.SIGNAL('textChanged()'), self.return_address_changed)
         self.connect(self.ui.headerList, QtCore.SIGNAL('itemDoubleClicked(QListWidgetItem*)'), self.add_header_text)
+        
+        
+        self.progressWindow = QtGui.QProgressDialog(self.MainWindow)
+        self.progressWindow.setWindowTitle("PDF Generation Progress...")
+        self.progressWindow.setMinimumWidth(300)
         
         
         self.ui.zoomLevel.setValue(250.0)
@@ -465,14 +497,28 @@ class Labeler(QtGui.QApplication):
         obj.setTextCursor(cursor)
     
     def start_merge(self):
+#        self.labelView.hide_bg()
+#        self.pdfprinter = QtGui.QPrinter()
+#        self.pdfprinter.setPaperSize(QtCore.QSizeF(45, 90), QtGui.QPrinter.Millimeter)
+#        self.pdfprinter.setOutputFileName("Testing.pdf")
+#        self.pdfprinter.setOrientation(QtGui.QPrinter.Landscape)
+#        self.pdfprinter.setFullPage(True)
+#        
+#        self.scenepainter = QtGui.QPainter()
+#        self.scenepainter.begin(self.pdfprinter)
         self.labelView.start_merge()
         for obj in self.objectCollection:
             obj.start_merge()
+        self.start_progress_bar(1, len(self.dataSet))
         
     def end_merge(self):
         self.labelView.end_merge()
         for obj in self.objectCollection:
             obj.end_merge()
+            
+#        self.scenepainter.end()
+#        
+#        self.labelView.show_bg()
         
     def merge_row(self, row):
         for obj in self.objectCollection:
@@ -509,8 +555,53 @@ class Labeler(QtGui.QApplication):
     def zoom_from_mouse(self, zoom):
         self.ui.zoomLevel.setValue(zoom)
         
+    def start_progress_bar(self, minimum, maximum):
+        self.progressWindow.setRange(minimum, maximum)
+        newValue = 1
+        progressText = "Generating Page %d of %d" % (newValue, self.progressWindow.maximum())
+        self.progressWindow.setLabelText(progressText)
+        self.progressWindow.show()
+        
+    def increment_progress_bar(self):
+        newValue = self.progressWindow.value() + 1
+        progressText = "Generating Page %d of %d" % (newValue, self.progressWindow.maximum())
+        self.progressWindow.setValue(newValue)
+        self.progressWindow.setLabelText(progressText)
+        self.progressWindow.update()
+        
+    def render_pdf(self):
+        self.labelView.scene().render(self.scenepainter)
+        
     def create_pdf(self):
         """ Generates a pdf file based on data and layup """
+        ## test text objects for header names as well as unselect everything
+#        headersMatched = True
+#        errorMessage = ""
+#        for obj in self.objectCollection:
+#            # if obj is type text
+#            obj.setSelected(False)
+#            text = str(obj.toPlainText())
+#            matches = self.headerRE.findall(text)
+#            matches = set(matches)
+#            for i in matches:
+#                x = i.replace("<<", "").replace(">>","")
+#                if not x in self.headers:
+#                    errorMessage += "Error, could not find header %s, please check your spelling.\n" % i
+#                    headersMatched = False
+#        if not headersMatched:
+#            QtGui.QMessageBox.critical(self.MainWindow, "Error Header Not Found", errorMessage)
+#            return
+        
+        
+        self.start_merge()
+        
+        #self.pdfthread = PDFThread(self)
+        #self.connect(self.pdfthread, QtCore.SIGNAL('finished()'), self.end_merge)
+        #self.connect(self.pdfthread, QtCore.SIGNAL('pdfprogress()'), self.increment_progress_bar)
+        #self.connect(self.pdfthread, QtCore.SIGNAL('mergerow(PyQt_PyObject)'), self.merge_row)
+        #self.connect(self.pdfthread, QtCore.SIGNAL('render()'), self.render_pdf)
+        #self.pdfthread.start()
+        
             
         ## test text objects for header names as well as unselect everything
         headersMatched = True
@@ -548,6 +639,7 @@ class Labeler(QtGui.QApplication):
                 pp.newPage()
             self.merge_row(row)
             self.labelView.scene().render(painter)
+            self.increment_progress_bar()
         self.end_merge()
         painter.end()
         
