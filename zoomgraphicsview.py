@@ -1,6 +1,8 @@
 from PyQt4 import QtCore, QtGui
 from returntext import ReturnText
 
+import barcode
+
 class ZoomGraphicsView(QtGui.QGraphicsView):
     def __init__(self, *args, **kwargs):
         super(ZoomGraphicsView, self).__init__(*args, **kwargs)
@@ -48,6 +50,11 @@ class ZoomGraphicsView(QtGui.QGraphicsView):
         self.returnAddress.setFont(font)
         self.returnAddress.setPos(45*self.dpmm[0], 40*self.dpmm[1])
         self.scene().addItem(self.returnAddress)
+        
+        #bar = QtGui.QGraphicsPixmapItem(barcode.bar_I2of5('44454545'))
+        #bar.scale(.2,1.0)
+        #bar.setFlags(bar.ItemIsSelectable|bar.ItemIsMovable|bar.ItemIsFocusable)
+        #self.scene().addItem(bar)
         
         self.update()
         

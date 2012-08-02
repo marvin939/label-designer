@@ -63,7 +63,7 @@
           <string>Layup Items</string>
          </property>
          <layout class="QGridLayout" name="gridLayout_2">
-          <item row="1" column="0">
+          <item row="3" column="0">
            <spacer name="verticalSpacer">
             <property name="orientation">
              <enum>Qt::Vertical</enum>
@@ -105,6 +105,16 @@
             </property>
             <property name="text">
              <string>Add Text</string>
+            </property>
+            <property name="checkable">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="0">
+           <widget class="QPushButton" name="addBarcode">
+            <property name="text">
+             <string>Add Barcode</string>
             </property>
             <property name="checkable">
              <bool>true</bool>
@@ -407,7 +417,7 @@
                   <x>0</x>
                   <y>0</y>
                   <width>292</width>
-                  <height>147</height>
+                  <height>118</height>
                  </rect>
                 </property>
                 <layout class="QVBoxLayout" name="verticalLayout_2">

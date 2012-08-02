@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'C:\Users\Captain\workspace\Labeler\LabelDesigner.ui'
 #
-# Created: Tue Jul 31 21:20:21 2012
+# Created: Fri Aug 03 00:57:14 2012
 #      by: PyQt4 UI code generator 4.9.1
 #
 # WARNING! All changes made in this file will be lost!
@@ -48,7 +48,7 @@ class Ui_MainWindow(object):
         self.gridLayout_2 = QtGui.QGridLayout(self.groupBox)
         self.gridLayout_2.setObjectName(_fromUtf8("gridLayout_2"))
         spacerItem = QtGui.QSpacerItem(20, 40, QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Expanding)
-        self.gridLayout_2.addItem(spacerItem, 1, 0, 1, 1)
+        self.gridLayout_2.addItem(spacerItem, 3, 0, 1, 1)
         spacerItem1 = QtGui.QSpacerItem(40, 20, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Minimum)
         self.gridLayout_2.addItem(spacerItem1, 0, 1, 1, 1)
         self.addText = QtGui.QPushButton(self.groupBox)
@@ -61,6 +61,10 @@ class Ui_MainWindow(object):
         self.addText.setCheckable(True)
         self.addText.setObjectName(_fromUtf8("addText"))
         self.gridLayout_2.addWidget(self.addText, 0, 0, 1, 1)
+        self.addBarcode = QtGui.QPushButton(self.groupBox)
+        self.addBarcode.setCheckable(True)
+        self.addBarcode.setObjectName(_fromUtf8("addBarcode"))
+        self.gridLayout_2.addWidget(self.addBarcode, 2, 0, 1, 1)
         self.horizontalLayout_4.addWidget(self.groupBox)
         self.groupBox_2 = QtGui.QGroupBox(self.frame)
         self.groupBox_2.setObjectName(_fromUtf8("groupBox_2"))
@@ -203,7 +207,7 @@ class Ui_MainWindow(object):
         self.scrollArea.setWidgetResizable(True)
         self.scrollArea.setObjectName(_fromUtf8("scrollArea"))
         self.scrollAreaWidgetContents = QtGui.QWidget()
-        self.scrollAreaWidgetContents.setGeometry(QtCore.QRect(0, 0, 292, 147))
+        self.scrollAreaWidgetContents.setGeometry(QtCore.QRect(0, 0, 292, 118))
         self.scrollAreaWidgetContents.setObjectName(_fromUtf8("scrollAreaWidgetContents"))
         self.verticalLayout_2 = QtGui.QVBoxLayout(self.scrollAreaWidgetContents)
         self.verticalLayout_2.setObjectName(_fromUtf8("verticalLayout_2"))
@@ -252,6 +256,7 @@ class Ui_MainWindow(object):
         MainWindow.setWindowTitle(QtGui.QApplication.translate("MainWindow", "MainWindow", None, QtGui.QApplication.UnicodeUTF8))
         self.groupBox.setTitle(QtGui.QApplication.translate("MainWindow", "Layup Items", None, QtGui.QApplication.UnicodeUTF8))
         self.addText.setText(QtGui.QApplication.translate("MainWindow", "Add Text", None, QtGui.QApplication.UnicodeUTF8))
+        self.addBarcode.setText(QtGui.QApplication.translate("MainWindow", "Add Barcode", None, QtGui.QApplication.UnicodeUTF8))
         self.groupBox_2.setTitle(QtGui.QApplication.translate("MainWindow", "Misc", None, QtGui.QApplication.UnicodeUTF8))
         self.alignTop.setText(QtGui.QApplication.translate("MainWindow", "Align Top Edges", None, QtGui.QApplication.UnicodeUTF8))
         self.alignLeft.setText(QtGui.QApplication.translate("MainWindow", "Align Left Edges", None, QtGui.QApplication.UnicodeUTF8))

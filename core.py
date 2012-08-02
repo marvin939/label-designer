@@ -2,6 +2,8 @@ import LabelDesigner
 import sys, os, csv
 import xlrd
 import re
+from labelertextitem import LabelerTextItem
+from labelerbarcodeitem import LabelerBarcodeItem
 from PyQt4 import QtCore, QtGui
 try:
     _fromUtf8 = QtCore.QString.fromUtf8
@@ -20,247 +22,7 @@ propertyTypes = {'string':(QtGui.QLineEdit, QtCore.SIGNAL('textChanged(QString)'
                  'boolean':(QtGui.QCheckBox, QtCore.SIGNAL('toggled(bool)')),
                  'font':(QtGui.QFontComboBox, QtCore.SIGNAL('currentFontChanged(QFont)'))}
 
-class PDFThread(QtCore.QThread):
-    pdfprogress = QtCore.SIGNAL('pdfprogress()')
-    mergerow = QtCore.SIGNAL('mergerow(PyQt_PyObject)')
-    render = QtCore.SIGNAL('render()')
-    def __init__(self, app, *args, **kwargs):
-        super(PDFThread, self).__init__(*args, **kwargs)
-        self.app = app
-        
-        
-    def run(self, *args, **kwargs):
-        super(PDFThread, self).__init__(*args, **kwargs)
-        
-        first = True
-        for row in self.app.dataSet:
-            if first:
-                first = False
-            else:
-                self.app.pdfprinter.newPage()
-            #self.app.merge_row(row)
-            self.emit(self.mergerow, row)
-            
-            #self.app.labelView.scene().render(self.app.scenepainter)
-            self.emit(self.render)
-            self.emit(self.pdfprogress)
-        
-        return
-        
-        
- 
-class LabelerTextItem(QtGui.QGraphicsTextItem):
-    def __init__(self, *args, **kwargs):
-        self.editing = False
-        super(LabelerTextItem, self).__init__(*args, **kwargs)
-        self.setFlags(self.ItemIsSelectable|self.ItemIsMovable|self.ItemIsFocusable|self.ItemSendsGeometryChanges)
-        self.setAcceptHoverEvents(True)
-        self.dpi = MainApp.dpi
-        self.dpmm = MainApp.dpmm
-        self.lineSpacing = 1.2
-        self.merging = False
-        self.mergeText = self.toPlainText()
-        
-        font = QtGui.QFont("Arial")
-        font.setPointSize(9)
-        self.setFont(font)
-        self.properties = {'Value':('text','', self.text_changed), 
-                           'Skip Blanks':('boolean', False, None),
-                           'Font Size':('float', 9.0, self.set_font_size),
-                           'Font':('font', (self.font().family(),self.font().styleName(), self.font().pointSizeF()), self.set_font_family),
-                           'Font Bold':('boolean', self.font().bold(), self.set_font_bold),
-                           'Font Italic':('boolean', self.font().italic(), self.set_font_italic),
-                           'X Coord':('float', self.scenePos().x(), self.setX),
-                           'Y Coord':('float', self.scenePos().y(), self.setY)}
-        self.propOrder = ['Value', 'Skip Blanks', 'Font', 'Font Size', 'Font Bold', 'Font Italic', 'X Coord', 'Y Coord']
-        self.propWidgets = {}
-        self.skipBlanks = False
-        self.create_property_widgets()
-        
-        self.headerRE = re.compile('<<.*?>>')
-        
-        self.set_pos_by_mm(5,4)
-        
-    def start_edit(self):
-        self.editing = True
-        self.scene().clearSelection()
-        self.setTextInteractionFlags(QtCore.Qt.TextEditorInteraction)
-        self.setFocus(True)
-        self.setSelected(True)
-        
-    def end_edit(self):
-        self.editing = False
-        self.setTextInteractionFlags(QtCore.Qt.NoTextInteraction)
-        cursor = self.textCursor()
-        cursor.clearSelection()
-        self.setTextCursor(cursor)
-        
-    def start_merge(self):
-        self.mergeText = self.toPlainText()
-        self.merging = True
-        
-        
-    def end_merge(self):
-        self.setPlainText(self.mergeText)
-        self.merging = False
-        
-    def merge_row(self, row):
-        text = str(self.mergeText)
-        matches = self.headerRE.findall(text)
-        matches = set(matches)
-        for i in matches:
-            field = i.replace("<<", "").replace(">>","")
-            text = text.replace(i, row[field])
-        
-        
-        finalText = ""
-        if self.propWidgets['Skip Blanks'].isChecked():
-            for line in text.split("\n"):
-                if line.strip() <> "":
-                    finalText += line +"\n"
-            finalText = finalText.rstrip("\n")
-        else:
-            finalText = text
-            
-        self.setPlainText(finalText)
-            
-        
-        
-    def text_changed(self):
-        string = self.propWidgets['Value'].toPlainText()
-        if string <> self.toPlainText():
-            self.setPlainText(string)
-            
-    def set_font_size(self, size):
-        font = self.font()
-        font.setPointSizeF(size)
-        self.setFont(font)
-        
-    def set_font_family(self, newFont):
-        font = self.font()
-        font.setFamily(newFont.family())
-        self.setFont(font)
-        
-    def set_font_bold(self, toggle):
-        font = self.font()
-        font.setBold(toggle)
-        self.setFont(font)
-        
-    def set_font_italic(self, toggle):
-        font = self.font()
-        font.setItalic(toggle)
-        self.setFont(font)
-        
-            
-    def create_property_widgets(self):
-        for field in self.propOrder:
-            propertyType, value, slot = self.properties[field]
-            widget, signal = propertyTypes[propertyType]
-            if propertyType == 'boolean':
-                editor = widget()
-                editor.setCheckState(value)
-            elif propertyType == 'float' or propertyType == 'integer':
-                editor = widget()
-                editor.setValue(value)
-                editor.setMinimum(-1000)
-                editor.setMaximum(1000)
-            elif propertyType == 'font':
-                editor = widget()
-                editor.setCurrentFont(fontDB.font(*value))
-            else:
-                editor = widget(value)
-            editor.setVisible(False)
-            if slot <> None:
-                editor.connect(editor, signal, slot)
-            self.propWidgets[field] = editor
-        
-    def get_pos_mm(self):
-        """ returns position in millimeters """
-        return self.pos().x() / self.dpmm[0], self.pos().y() / self.dpmm[1]
-    
-    def set_pos_by_mm(self, x, y):
-        """ sets position in mm """
-        self.setPos(x*self.dpmm[0], y*self.dpmm[1])
-        
-    def get_pos_for_pdf(self):
-        """ same as get pos by mm? """
-        #y = self.y() + self.boundingRect().height()
-        return self.x()/self.dpmm[0], (self.y()/self.dpmm[1]) 
-        
-    #def mouseDoubleClickEvent(self, event):
-    #    """ Overrided to make text editable after being double clicked TODO make sure cursor is showing """
-    #    self.start_edit()
-    
-    def mousePressEvent(self, event):
-        if self.isSelected():
-            if event.modifiers() == QtCore.Qt.ControlModifier:
-                self.end_edit()
-            else:
-                self.start_edit()
-            
-        super(LabelerTextItem, self).mousePressEvent(event)
-        
-    def keyReleaseEvent(self, event):
-        super(LabelerTextItem, self).keyReleaseEvent(event)
-        if event.key() == QtCore.Qt.Key_Control:
-                self.setCursor(QtCore.Qt.ArrowCursor)
-        self.propWidgets['Value'].setPlainText(self.toPlainText())
-        
-#    def hoverLeaveEvent(self, event):
-#        self.setCursor(QtCore.Qt.ArrowCursor)
-#        super(LabelerTextItem, self).hoverLeaveEvent(event)
-#        
-    def hoverEnterEvent(self, event):
-        if event.modifiers() == QtCore.Qt.ControlModifier:
-            self.setCursor(QtCore.Qt.SizeAllCursor)
-        else:
-            self.setCursor(QtCore.Qt.ArrowCursor)
-#            
-#    def hoverMoveEvent(self, event):
-#        if event.modifiers() == QtCore.Qt.ControlModifier:
-#            self.setCursor(QtCore.Qt.SizeAllCursor)
-#        else:
-#            self.setCursor(QtCore.Qt.ArrowCursor)
-        
-    def keyPressEvent(self, event):
-        if event.key() == QtCore.Qt.Key_Control:
-            self.setCursor(QtCore.Qt.SizeAllCursor)
-            self.update()
-        
-        if event.key() in (QtCore.Qt.Key_Return, QtCore.Qt.Key_Enter):
-            if event.modifiers() in (QtCore.Qt.NoModifier, QtCore.Qt.KeypadModifier):
-                self.end_edit()
-            elif event.modifiers() in (QtCore.Qt.ControlModifier, QtCore.Qt.ControlModifier|QtCore.Qt.KeypadModifier):
-                self.textCursor().insertText("\n")
-        else:
-            super(LabelerTextItem, self).keyPressEvent(event)
-        
-    def setFont(self, *args, **kwargs):
-        """ Overrided to add calc for leading/line spacing """
-        super(LabelerTextItem, self).setFont(*args, **kwargs)
-        self.leading = self.font().pointSize()*self.lineSpacing
-        
-    def setPlainText(self, text):
-        super(LabelerTextItem, self).setPlainText(text)
-        string = self.toPlainText()
-        if not self.merging:
-            if string <> self.propWidgets['Value'].toPlainText():
-                self.propWidgets['Value'].setPlainText(self.toPlainText())
-        
-        
-    def itemChange(self, change, value):
-        """ Overrided to stop editing after losing selection """
-        super(LabelerTextItem,self).itemChange(change, value)
-        if change == QtGui.QGraphicsItem.ItemSelectedChange:
-            if value == False:
-                self.end_edit()
-                self.clearFocus()
-        elif change == QtGui.QGraphicsItem.ItemPositionHasChanged:
-            self.propWidgets['X Coord'].setValue(self.x())
-            self.propWidgets['Y Coord'].setValue(self.y())
-        return value
-    
-    
+
 class Labeler(QtGui.QApplication):
     def __init__(self, *args, **kwargs):
         super(Labeler, self).__init__(*args, **kwargs)
@@ -305,6 +67,7 @@ class Labeler(QtGui.QApplication):
         #set up list of add item buttons
         self.addItemList = []
         self.addItemList.append((self.ui.addText, self.add_text))
+        self.addItemList.append((self.ui.addBarcode, self.add_barcode))
         self.labelView.set_add_item_list(self.addItemList)
         
         
@@ -460,8 +223,14 @@ class Labeler(QtGui.QApplication):
                 for cell in row:
                     if cell.ctype == 3:
                         newrow.append(xlrd.xldate_as_tuple(cell.value, xlfile.datemode))
-                    elif cell.ctype == 2:
+                    elif cell.ctype == 4:
                         newrow.append("TRUE") if cell.value else newrow.append("FALSE")
+                    elif cell.ctype == 2:
+                        val = int(cell.value)
+                        if val == cell.value:
+                            newrow.append(str(int(cell.value)))
+                        else:
+                            newrow.append(str(cell.value))
                     else:
                         newrow.append(cell.value)
                 data.append(newrow)
@@ -470,7 +239,7 @@ class Labeler(QtGui.QApplication):
         
 
     def add_text(self, pos):#text, x, y):
-        """ add a text item at x, y """
+        """ add a text item at pos """
         obj = LabelerTextItem()
         
         self.labelView.scene().addItem(obj)
@@ -495,17 +264,24 @@ class Labeler(QtGui.QApplication):
         cursor.movePosition(QtGui.QTextCursor.Start)
         cursor.movePosition(QtGui.QTextCursor.End, QtGui.QTextCursor.KeepAnchor)
         obj.setTextCursor(cursor)
+        
+    def add_barcode(self, pos):
+        """ Add a barcode item """
+        obj = LabelerBarcodeItem()
+        self.labelView.scene().addItem(obj)
+        
+        obj.setPos(self.labelView.mapToScene(pos))
+        
+        item = QtGui.QTreeWidgetItem(self.itemList)
+        item.setText(0, "BarcodeObj1")
+        item.setData(1,0, obj)
+        self.itemListObjects[obj] = item
+        
+        
+        self.objectCollection.append(obj)
+        
     
     def start_merge(self):
-#        self.labelView.hide_bg()
-#        self.pdfprinter = QtGui.QPrinter()
-#        self.pdfprinter.setPaperSize(QtCore.QSizeF(45, 90), QtGui.QPrinter.Millimeter)
-#        self.pdfprinter.setOutputFileName("Testing.pdf")
-#        self.pdfprinter.setOrientation(QtGui.QPrinter.Landscape)
-#        self.pdfprinter.setFullPage(True)
-#        
-#        self.scenepainter = QtGui.QPainter()
-#        self.scenepainter.begin(self.pdfprinter)
         self.labelView.start_merge()
         for obj in self.objectCollection:
             obj.start_merge()
@@ -516,9 +292,6 @@ class Labeler(QtGui.QApplication):
         for obj in self.objectCollection:
             obj.end_merge()
             
-#        self.scenepainter.end()
-#        
-#        self.labelView.show_bg()
         
     def merge_row(self, row):
         for obj in self.objectCollection:
@@ -574,33 +347,10 @@ class Labeler(QtGui.QApplication):
         
     def create_pdf(self):
         """ Generates a pdf file based on data and layup """
-        ## test text objects for header names as well as unselect everything
-#        headersMatched = True
-#        errorMessage = ""
-#        for obj in self.objectCollection:
-#            # if obj is type text
-#            obj.setSelected(False)
-#            text = str(obj.toPlainText())
-#            matches = self.headerRE.findall(text)
-#            matches = set(matches)
-#            for i in matches:
-#                x = i.replace("<<", "").replace(">>","")
-#                if not x in self.headers:
-#                    errorMessage += "Error, could not find header %s, please check your spelling.\n" % i
-#                    headersMatched = False
-#        if not headersMatched:
-#            QtGui.QMessageBox.critical(self.MainWindow, "Error Header Not Found", errorMessage)
-#            return
-        
+
         
         self.start_merge()
-        
-        #self.pdfthread = PDFThread(self)
-        #self.connect(self.pdfthread, QtCore.SIGNAL('finished()'), self.end_merge)
-        #self.connect(self.pdfthread, QtCore.SIGNAL('pdfprogress()'), self.increment_progress_bar)
-        #self.connect(self.pdfthread, QtCore.SIGNAL('mergerow(PyQt_PyObject)'), self.merge_row)
-        #self.connect(self.pdfthread, QtCore.SIGNAL('render()'), self.render_pdf)
-        #self.pdfthread.start()
+
         
             
         ## test text objects for header names as well as unselect everything
@@ -609,7 +359,7 @@ class Labeler(QtGui.QApplication):
         for obj in self.objectCollection:
             # if obj is type text
             obj.setSelected(False)
-            text = str(obj.toPlainText())
+            text = str(obj.get_merge_text())
             matches = self.headerRE.findall(text)
             matches = set(matches)
             for i in matches:
