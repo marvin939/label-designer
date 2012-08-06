@@ -5,6 +5,13 @@ class LabelerTextItem(QtGui.QGraphicsTextItem, LabelerItemMixin):
     def __init__(self, *args, **kwargs):
         self.editing = False
         super(LabelerTextItem, self).__init__(*args, **kwargs)
+        self.fontScale = 1.0
+        self.currentFontSize = self.font().pointSizeF()
+        self.perfectFontSize = 16.0
+        self.lineSpacing = 1.2
+        font = QtGui.QFont("Verdana")
+        font.setPointSize(9)
+        self.setFont(font)
         properties = {'Value':('text','', self.text_changed), 
                            'Skip Blanks':('boolean', False, None),
                            'Font Size':('float', 9.0, self.set_font_size),
@@ -19,13 +26,11 @@ class LabelerTextItem(QtGui.QGraphicsTextItem, LabelerItemMixin):
         
         self.setFlags(self.ItemIsSelectable|self.ItemIsMovable|self.ItemIsFocusable|self.ItemSendsGeometryChanges)
         self.setAcceptHoverEvents(True)
-        self.lineSpacing = 1.2
+        
         self.merging = False
         self.mergeText = self.toPlainText()
         
-        font = QtGui.QFont("Arial")
-        font.setPointSize(9)
-        self.setFont(font)
+        
         
         self.skipBlanks = False
         
@@ -192,10 +197,26 @@ class LabelerTextItem(QtGui.QGraphicsTextItem, LabelerItemMixin):
         else:
             super(LabelerTextItem, self).keyPressEvent(event)
         
-    def setFont(self, *args, **kwargs):
+    def setFont(self, font):
         """ Overrided to add calc for leading/line spacing """
-        super(LabelerTextItem, self).setFont(*args, **kwargs)
+        size = font.pointSizeF()
+        if size < 14.0:
+            if self.fontScale <> 1.0:
+                old = 1.0 / self.fontScale
+                self.scale(old, old)
+            new = size / self.perfectFontSize
+            self.scale(new, new)
+            self.fontScale = new
+            font.setPointSizeF(16.0)
+        elif self.fontScale <> 1:
+            new = 1.0 / self.fontScale
+            self.scale(new, new)
+            self.fontScale = 1.0
+        
+        super(LabelerTextItem, self).setFont(font)
+            
         self.leading = self.font().pointSize()*self.lineSpacing
+        print self.sceneBoundingRect().height()
         
     def setPlainText(self, text):
         super(LabelerTextItem, self).setPlainText(text)

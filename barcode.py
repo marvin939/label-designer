@@ -34,7 +34,6 @@ def bar_I2of5(data):
     #x = 2.0
     
     width = math.ceil(((c * ((2*n) + 3)) + 6 + n ) * x)
-    print width
     
     height = 20.0
     
@@ -91,7 +90,6 @@ def _draw_i2of5_line(painter, digitcode, currentPos):
             
             painter.drawLine(start, end)
         newPos += size/2.0
-        print newPos, size, 'space' if space else 'bar'
         space = not space
     return newPos
     

@@ -51,6 +51,8 @@ class ZoomGraphicsView(QtGui.QGraphicsView):
         self.returnAddress.setPos(45*self.dpmm[0], 40*self.dpmm[1])
         self.scene().addItem(self.returnAddress)
         
+        
+        
         #bar = QtGui.QGraphicsPixmapItem(barcode.bar_I2of5('44454545'))
         #bar.scale(.2,1.0)
         #bar.setFlags(bar.ItemIsSelectable|bar.ItemIsMovable|bar.ItemIsFocusable)
