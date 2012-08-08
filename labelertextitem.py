@@ -216,7 +216,6 @@ class LabelerTextItem(QtGui.QGraphicsTextItem, LabelerItemMixin):
         super(LabelerTextItem, self).setFont(font)
             
         self.leading = self.font().pointSize()*self.lineSpacing
-        print self.sceneBoundingRect().height()
         
     def setPlainText(self, text):
         super(LabelerTextItem, self).setPlainText(text)

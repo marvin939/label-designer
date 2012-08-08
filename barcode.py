@@ -17,9 +17,9 @@ _i2of5 = {'0':'nnwwn',
 
 
 def bar_I2of5(data):
+    """ Returns a QPixmap containing the barcode """
     _dpi = (QtCore.QCoreApplication.instance().desktop().physicalDpiX(), QtCore.QCoreApplication.instance().desktop().physicalDpiY())
     _dpmm = (_dpi[0] / 25.4, _dpi[1] / 25.4)
-    """ Returns a QPixmap containing the barcode """
     datatext = str(data) 
     if not datatext.isdigit():
         raise TypeError("i2of5 can only contain digits 0-9")
