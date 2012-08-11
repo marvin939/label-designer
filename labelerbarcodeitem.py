@@ -7,16 +7,28 @@ class LabelerBarcodeItem(QtGui.QGraphicsPixmapItem, LabelerItemMixin):
         
         super(LabelerBarcodeItem, self).__init__( *args, **kwargs)
         
+        self.barcodeTypes = {'Code39':barcode.bar_3of9, 'Interlaced 2of5':barcode.bar_I2of5, 'Code128':barcode.bar_Code128}
+        self.barcodeOrder  = ['Code39', 'Interlaced 2of5', 'Code128']
+        self.currentBarcode = self.barcodeTypes[self.barcodeOrder[0]]
+        
         properties = {'Data':('text','', self.data_changed),
                            'X Coord':('float', self.scenePos().x(), self.setX),
-                           'Y Coord':('float', self.scenePos().y(), self.setY)}
-        propOrder = ['Data', 'X Coord', 'Y Coord']
+                           'Y Coord':('float', self.scenePos().y(), self.setY),
+                           'Barcode Type':('list', self.barcodeTypes.keys(), self.change_barcode_type)}
+        propOrder = ['Data', 'X Coord', 'Y Coord', 'Barcode Type']
         LabelerItemMixin.__init__(self, properties, propOrder)
         
         
         self.setFlags(self.ItemIsSelectable|self.ItemIsMovable|self.ItemIsFocusable)
         
+        #self.scale(0.2,1.0)
         self.scale(0.2,1.0)
+        
+        
+    def change_barcode_type(self, typeIndex):
+        barcode = str(self.propWidgets['Barcode Type'].currentText())
+        self.currentBarcode = self.barcodeTypes[barcode]
+        self.data_changed()
         
     def get_merge_text(self):
         if not self.merging:
@@ -27,7 +39,10 @@ class LabelerBarcodeItem(QtGui.QGraphicsPixmapItem, LabelerItemMixin):
         
     def data_changed(self):
         data = self.propWidgets['Data'].toPlainText()
-        self.setPixmap(barcode.bar_I2of5(data))
+        #self.setPixmap(barcode.bar_I2of5(data))
+        #self.setPixmap(barcode.bar_Code128(data))
+        #self.setPixmap(barcode.bar_3of9(data))
+        self.setPixmap(self.currentBarcode(data))
         
         
     def start_merge(self):

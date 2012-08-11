@@ -111,9 +111,12 @@ class ZoomGraphicsView(QtGui.QGraphicsView):
         if event.key() == QtCore.Qt.Key_Delete:
             dontDelete = False
             for i in self.scene().selectedItems():
-                if QtCore.Qt.TextEditorInteraction == i.textInteractionFlags():
-                    dontDelete = True
-                    break
+                try:
+                    if QtCore.Qt.TextEditorInteraction == i.textInteractionFlags():
+                        dontDelete = True
+                        break
+                except AttributeError:
+                    pass
             if not dontDelete:
                 for i in self.scene().selectedItems():
                     QtGui.QApplication.instance().remove_object(i)

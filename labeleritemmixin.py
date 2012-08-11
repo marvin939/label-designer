@@ -60,6 +60,9 @@ class LabelerItemMixin:
             elif propertyType == 'font':
                 editor = widget()
                 editor.setCurrentFont(self.fontDB.font(*value))
+            elif propertyType == 'list':
+                editor = widget()
+                editor.addItems(value)
             else:
                 editor = widget(value)
             editor.setVisible(False)

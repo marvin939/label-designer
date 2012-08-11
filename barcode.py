@@ -15,6 +15,96 @@ _i2of5 = {'0':'nnwwn',
           'end':'Wnn'}
 
 
+_3of9 = {'0':'NnNwWnWnN',
+         '1':'WnNwNnNnW',
+         '2':'NnWwNnNnW',
+         '3':'WnWwNnNnN',
+         '4':'NnNwWnNnW',
+         '5':'WnNwWnNnN',
+         '6':'NnWwWnNnN',
+         '7':'NnNwNnWnW',
+         '8':'WnNwNnWnN',
+         '9':'NnWwNnWnN',
+         'A':'WnNnNwNnW',
+         'B':'NnWnNwNnW',
+         'C':'WnWnNwNnN',
+         'D':'NnNnWwNnW',
+         'E':'WnNnWwNnN',
+         'F':'NnWnWwNnN',
+         'G':'NnNnNwWnW',
+         'H':'WnNnNwWnN',
+         'I':'NnWnNwWnN',
+         'J':'NnNnWwWnN',
+         'K':'WnNnNnNwW',
+         'L':'NnWnNnNwW',
+         'M':'WnWnNnNwN',
+         'N':'NnNnWnNwW',
+         'O':'WnNnWnNwN',
+         'P':'NnWnWnNwN',
+         'Q':'NnNnNnWwW',
+         'R':'WnNnNnWwN',
+         'S':'NnWnNnWwN',
+         'T':'NnNnWnWwN',
+         'U':'WwNnNnNnW',
+         'V':'NwWnNnNnW',
+         'W':'WwWnNnNnN',
+         'X':'NwNnWnNnW',
+         'Y':'WwNnWnNnN',
+         'Z':'NwWnWnNnN',
+         '-':'NwNnNnWnW',
+         '.':'WwNnNnWnN',
+         ' ':'NwWnNnWnN',
+         '$':'NwNwNwNnN',
+         '/':'NwNwNnNwN',
+         '+':'NwNnNwNwN',
+         '%':'NnNwNwNwN',
+         '*':'NwNnWnWnN'}
+
+_3of9check = {'0':0,
+              '1':1,
+              '2':2,
+              '3':3,
+              '4':4,
+              '5':5,
+              '6':6,
+              '7':7,
+              '8':8,
+              '9':9,
+              'A':10,
+              'B':11,
+              'C':12,
+              'D':13,
+              'E':14,
+              'F':15,
+              'G':16,
+              'H':17,
+              'I':18,
+              'J':19,
+              'K':20,
+              'L':21,
+              'M':22,
+              'N':23,
+              'O':24,
+              'P':25,
+              'Q':26,
+              'R':27,
+              'S':28,
+              'T':29,
+              'U':30,
+              'V':31,
+              'W':32,
+              'X':33,
+              'Y':34,
+              'Z':35,
+              '-':36,
+              '.':37,
+              ' ':38,
+              '$':39,
+              '/':40,
+              '+':41,
+              '%':42}
+
+
 _128CharSetA =  {
                 ' ':0, '!':1, '"':2, '#':3, '$':4, '%':5, '&':6, "'":7,
                 '(':8, ')':9, '*':10, '+':11, ',':12, '-':13, '.':14, '/':15,
@@ -115,14 +205,13 @@ def bar_Code128(data, checksum=False):
     
     #n = 2.4 # narrow to wide ratio
     c = len(datatext) # number of characters
-    x = 5.0 # bar size
-    
-    width = 
+    x = 2.0 # bar size
+  
     
     
     currentSet = ""
     # Look ahead 2 and check to see if they're digits, if so, use set C
-    if datatext[:2].isdigit():
+    if datatext[:2].isdigit() and len(datatext[:2]) == 2:
         code = "11010011100" # start with set C
         currentSet = "C"
     else:
@@ -141,7 +230,13 @@ def bar_Code128(data, checksum=False):
         if currentSet == "C":
             val = _128CharSetC[datatext[index:index+2]]
             index += 2
-            if not datatext[index:index+2].isdigit():
+            
+            if index == len(datatext):
+                completed = True
+            
+            elif datatext[index:index+2].isdigit() and len(datatext[index:index+2]) == 2:
+                currentSet = "C"
+            else:
                 if datatext[index] in _128CharSetB:
                     currentSet = "B"
                 else:
@@ -149,7 +244,10 @@ def bar_Code128(data, checksum=False):
         elif currentSet == "B":
             val = _128CharSetB[datatext[index]]
             index += 1
-            if datatext[index:index+2].isdigit():
+            if index == len(datatext):
+                completed = True
+            
+            elif datatext[index:index+2].isdigit() and len(datatext[index:index+2]) == 2:
                 currentSet = "C"
             else:
                 if datatext[index] in _128CharSetB:
@@ -159,7 +257,11 @@ def bar_Code128(data, checksum=False):
         elif currentSet == "A":
             val = _128CharSetA[datatext[index]]
             index += 1
-            if datatext[index:index+2].isdigit():
+            
+            if index == len(datatext):
+                completed = True
+            
+            elif datatext[index:index+2].isdigit() and len(datatext[index:index+2]) == 2:
                 currentSet = "C"
             else:
                 if datatext[index] in _128CharSetA:
@@ -167,14 +269,53 @@ def bar_Code128(data, checksum=False):
                 else:
                     currentSet = "B"
         code += _128ValueEncodings[val]
-        if index == len(datatext):
-            completed = True
             
         checksumTotal += weight*val
         weight += 1
             
     
     code += "1100011101011"
+    
+    
+    codeGroups = []
+    
+    last = None
+    for i in code:
+        if i == last:
+            codeGroups[-1].append(i)
+        else:
+            codeGroups.append([i])
+            last = i
+            
+    width = x * len(code)
+    
+    height = 10.0
+    
+    bitmap = QtGui.QPixmap(width, height)
+    
+    bitmap.fill()
+    
+    painter = QtGui.QPainter(bitmap)
+    painter.setBrush(QtCore.Qt.black)
+    currentPos = 0.0
+    
+    pen = painter.pen()
+    pen.setWidthF(x)
+    painter.setPen(pen)
+    
+    for group in codeGroups:
+        if group[0] == "1": # bar
+            for i in group:
+                currentPos += x/2.0
+                start = QtCore.QPointF(currentPos, 0.0)
+                end = QtCore.QPointF(currentPos, height)
+                painter.drawLine(start, end)
+                currentPos += x/2.0
+        else:
+            currentPos += len(group) * x
+            
+    return bitmap
+    
             
     
 
@@ -204,7 +345,7 @@ def bar_I2of5(data, checksum=False):
     elif len(datatext) % 2 == 1:
         datatext = '0' + datatext
     
-    n = 2.4 # narrow to wide ratio
+    n = 2.7 # narrow to wide ratio
     c = len(datatext) # number of characters
     x = 5.0 # small bar size
     
@@ -243,7 +384,7 @@ def _draw_i2of5_line(painter, digitcode, currentPos):
     """ Digitcode is the interlaced code (nnwnw...) """
     #_dpi = (QtCore.QCoreApplication.instance().desktop().physicalDpiX(), QtCore.QCoreApplication.instance().desktop().physicalDpiY())
     #_dpmm = (_dpi[0] / 25.4, _dpi[1] / 25.4)
-    n = 2.4
+    n = 2.7
     x = 5.0 #0.508 * _dpmm[0]
     #x = 2.0
     height = 20.0
@@ -267,5 +408,80 @@ def _draw_i2of5_line(painter, digitcode, currentPos):
         newPos += size/2.0
         space = not space
     return newPos
+
+def bar_3of9(data, checksum=False):
+    datatext = str(data)
+    n = 2.8
+    x = 5.0
+    c = len(datatext) + 2
+    if checksum:
+        c += 1
+    
+    if "*" in datatext:
+        raise ValueError("data cannot contain the * character")
+    
+    
+    codeList = []
+    
+    checksumValue = 0
+    datatext = "*%s*" % datatext
+    for char in datatext:
+        codeList.append(_3of9[char])
+        if char <> "*":
+            checksumValue += _3of9check[char]
+            
+    if checksum:
+        checksumValue = checksumValue % 43
+        for i, v in _3of9check.items():
+            if v == checksumValue:
+                checksumChar = i
+                break
+        codeList.insert(-1, _3of9[checksumChar])
+    
+    
+    
+    
+    height = 20.0
+    
+    width = c * ((n*3.0) + 6) * x + ((c - 1) * x)
+    
+    bitmap = QtGui.QPixmap(width, height)
+    
+    bitmap.fill()
+    
+    painter = QtGui.QPainter(bitmap)
+    painter.setBrush(QtCore.Qt.black)
+    currentPos = 0.0
+    for block in codeList:
+        for pos in range(len(block)):
+
+            if block[pos].lower() == 'w':
+                size = n * x
+            else:
+                size = x
+            if pos % 2 == 0:
+                currentPos += size/2.0
+                
+                start = QtCore.QPointF(currentPos, 0.0)
+                end = QtCore.QPointF(currentPos, height)
+                
+                pen = painter.pen()
+                pen.setWidthF(size)
+                painter.setPen(pen)
+                     
+                painter.drawLine(start, end)
+                     
+                currentPos += size/2.0
+            else:
+                currentPos += size
+        
+        currentPos += x
+    print currentPos-x, width
+            
+    return bitmap
+    
+    
+    
+    
     
     
