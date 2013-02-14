@@ -12,6 +12,9 @@ except AttributeError:
     
 DPMM = []
 
+
+## TODO next, print directly to label printer
+
 fontDB = QtGui.QFontDatabase()
 
 propertyTypes = {'string':(QtGui.QLineEdit, QtCore.SIGNAL('textChanged(QString)')),
@@ -94,17 +97,45 @@ class Labeler(QtGui.QApplication):
         self.connect(self.ui.returnCheck, QtCore.SIGNAL('toggled(bool)'), self.toggle_return_address)
         self.connect(self.ui.returnAddress, QtCore.SIGNAL('textChanged()'), self.return_address_changed)
         self.connect(self.ui.headerList, QtCore.SIGNAL('itemDoubleClicked(QListWidgetItem*)'), self.add_header_text)
-        
+        self.connect(self.ui.printerList, QtCore.SIGNAL('currentIndexChanged(QString)'), self.set_printer)
+        self.connect(self.ui.printButton, QtCore.SIGNAL('clicked()'), self.print_labels)        
         
         self.progressWindow = QtGui.QProgressDialog(self.MainWindow)
         self.progressWindow.setWindowTitle("PDF Generation Progress...")
         self.progressWindow.setMinimumWidth(300)
         
+        self.ui.dataInfo.setText("No data loaded.")
+        self.ui.permitCheck.setChecked(True)
+        self.ui.permitEntry.setText("478")
+        self.ui.returnCheck.setChecked(True)
+        self.ui.returnAddress.setText("If Undelivered, Return To: Private Bag 39996, Wellington Mail Centre, Lower Hutt  5045")
         
-        self.ui.zoomLevel.setValue(250.0)
+        
+        self.ui.zoomLevel.setValue(125.0)
+        
+        self.refresh_printer_list()
+        
+        
+        
         #self.labelView.zoom_to(200.0)
 
         self.MainWindow.show()
+        
+        
+    def refresh_printer_list(self):
+        self.ui.printerList.clear()
+        printers = QtGui.QPrinterInfo.availablePrinters()
+        printers.reverse()
+        for i in printers:
+            self.ui.printerList.addItem(i.printerName())
+        for i in printers:
+            name = i.printerName()
+            if "avery" in str(name).lower():
+                self.ui.printerList.setCurrentIndex(self.ui.printerList.findText(name))
+                break
+        
+    def set_printer(self, printerName):
+        self.currentPrinter = printerName
         
     def toggle_return_address(self, toggle):
         self.showReturn = toggle
@@ -196,6 +227,11 @@ class Labeler(QtGui.QApplication):
                 newrow[field] = row[col]
             self.dataSet.append(newrow)
             
+        if len(self.dataSet) == 0:
+            self.ui.dataInfo.setText("Dataset is empty.")
+        else:
+            self.ui.dataInfo.setText("The dataset contains %d row%s."%(len(self.dataSet),"s" if len(self.dataSet) > 1 else ""))
+            
         
     def add_header_text(self, item):
         itemSelection = self.labelView.scene().selectedItems()
@@ -285,7 +321,12 @@ class Labeler(QtGui.QApplication):
         self.labelView.start_merge()
         for obj in self.objectCollection:
             obj.start_merge()
-        self.start_progress_bar(1, len(self.dataSet))
+            
+        self.mergeDataSet = self.dataSet
+        
+        if self.ui.useSubset.checkState():
+            self.mergeDataSet = self.dataSet[int(self.ui.subsetBottom.value()) -1:int(self.ui.subsetTop.value())]
+        self.start_progress_bar(1, len(self.mergeDataSet))
         
     def end_merge(self):
         self.labelView.end_merge()
@@ -347,11 +388,13 @@ class Labeler(QtGui.QApplication):
         
     def create_pdf(self):
         """ Generates a pdf file based on data and layup """
-
+        self.make_labels()
         
-        self.start_merge()
-
+    def print_labels(self):
+        self.make_labels("PRINT")
         
+        
+    def make_labels(self, method="PDF"):
             
         ## test text objects for header names as well as unselect everything
         headersMatched = True
@@ -371,18 +414,29 @@ class Labeler(QtGui.QApplication):
             QtGui.QMessageBox.critical(self.MainWindow, "Error Header Not Found", errorMessage)
             return
         
-        self.labelView.hide_bg()
+        #self.start_merge()
+        #self.labelView.hide_bg()
         pp = QtGui.QPrinter()
-        pp.setPaperSize(QtCore.QSizeF(45, 90), QtGui.QPrinter.Millimeter)
-        pp.setOutputFileName("Testing.pdf")
-        pp.setOrientation(QtGui.QPrinter.Landscape)
+        
+        
+        if method == "PDF":
+            pp.setOutputFileName("Testing.pdf")
+            pp.setOrientation(pp.Landscape)
+            pp.setPaperSize(QtCore.QSizeF(45, 90), QtGui.QPrinter.Millimeter)
+        else:
+            pp.setPrinterName(self.currentPrinter)
+            pp.setOrientation(pp.Portrait)
+            pp.setPaperSize(QtCore.QSizeF(90, 180), QtGui.QPrinter.Millimeter)
+        #pp.setOrientation(QtGui.QPrinter.Landscape)
         pp.setFullPage(True)
         
         painter = QtGui.QPainter()
         painter.begin(pp)
+        
         self.start_merge()
         first = True
-        for row in self.dataSet:
+        
+        for row in self.mergeDataSet:
             if first:
                 first = False
             else:

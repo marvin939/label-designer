@@ -5,6 +5,14 @@ class ReturnText(QtGui.QGraphicsTextItem):
         super(ReturnText, self).__init__(*args, **kwargs)
         self.alignment_ = QtCore.Qt.AlignCenter
         
+        
+        font = self.font()
+        font.setPointSize(20)
+        
+        self.setFont(font)
+        self.setScale(.25)
+        
+        
         self.dpi  = QtCore.QCoreApplication.instance().dpi
         self.dpmm = QtCore.QCoreApplication.instance().dpmm
         self.init()
@@ -13,18 +21,23 @@ class ReturnText(QtGui.QGraphicsTextItem):
         self.updateGeometry()
         self.connect(self.document(), QtCore.SIGNAL('contentsChange(int, int, int)'), self.updateGeometry)
         
+    #def setScale(self, scale):
+    #    super(ReturnText, self).setScale(scale)
+    #    self.dpi = (self.dpi[0]*scale, self.dpi[1]*scale)
+    #    self.dpmm = (self.dpmm[0]*scale, self.dpmm[1]*scale)
+        
     def updateGeometry(self, x=None, y=None, z=None):
-        heightPrev = self.boundingRect().height()
-        widthPrev = self.boundingRect().width()
+        heightPrev = self.boundingRect().height() * self.scale()
+        widthPrev = self.boundingRect().width() * self.scale()
         topRightPrev = self.boundingRect().topRight()
         self.setTextWidth(-1)
         self.setTextWidth(self.boundingRect().width())
         self.setAlignment(self.alignment_)
         topRight = self.boundingRect().topRight()
-        if self.boundingRect().width() > self.dpmm[0]*90:
-            self.setTextWidth(self.dpmm[0]*90)
-        width = self.boundingRect().width()
-        height = self.boundingRect().height()
+        if self.boundingRect().width() > self.dpmm[0] * 90 * (1.0/self.scale()):
+            self.setTextWidth(self.dpmm[0] * 90 * (1.0/self.scale))
+        width = self.boundingRect().width() * self.scale()
+        height = self.boundingRect().height() * self.scale()
         
         
         if self.alignment_ == QtCore.Qt.AlignRight:

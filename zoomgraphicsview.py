@@ -1,5 +1,6 @@
 from PyQt4 import QtCore, QtGui
 from returntext import ReturnText
+from labelertextitem import LabelerTextItem
 
 import barcode
 
@@ -29,13 +30,18 @@ class ZoomGraphicsView(QtGui.QGraphicsView):
         self.permitImage = self.scene().addPixmap(pix)
         self.permitImage.setTransformationMode(QtCore.Qt.SmoothTransformation)
         self.permitImage.scale((self.dpmm[0]*43)/self.permitImage.boundingRect().width(), (self.dpmm[1]*10)/self.permitImage.boundingRect().height())
-        self.permitImage.setPos(self.dpmm[0]*46, self.dpmm[1] * 1)
+        self.permitImage.setPos(self.dpmm[0]*46, self.dpmm[1] * 3)
         self.permitText = self.scene().addText("")
+        #self.permitText = LabelerTextItem()
+        #self.scene().addItem(self.permitText)
         font = QtGui.QFont("Arial Narrow")
-        font.setPointSize(8)
+        font.setPointSize(16)
+        #font.setLetterSpacing(font.AbsoluteSpacing,1.0)
+        print font.letterSpacing()
         self.permitText.setFont(font)
-        self.permitText.setTextWidth(self.dpmm[0]*24)
-        self.permitText.setPos(self.dpmm[0]*46.2, self.dpmm[1]*0.9)
+        self.permitText.setScale(.5)
+        self.permitText.setTextWidth(self.dpmm[0]*48)
+        self.permitText.setPos(self.dpmm[0]*46.2, self.dpmm[1]*4)
         self.zoomUpdate = QtCore.SIGNAL("zoomUpdated(PyQt_PyObject)")
         
         self.permitImage.setSelected(True)
@@ -45,12 +51,10 @@ class ZoomGraphicsView(QtGui.QGraphicsView):
         self.addItemList = None
         
         self.returnAddress = ReturnText()
-        font = self.returnAddress.font()
-        font.setPointSize(5)
-        self.returnAddress.setFont(font)
-        self.returnAddress.setPos(45*self.dpmm[0], 40*self.dpmm[1])
-        self.scene().addItem(self.returnAddress)
+        self.returnAddress.setPos(45*self.dpmm[0], 42*self.dpmm[1])
         
+        self.scene().addItem(self.returnAddress)
+        print self.returnAddress.pos().x(), self.returnAddress.pos().y(), self.returnAddress.textWidth()
         
         
         #bar = QtGui.QGraphicsPixmapItem(barcode.bar_I2of5('44454545'))
