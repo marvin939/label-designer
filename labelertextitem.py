@@ -5,13 +5,16 @@ class LabelerTextItem(QtGui.QGraphicsTextItem, LabelerItemMixin):
     def __init__(self, *args, **kwargs):
         self.editing = False
         super(LabelerTextItem, self).__init__(*args, **kwargs)
-        self.fontScale = 1.0
-        self.currentFontSize = self.font().pointSizeF()
-        self.perfectFontSize = 16.0
+        
         self.lineSpacing = 1.2
-        font = QtGui.QFont("Verdana")
-        font.setPointSize(9)
+        self.currentFontSize = 9.0
+        self.perfectFontSize = 16.0
+        self.fontScale = 1.0
+        font = self.font()
+        font.setFamily("Arial")
+        font.setPointSizeF(9.0)
         self.setFont(font)
+        
         properties = {'Value':('text','', self.text_changed), 
                            'Skip Blanks':('boolean', False, None),
                            'Font Size':('float', 9.0, self.set_font_size),
@@ -22,6 +25,7 @@ class LabelerTextItem(QtGui.QGraphicsTextItem, LabelerItemMixin):
                            'Y Coord':('float', self.scenePos().y(), self.setY)}
         propOrder = ['Value', 'Skip Blanks', 'Font', 'Font Size', 'Font Bold', 'Font Italic', 'X Coord', 'Y Coord']
         LabelerItemMixin.__init__(self, properties, propOrder)
+        
         
         
         self.setFlags(self.ItemIsSelectable|self.ItemIsMovable|self.ItemIsFocusable|self.ItemSendsGeometryChanges)
@@ -94,8 +98,9 @@ class LabelerTextItem(QtGui.QGraphicsTextItem, LabelerItemMixin):
             self.setPlainText(string)
             
     def set_font_size(self, size):
+        self.currentFontSize = size
         font = self.font()
-        font.setPointSizeF(size)
+        #font.setPointSizeF(size)
         self.setFont(font)
         
     def set_font_family(self, newFont):
@@ -198,9 +203,10 @@ class LabelerTextItem(QtGui.QGraphicsTextItem, LabelerItemMixin):
             super(LabelerTextItem, self).keyPressEvent(event)
         
     def setFont(self, font):
-        """ Overrided to add calc for leading/line spacing """
-        size = font.pointSizeF()
-        if size < 14.0:
+        """ Overrided to add calc for leading/line spacing, and to correct QT bug with letter spacing under 16pt """
+        #size = font.pointSizeF()
+        size = self.currentFontSize
+        if size < 16.0:
             if self.fontScale <> 1.0:
                 old = 1.0 / self.fontScale
                 self.scale(old, old)
@@ -212,6 +218,8 @@ class LabelerTextItem(QtGui.QGraphicsTextItem, LabelerItemMixin):
             new = 1.0 / self.fontScale
             self.scale(new, new)
             self.fontScale = 1.0
+        if size >= 16.0:
+            font.setPointSizeF(self.currentFontSize)
         
         super(LabelerTextItem, self).setFont(font)
             

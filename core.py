@@ -2,6 +2,7 @@ import LabelDesigner
 import sys, os, csv
 import xlrd
 import re
+import random
 from labelertextitem import LabelerTextItem
 from labelerbarcodeitem import LabelerBarcodeItem
 from PyQt4 import QtCore, QtGui
@@ -12,6 +13,7 @@ except AttributeError:
     
 DPMM = []
 
+random.seed()
 
 ## TODO next, print directly to label printer
 
@@ -32,6 +34,7 @@ class Labeler(QtGui.QApplication):
         self.objectCollection = []
         self.ui = LabelDesigner.Ui_MainWindow()
         self.MainWindow = QtGui.QMainWindow()
+        
         self.itemListObjects = {}
         self.dataSet = []
         self.currentDirectory = os.getcwd()
@@ -57,7 +60,9 @@ class Labeler(QtGui.QApplication):
         
         
        
-        
+        self.statusBar = self.MainWindow.statusBar()
+        self.dataSetCount = QtGui.QLabel(self.MainWindow)
+        self.statusBar.addPermanentWidget(self.dataSetCount)
         
         self.header_check(self.ui.headersCheck.isChecked())
         
@@ -96,15 +101,19 @@ class Labeler(QtGui.QApplication):
         self.connect(self.ui.permitEntry, QtCore.SIGNAL('textChanged(QString)'), self.permit_number_changed)
         self.connect(self.ui.returnCheck, QtCore.SIGNAL('toggled(bool)'), self.toggle_return_address)
         self.connect(self.ui.returnAddress, QtCore.SIGNAL('textChanged()'), self.return_address_changed)
-        self.connect(self.ui.headerList, QtCore.SIGNAL('itemDoubleClicked(QListWidgetItem*)'), self.add_header_text)
+        self.connect(self.ui.headerList, QtCore.SIGNAL('itemDoubleClicked(QTableWidgetItem*)'), self.add_header_text)
         self.connect(self.ui.printerList, QtCore.SIGNAL('currentIndexChanged(QString)'), self.set_printer)
         self.connect(self.ui.printButton, QtCore.SIGNAL('clicked()'), self.print_labels)        
+        self.connect(self.ui.subsetBottom, QtCore.SIGNAL('valueChanged(int)'), self.update_subset_bottom)
+        self.connect(self.ui.subsetTop, QtCore.SIGNAL('valueChanged(int)'), self.update_subset_top)
+        self.connect(self.ui.previewRecord, QtCore.SIGNAL('valueChanged(int)'), self.update_preview_record)
         
         self.progressWindow = QtGui.QProgressDialog(self.MainWindow)
         self.progressWindow.setWindowTitle("PDF Generation Progress...")
         self.progressWindow.setMinimumWidth(300)
+        self.connect(self.progressWindow, QtCore.SIGNAL('canceled()'), self.cancel_label)
         
-        self.ui.dataInfo.setText("No data loaded.")
+        self.dataSetCount.setText("No data loaded.")
         self.ui.permitCheck.setChecked(True)
         self.ui.permitEntry.setText("478")
         self.ui.returnCheck.setChecked(True)
@@ -112,9 +121,12 @@ class Labeler(QtGui.QApplication):
         
         
         self.ui.zoomLevel.setValue(125.0)
+        self.ui.headersCheck.setChecked(True)
+        
+        
         
         self.refresh_printer_list()
-        
+       
         
         
         #self.labelView.zoom_to(200.0)
@@ -122,10 +134,35 @@ class Labeler(QtGui.QApplication):
         self.MainWindow.show()
         
         
+    def cancel_label(self):
+        self.labelInProgress = False
+        
+    def update_preview_record(self, val):
+        self.ui.headerList.setUpdatesEnabled(False)
+        row = 0
+        for i in self.headers:
+            item = QtGui.QTableWidgetItem(self.dataSet[val-1][i])
+            self.ui.headerList.setItem(row, 1, item)
+            row += 1
+        self.ui.headerList.setUpdatesEnabled(True)
+            
+        
+        
+    def update_subset_bottom(self, val):
+        if self.ui.subsetTop.value() < val:
+            self.ui.subsetTop.setValue(val)
+        
+    
+    def update_subset_top(self, val):
+        if self.ui.subsetBottom.value() > val:
+            self.ui.subsetBottom.setValue(val)
+
+        
     def refresh_printer_list(self):
+        """ Refreshes the list of printers, setting it to default on the first printer with "Avery" in its name, if any """
         self.ui.printerList.clear()
         printers = QtGui.QPrinterInfo.availablePrinters()
-        printers.reverse()
+        printers.sort(key=lambda x: str(x.printerName()))
         for i in printers:
             self.ui.printerList.addItem(i.printerName())
         for i in printers:
@@ -151,7 +188,7 @@ class Labeler(QtGui.QApplication):
     def toggle_permit(self, toggle):
         """ Called to toggle the on/off status of the permit label """
         self.showPermit = toggle
-        self.ui.permitPosition.setEnabled(toggle)
+        #self.ui.permitPosition.setEnabled(toggle)
         self.ui.permitEntry.setEnabled(toggle)
         self.labelView.toggle_permit(toggle)
         
@@ -205,22 +242,47 @@ class Labeler(QtGui.QApplication):
     def setup_data(self):
         """ Takes the raw data and arranges it into a dict, based on whether or not it has headers """
         self.dataSet = []
+        
         offset = 0
         if self.hasHeaders:
             offset = 1
-            self.headers = self.rawData[0]
+            self.headers = []
+            for i in self.rawData[0]:
+                if i not in self.headers or i.strip() == "":
+                    self.headers.append(i)
+                else:
+                    added = False
+                    count = 1
+                    while not added:
+                        field = i + " (%d)" % count
+                        if field not in self.headers:
+                            self.headers.append(field)
+                            added = True
+                        count += 1
         else:
             self.headers = [""] * len(self.rawData[0])
             
         emptyFieldCount = 0
         headEnum = []
+        
+        self.ui.headerList.setUpdatesEnabled(False)
         self.ui.headerList.clear()
+        self.ui.headerList.setRowCount(len(self.headers))
+        self.ui.headerList.setColumnCount(2)
+        self.ui.headerList.setHorizontalHeaderLabels(["Header", "Record"])
+        
+        row = 0
+        
         for i in range(len(self.headers)):
+            self.ui.headerList.verticalHeader().resizeSection(row, 15)
             if self.headers[i].strip() == "":
                 emptyFieldCount += 1
                 self.headers[i] = "Field%d" % emptyFieldCount
             headEnum.append((i,self.headers[i]))
-            self.ui.headerList.addItem(self.headers[i])
+            item = QtGui.QTableWidgetItem(self.headers[i])
+            self.ui.headerList.setItem(row, 0, item)
+            row += 1
+            
         for row in self.rawData[offset:]:
             newrow = {}
             for col, field in headEnum:
@@ -228,9 +290,36 @@ class Labeler(QtGui.QApplication):
             self.dataSet.append(newrow)
             
         if len(self.dataSet) == 0:
-            self.ui.dataInfo.setText("Dataset is empty.")
+            self.dataSetCount.setText("Dataset is empty.")
+            self.ui.subsetBottom.setMinimum(0)
+            self.ui.subsetBottom.setMaximum(0)
+            self.ui.subsetTop.setMinimum(0)
+            self.ui.subsetTop.setMaximum(0)
+            self.ui.previewRecord.setMinimum(0)
+            self.ui.previewRecord.setMaximum(0)
+            self.ui.copyField.clear()
         else:
-            self.ui.dataInfo.setText("The dataset contains %d row%s."%(len(self.dataSet),"s" if len(self.dataSet) > 1 else ""))
+            self.dataSetCount.setText("The dataset contains %d record%s."%(len(self.dataSet),"s" if len(self.dataSet) > 1 else ""))
+            self.ui.subsetBottom.setMinimum(1)
+            self.ui.subsetBottom.setMaximum(len(self.dataSet))
+            self.ui.subsetTop.setMinimum(1)
+            self.ui.subsetTop.setMaximum(len(self.dataSet))
+            
+            self.ui.previewRecord.setMinimum(1)
+            self.ui.previewRecord.setMaximum(len(self.dataSet))
+            
+            row = 0
+            self.ui.copyField.setUpdatesEnabled(False)
+            self.ui.copyField.clear()
+            for i in self.headers:
+                record = str(self.dataSet[self.ui.previewRecord.value()-1][i])
+                item = QtGui.QTableWidgetItem(record)
+                self.ui.headerList.setItem(row, 1, item)
+                self.ui.copyField.addItem(i)
+                row += 1
+            self.ui.copyField.setUpdatesEnabled(True)
+        
+        self.ui.headerList.setUpdatesEnabled(True)
             
         
     def add_header_text(self, item):
@@ -326,6 +415,13 @@ class Labeler(QtGui.QApplication):
         
         if self.ui.useSubset.checkState():
             self.mergeDataSet = self.dataSet[int(self.ui.subsetBottom.value()) -1:int(self.ui.subsetTop.value())]
+            
+        if self.ui.genSamples.checkState():
+            self.mergeDataSet = random.sample(self.mergeDataSet, int(self.ui.sampleCount.value()))
+            
+        if self.mergeDataSet == []:
+            self.mergeDataSet = [[]]
+        
         self.start_progress_bar(1, len(self.mergeDataSet))
         
     def end_merge(self):
@@ -395,6 +491,7 @@ class Labeler(QtGui.QApplication):
         
         
     def make_labels(self, method="PDF"):
+        """ Starts making labels, if method is set to "PRINT", it will also print to the selected printer """
             
         ## test text objects for header names as well as unselect everything
         headersMatched = True
@@ -416,36 +513,66 @@ class Labeler(QtGui.QApplication):
         
         #self.start_merge()
         #self.labelView.hide_bg()
-        pp = QtGui.QPrinter()
         
         
-        if method == "PDF":
-            pp.setOutputFileName("Testing.pdf")
-            pp.setOrientation(pp.Landscape)
-            pp.setPaperSize(QtCore.QSizeF(45, 90), QtGui.QPrinter.Millimeter)
-        else:
-            pp.setPrinterName(self.currentPrinter)
-            pp.setOrientation(pp.Portrait)
-            pp.setPaperSize(QtCore.QSizeF(90, 180), QtGui.QPrinter.Millimeter)
-        #pp.setOrientation(QtGui.QPrinter.Landscape)
-        pp.setFullPage(True)
         
-        painter = QtGui.QPainter()
-        painter.begin(pp)
+        
+        
+        #if method == "PDF":
+        #    pdfPrint.setOutputFileName("Testing.pdf")
+        #    pdfPrint.setOrientation(pp.Landscape)
+        #    pdfPrint.setPaperSize(QtCore.QSizeF(45, 90), QtGui.QPrinter.Millimeter)
+        #else:
+        printer = None
+        if method == "PRINT":
+            printer = QtGui.QPrinter()
+            printer.setPrinterName(self.currentPrinter)
+            printer.setOrientation(printer.Portrait)
+            printer.setPaperSize(QtCore.QSizeF(90, 180), QtGui.QPrinter.Millimeter)
+            printer.setFullPage(True)
+            
+            painter = QtGui.QPainter()
+            painter.begin(printer)
+
+        pdfPrint = QtGui.QPrinter()
+        pdfPrint.setOutputFileName("Testing.pdf")
+        pdfPrint.setOrientation(pdfPrint.Landscape)
+        pdfPrint.setPaperSize(QtCore.QSizeF(45, 90), QtGui.QPrinter.Millimeter)
+        pdfPrint.setFullPage(True)
+        pdfPainter = QtGui.QPainter()
+        pdfPainter.begin(pdfPrint)
         
         self.start_merge()
         first = True
-        
+        self.labelInProgress = True
         for row in self.mergeDataSet:
-            if first:
-                first = False
-            else:
-                pp.newPage()
+            
             self.merge_row(row)
-            self.labelView.scene().render(painter)
+            
+            copies = self.ui.copyCount.value()
+            if self.ui.copyUseField.isChecked():
+                copies = int(row[str(self.ui.copyField.currentText())])
+            
+            for i in range(copies):
+                if first:
+                    first = False
+                else:
+                    if printer <> None:
+                        printer.newPage()
+                    pdfPrint.newPage()
+            
+                if printer <> None:
+                    self.labelView.scene().render(painter)
+                
+                self.labelView.scene().render(pdfPainter)
             self.increment_progress_bar()
+            if not self.labelInProgress:
+                break
+            
         self.end_merge()
-        painter.end()
+        if printer <> None:
+            painter.end()
+        pdfPainter.end()
         
         self.labelView.show_bg()
 

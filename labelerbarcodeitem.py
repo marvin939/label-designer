@@ -63,6 +63,4 @@ class LabelerBarcodeItem(QtGui.QGraphicsPixmapItem, LabelerItemMixin):
             field = i.replace("<<", "").replace(">>","")
             text = text.replace(i, row[field])
         
-        print row[field]
-        print text, "merged"
         self.propWidgets['Data'].setPlainText(text)

@@ -25,6 +25,7 @@ class LabelerItemMixin:
         self.propWidgets = {}
         
         self.create_property_widgets()
+        self.merging = False
         
         
         self.dpi = QtCore.QCoreApplication.instance().dpi

@@ -13,6 +13,12 @@
   <property name="windowTitle">
    <string>MainWindow</string>
   </property>
+  <property name="tabShape">
+   <enum>QTabWidget::Rounded</enum>
+  </property>
+  <property name="unifiedTitleAndToolBarOnMac">
+   <bool>false</bool>
+  </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QVBoxLayout" name="verticalLayout_4">
     <property name="topMargin">
@@ -32,7 +38,7 @@
       <property name="frameShadow">
        <enum>QFrame::Raised</enum>
       </property>
-      <layout class="QHBoxLayout" name="horizontalLayout_4" stretch="1,1">
+      <layout class="QHBoxLayout" name="horizontalLayout_4" stretch="1">
        <property name="spacing">
         <number>0</number>
        </property>
@@ -42,7 +48,7 @@
        <item>
         <widget class="QGroupBox" name="groupBox">
          <property name="sizePolicy">
-          <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+          <sizepolicy hsizetype="Preferred" vsizetype="Minimum">
            <horstretch>0</horstretch>
            <verstretch>0</verstretch>
           </sizepolicy>
@@ -63,19 +69,6 @@
           <string>Layup Items</string>
          </property>
          <layout class="QGridLayout" name="gridLayout_2">
-          <item row="3" column="0">
-           <spacer name="verticalSpacer">
-            <property name="orientation">
-             <enum>Qt::Vertical</enum>
-            </property>
-            <property name="sizeHint" stdset="0">
-             <size>
-              <width>20</width>
-              <height>40</height>
-             </size>
-            </property>
-           </spacer>
-          </item>
           <item row="0" column="1">
            <spacer name="horizontalSpacer">
             <property name="orientation">
@@ -88,6 +81,16 @@
              </size>
             </property>
            </spacer>
+          </item>
+          <item row="2" column="0">
+           <widget class="QPushButton" name="addBarcode">
+            <property name="text">
+             <string>Add Barcode</string>
+            </property>
+            <property name="checkable">
+             <bool>true</bool>
+            </property>
+           </widget>
           </item>
           <item row="0" column="0">
            <widget class="QPushButton" name="addText">
@@ -111,83 +114,14 @@
             </property>
            </widget>
           </item>
-          <item row="2" column="0">
-           <widget class="QPushButton" name="addBarcode">
-            <property name="text">
-             <string>Add Barcode</string>
-            </property>
-            <property name="checkable">
-             <bool>true</bool>
-            </property>
-           </widget>
-          </item>
          </layout>
-        </widget>
-       </item>
-       <item>
-        <widget class="QGroupBox" name="groupBox_2">
-         <property name="title">
-          <string>Misc</string>
-         </property>
-         <widget class="QPushButton" name="alignTop">
-          <property name="geometry">
-           <rect>
-            <x>70</x>
-            <y>20</y>
-            <width>101</width>
-            <height>23</height>
-           </rect>
-          </property>
-          <property name="text">
-           <string>Align Top Edges</string>
-          </property>
-         </widget>
-         <widget class="QPushButton" name="alignLeft">
-          <property name="geometry">
-           <rect>
-            <x>10</x>
-            <y>40</y>
-            <width>101</width>
-            <height>23</height>
-           </rect>
-          </property>
-          <property name="text">
-           <string>Align Left Edges</string>
-          </property>
-         </widget>
-         <widget class="QPushButton" name="alignRight">
-          <property name="geometry">
-           <rect>
-            <x>130</x>
-            <y>40</y>
-            <width>101</width>
-            <height>23</height>
-           </rect>
-          </property>
-          <property name="text">
-           <string>Align Right Edges</string>
-          </property>
-         </widget>
-         <widget class="QPushButton" name="alignBottom">
-          <property name="geometry">
-           <rect>
-            <x>60</x>
-            <y>60</y>
-            <width>121</width>
-            <height>23</height>
-           </rect>
-          </property>
-          <property name="text">
-           <string>Align Bottom Edges</string>
-          </property>
-         </widget>
         </widget>
        </item>
       </layout>
      </widget>
     </item>
     <item>
-     <layout class="QHBoxLayout" name="horizontalLayout_9">
+     <layout class="QHBoxLayout" name="horizontalLayout_9" stretch="0">
       <item>
        <widget class="QSplitter" name="splitter_2">
         <property name="sizePolicy">
@@ -233,7 +167,7 @@
               </item>
              </layout>
             </item>
-            <item row="4" column="0">
+            <item row="7" column="0">
              <layout class="QHBoxLayout" name="horizontalLayout_6">
               <item>
                <widget class="QCheckBox" name="useSubset">
@@ -278,21 +212,14 @@
               </item>
              </layout>
             </item>
-            <item row="6" column="0">
-             <widget class="QPushButton" name="loadData">
-              <property name="text">
-               <string>Load Data</string>
-              </property>
-             </widget>
-            </item>
-            <item row="1" column="0">
+            <item row="3" column="0">
              <widget class="QPushButton" name="createPdfBtn">
               <property name="text">
                <string>Create PDF</string>
               </property>
              </widget>
             </item>
-            <item row="2" column="0">
+            <item row="4" column="0">
              <layout class="QHBoxLayout" name="horizontalLayout_10">
               <item>
                <widget class="QPushButton" name="printButton">
@@ -313,30 +240,111 @@
               </item>
              </layout>
             </item>
+            <item row="8" column="0">
+             <layout class="QHBoxLayout" name="horizontalLayout_12">
+              <item>
+               <widget class="QCheckBox" name="previewCheck">
+                <property name="text">
+                 <string>Show Preview</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QLabel" name="label_7">
+                <property name="text">
+                 <string>Record:</string>
+                </property>
+                <property name="alignment">
+                 <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QSpinBox" name="previewRecord"/>
+              </item>
+             </layout>
+            </item>
             <item row="5" column="0">
-             <widget class="QLabel" name="dataInfo">
-              <property name="sizePolicy">
-               <sizepolicy hsizetype="Preferred" vsizetype="Minimum">
-                <horstretch>0</horstretch>
-                <verstretch>0</verstretch>
-               </sizepolicy>
+             <layout class="QHBoxLayout" name="horizontalLayout_5">
+              <item>
+               <widget class="QLabel" name="label_2">
+                <property name="text">
+                 <string>Copies</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QSpinBox" name="copyCount">
+                <property name="minimum">
+                 <number>1</number>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QCheckBox" name="copyUseField">
+                <property name="text">
+                 <string>Use Field</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QComboBox" name="copyField">
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+                  <horstretch>1</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </item>
+            <item row="6" column="0">
+             <layout class="QHBoxLayout" name="horizontalLayout_11">
+              <item>
+               <widget class="QCheckBox" name="genSamples">
+                <property name="text">
+                 <string>Generate Samples</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QLabel" name="label_6">
+                <property name="text">
+                 <string>Amount:</string>
+                </property>
+                <property name="alignment">
+                 <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QSpinBox" name="sampleCount">
+                <property name="minimum">
+                 <number>1</number>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </item>
+            <item row="1" column="0">
+             <widget class="QPushButton" name="loadData">
+              <property name="text">
+               <string>Load Data</string>
+              </property>
+             </widget>
+            </item>
+            <item row="2" column="0">
+             <widget class="QCheckBox" name="headersCheck">
+              <property name="layoutDirection">
+               <enum>Qt::LeftToRight</enum>
               </property>
               <property name="text">
-               <string/>
+               <string>Has Headers?</string>
               </property>
              </widget>
             </item>
            </layout>
-          </item>
-          <item>
-           <widget class="QCheckBox" name="headersCheck">
-            <property name="layoutDirection">
-             <enum>Qt::LeftToRight</enum>
-            </property>
-            <property name="text">
-             <string>Has Headers?</string>
-            </property>
-           </widget>
           </item>
           <item>
            <layout class="QHBoxLayout" name="horizontalLayout_2">
@@ -347,23 +355,6 @@
               </property>
              </widget>
             </item>
-            <item>
-             <widget class="QLabel" name="label_2">
-              <property name="text">
-               <string>Position</string>
-              </property>
-              <property name="alignment">
-               <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QComboBox" name="permitPosition"/>
-            </item>
-           </layout>
-          </item>
-          <item>
-           <layout class="QHBoxLayout" name="horizontalLayout_3">
             <item>
              <widget class="QLabel" name="label_3">
               <property name="text">
@@ -385,6 +376,9 @@
              </widget>
             </item>
            </layout>
+          </item>
+          <item>
+           <layout class="QHBoxLayout" name="horizontalLayout_3"/>
           </item>
           <item>
            <widget class="QCheckBox" name="returnCheck">
@@ -526,7 +520,7 @@
                     <x>0</x>
                     <y>0</y>
                     <width>292</width>
-                    <height>379</height>
+                    <height>232</height>
                    </rect>
                   </property>
                   <layout class="QVBoxLayout" name="verticalLayout_2">
@@ -546,24 +540,20 @@
                </item>
               </layout>
              </widget>
-             <widget class="QWidget" name="headersTab">
-              <attribute name="title">
-               <string>Headers</string>
-              </attribute>
-              <layout class="QHBoxLayout" name="horizontalLayout_5">
-               <item>
-                <widget class="QListWidget" name="headerList">
-                 <property name="editTriggers">
-                  <set>QAbstractItemView::EditKeyPressed</set>
-                 </property>
-                 <property name="selectionBehavior">
-                  <enum>QAbstractItemView::SelectRows</enum>
-                 </property>
-                </widget>
-               </item>
-              </layout>
-             </widget>
             </widget>
+           </widget>
+          </item>
+          <item>
+           <widget class="QTableWidget" name="headerList">
+            <property name="editTriggers">
+             <set>QAbstractItemView::EditKeyPressed</set>
+            </property>
+            <property name="selectionBehavior">
+             <enum>QAbstractItemView::SelectRows</enum>
+            </property>
+            <attribute name="verticalHeaderVisible">
+             <bool>false</bool>
+            </attribute>
            </widget>
           </item>
          </layout>
