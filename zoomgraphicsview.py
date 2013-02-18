@@ -81,8 +81,9 @@ class ZoomGraphicsView(QtGui.QGraphicsView):
         self.returnAddress.setPlainText(text)
         
         
-    def start_merge(self):
-        self.hide_bg()
+    def start_merge(self, preview):
+        if not preview:
+            self.hide_bg()
         
     def end_merge(self):
         self.show_bg()

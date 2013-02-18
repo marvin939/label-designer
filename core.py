@@ -34,6 +34,8 @@ class Labeler(QtGui.QApplication):
         self.objectCollection = []
         self.ui = LabelDesigner.Ui_MainWindow()
         self.MainWindow = QtGui.QMainWindow()
+        self.merging = False
+        self.currentRecordNumber = None
         
         self.itemListObjects = {}
         self.dataSet = []
@@ -107,6 +109,7 @@ class Labeler(QtGui.QApplication):
         self.connect(self.ui.subsetBottom, QtCore.SIGNAL('valueChanged(int)'), self.update_subset_bottom)
         self.connect(self.ui.subsetTop, QtCore.SIGNAL('valueChanged(int)'), self.update_subset_top)
         self.connect(self.ui.previewRecord, QtCore.SIGNAL('valueChanged(int)'), self.update_preview_record)
+        self.connect(self.ui.previewCheck, QtCore.SIGNAL('toggled(bool)'), self.toggle_preview)
         
         self.progressWindow = QtGui.QProgressDialog(self.MainWindow)
         self.progressWindow.setWindowTitle("PDF Generation Progress...")
@@ -120,8 +123,12 @@ class Labeler(QtGui.QApplication):
         self.ui.returnAddress.setText("If Undelivered, Return To: Private Bag 39996, Wellington Mail Centre, Lower Hutt  5045")
         
         
-        self.ui.zoomLevel.setValue(125.0)
+        self.ui.zoomLevel.setValue(160.0)
         self.ui.headersCheck.setChecked(True)
+        
+        self.logAppendCursor = self.ui.logConsole.cursorForPosition(QtCore.QPoint(0,0))
+        self.logScrollBar = self.ui.logConsole.verticalScrollBar()
+        self.ui.logConsole.setLineWrapMode(self.ui.logConsole.NoWrap)
         
         
         
@@ -133,6 +140,38 @@ class Labeler(QtGui.QApplication):
 
         self.MainWindow.show()
         
+    def log_message(self, message, level="log"):
+        """ Logs a message to the console, levels include log, warning, and error """
+        color = 'black'
+        
+        if level == "error":
+            color = 'red'
+        elif level == "warning":
+            color = 'orange'
+            
+        
+        text = "<FONT COLOR='%s'>%s</FONT><BR />" % (color, message)
+            
+        self.logAppendCursor.movePosition(self.logAppendCursor.End)
+        self.logAppendCursor.insertHtml(text)
+        self.logScrollBar.setValue(self.logScrollBar.maximum())        
+        
+    def toggle_preview(self, toggle):
+        self.lock_editing(toggle)
+        self.ui.addText.setEnabled(not toggle)
+        self.ui.addBarcode.setEnabled(not toggle)
+        self.ui.detailsTab.setEnabled(not toggle)
+        self.labelView.scene().clearSelection()
+        if toggle:
+            self.start_merge(preview=True)
+            
+            self.currentRecordNumber = self.ui.previewRecord.value()
+            self.merge_row(self.dataSet[self.ui.previewRecord.value()-1])
+        else:
+            self.end_merge()
+        
+    def lock_editing(self, lock=True):
+        self.labelView.setInteractive(not lock)
         
     def cancel_label(self):
         self.labelInProgress = False
@@ -140,12 +179,15 @@ class Labeler(QtGui.QApplication):
     def update_preview_record(self, val):
         self.ui.headerList.setUpdatesEnabled(False)
         row = 0
+        self.currentRecordNumber = val
         for i in self.headers:
             item = QtGui.QTableWidgetItem(self.dataSet[val-1][i])
             self.ui.headerList.setItem(row, 1, item)
             row += 1
         self.ui.headerList.setUpdatesEnabled(True)
             
+        if self.merging:
+            self.merge_row(self.dataSet[val-1])
         
         
     def update_subset_bottom(self, val):
@@ -406,14 +448,17 @@ class Labeler(QtGui.QApplication):
         self.objectCollection.append(obj)
         
     
-    def start_merge(self):
-        self.labelView.start_merge()
+    def start_merge(self, preview=False):
+        self.labelView.start_merge(preview)
+        self.merging = True
         for obj in self.objectCollection:
             obj.start_merge()
             
         self.mergeDataSet = self.dataSet
+        self.currentRecordNumber = 1
         
         if self.ui.useSubset.checkState():
+            self.currentRecordNumber = int(self.ui.subsetBottom.value())
             self.mergeDataSet = self.dataSet[int(self.ui.subsetBottom.value()) -1:int(self.ui.subsetTop.value())]
             
         if self.ui.genSamples.checkState():
@@ -421,10 +466,11 @@ class Labeler(QtGui.QApplication):
             
         if self.mergeDataSet == []:
             self.mergeDataSet = [[]]
-        
-        self.start_progress_bar(1, len(self.mergeDataSet))
+        if not preview:
+            self.start_progress_bar(1, len(self.mergeDataSet))
         
     def end_merge(self):
+        self.merging = False
         self.labelView.end_merge()
         for obj in self.objectCollection:
             obj.end_merge()
@@ -446,9 +492,10 @@ class Labeler(QtGui.QApplication):
                 else:
                     break
             obj = currentItem.data(1,0).toPyObject()
-            if not obj.isSelected():
-                obj.scene().clearSelection()
-                obj.setSelected(True)
+            if self.labelView.isInteractive():
+                if not obj.isSelected():
+                    obj.scene().clearSelection()
+                    obj.setSelected(True)
             for field in obj.propOrder:
                 widget = obj.propWidgets[field]
                 self.ui.objectProperties.addRow(field, widget)
@@ -568,6 +615,7 @@ class Labeler(QtGui.QApplication):
             self.increment_progress_bar()
             if not self.labelInProgress:
                 break
+            self.currentRecordNumber += 1
             
         self.end_merge()
         if printer <> None:

@@ -42,7 +42,14 @@ class LabelerBarcodeItem(QtGui.QGraphicsPixmapItem, LabelerItemMixin):
         #self.setPixmap(barcode.bar_I2of5(data))
         #self.setPixmap(barcode.bar_Code128(data))
         #self.setPixmap(barcode.bar_3of9(data))
-        self.setPixmap(self.currentBarcode(data))
+        try:
+            self.setPixmap(self.currentBarcode(data))
+        except:
+            message = "Barcode data invalid"
+            if self.merging:
+                message = "Record %d: Barcode data invalid. (\"%s\")" % (QtCore.QCoreApplication.instance().currentRecordNumber, data)
+            QtCore.QCoreApplication.instance().log_message(message, "error")
+            self.setPixmap(QtGui.QPixmap())
         
         
     def start_merge(self):
