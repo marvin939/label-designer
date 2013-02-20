@@ -15,7 +15,7 @@ DPMM = []
 
 random.seed()
 
-## TODO next, print directly to label printer
+## Add ability to save settings
 
 fontDB = QtGui.QFontDatabase()
 
@@ -27,13 +27,24 @@ propertyTypes = {'string':(QtGui.QLineEdit, QtCore.SIGNAL('textChanged(QString)'
                  'boolean':(QtGui.QCheckBox, QtCore.SIGNAL('toggled(bool)')),
                  'font':(QtGui.QFontComboBox, QtCore.SIGNAL('currentFontChanged(QFont)'))}
 
+class LabelMainWindow(QtGui.QMainWindow):
+    def closeEvent(self, event):
+        quitBox = QtGui.QMessageBox(QtGui.QMessageBox.Warning, "Quit?", "Would you like to quit?", QtGui.QMessageBox.Yes|QtGui.QMessageBox.No|QtGui.QMessageBox.Cancel)
+        result = quitBox.exec_()
+        if result == quitBox.No or result == quitBox.Cancel:
+            event.ignore()
+        elif result == quitBox.Yes:
+            QtCore.QCoreApplication.instance().save_settings()
+            
+        
+
 
 class Labeler(QtGui.QApplication):
     def __init__(self, *args, **kwargs):
         super(Labeler, self).__init__(*args, **kwargs)
         self.objectCollection = []
         self.ui = LabelDesigner.Ui_MainWindow()
-        self.MainWindow = QtGui.QMainWindow()
+        self.MainWindow = LabelMainWindow()
         self.merging = False
         self.currentRecordNumber = None
         
@@ -45,6 +56,15 @@ class Labeler(QtGui.QApplication):
         self.previewMode = False
         self.previewRow = 0
         self.rawData = [[]]
+        self.settings = QtCore.QSettings("labelcore.conf", QtCore.QSettings.IniFormat)
+        for x in self.settings.allKeys():
+            print self.settings.value(x, QtCore.QString, QtCore.QString)
+            print str(x)
+        self.settings.beginGroup("MainApp")
+        self.settings.setValue("Zoom", 125.0)
+        self.settings.setValue("Permit", "478")
+        self.settings.setValue("Return Address", "Home")
+        self.settings.endGroup()
         
         # Maps file extensions to functions for decoding them
         self.fileLoaders = {}
@@ -140,6 +160,12 @@ class Labeler(QtGui.QApplication):
 
         self.MainWindow.show()
         
+    def save_settings(self):
+        print "WOO"
+        
+    def load_settings(self):
+        print "OOW"
+        
     def log_message(self, message, level="log"):
         """ Logs a message to the console, levels include log, warning, and error """
         color = 'black'
@@ -154,8 +180,8 @@ class Labeler(QtGui.QApplication):
             
         self.logAppendCursor.movePosition(self.logAppendCursor.End)
         self.logAppendCursor.insertHtml(text)
-        self.logScrollBar.setValue(self.logScrollBar.maximum())        
-        
+        self.logScrollBar.setValue(self.logScrollBar.maximum())    
+ 
     def toggle_preview(self, toggle):
         self.lock_editing(toggle)
         self.ui.addText.setEnabled(not toggle)
