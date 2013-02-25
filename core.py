@@ -56,15 +56,25 @@ class Labeler(QtGui.QApplication):
         self.previewMode = False
         self.previewRow = 0
         self.rawData = [[]]
-        self.settings = QtCore.QSettings("labelcore.conf", QtCore.QSettings.IniFormat)
-        for x in self.settings.allKeys():
-            print self.settings.value(x, QtCore.QString, QtCore.QString)
-            print str(x)
-        self.settings.beginGroup("MainApp")
-        self.settings.setValue("Zoom", 125.0)
-        self.settings.setValue("Permit", "478")
-        self.settings.setValue("Return Address", "Home")
-        self.settings.endGroup()
+        
+        
+        ## Load in settings from conf or generate if missing
+        self.defaultSettings = {'permit':478,
+                                'add permit':False,
+                                'return address':'If Undelivered, Return To: Private Bag 39996, Wellington Mail Centre, Lower Hutt  5045',
+                                'add return':True,
+                                'copies':1,
+                                'subset':False,
+                                'subset from':0,
+                                'subset to':0,
+                                'generate samples':False,
+                                'zoom':160.0,
+                                'has headers':True,
+                                'show preview':False,
+                                }
+        
+        
+        
         
         # Maps file extensions to functions for decoding them
         self.fileLoaders = {}
@@ -79,7 +89,6 @@ class Labeler(QtGui.QApplication):
         DPMM.append(self.dpi[1]/25.4)
         
         self.ui.setupUi(self.MainWindow)
-        
         
        
         self.statusBar = self.MainWindow.statusBar()
@@ -154,6 +163,7 @@ class Labeler(QtGui.QApplication):
         
         self.refresh_printer_list()
        
+        self.load_settings()
         
         
         #self.labelView.zoom_to(200.0)
@@ -161,10 +171,35 @@ class Labeler(QtGui.QApplication):
         self.MainWindow.show()
         
     def save_settings(self):
-        print "WOO"
+        
+        self.settings.beginGroup("MainApp")
+        self.settings.setValue("Zoom", int(self.ui.zoomLevel.value()))
+        self.settings.setValue("Permit", "478")
+        self.settings.setValue("Return Address", "Home")
+        self.settings.endGroup()
         
     def load_settings(self):
-        print "OOW"
+        
+        self.settings = QtCore.QSettings("labelcore.conf", QtCore.QSettings.IniFormat)
+        
+        self.settings.beginGroup('MainApp')
+        keys = []
+        for x in self.settings.allKeys():
+            keys.append(str(x))
+        for key, value in self.defaultSettings.items():
+            if key not in keys:
+                self.settings.setValue(key, value)
+        self.settings.sync()
+        
+        
+        self.ui.zoomLevel.setValue(self.settings.value('zoom').toDouble()[0])
+        self.ui.permitEntry.setText(self.settings.value('permit').toString())
+        self.ui.permitCheck.setChecked(self.settings.value('add permit').toBool())
+        self.ui.returnAddress.setText(self.settings.value('return address').toString())
+        self.ui.returnCheck.setChecked(self.settings.value('add return').toBool())
+        self.ui.copyCount.setValue(self.settings.value('copies').toInteger())
+                
+        self.settings.endGroup()
         
     def log_message(self, message, level="log"):
         """ Logs a message to the console, levels include log, warning, and error """
