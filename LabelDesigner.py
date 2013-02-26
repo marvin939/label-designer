@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'LabelDesigner.ui'
 #
-# Created: Mon Feb 18 16:51:31 2013
+# Created: Tue Feb 26 13:35:01 2013
 #      by: PyQt4 UI code generator 4.9.4
 #
 # WARNING! All changes made in this file will be lost!
@@ -65,7 +65,17 @@ class Ui_MainWindow(object):
         self.addText.setCheckable(True)
         self.addText.setObjectName(_fromUtf8("addText"))
         self.gridLayout_2.addWidget(self.addText, 0, 0, 1, 1)
+        spacerItem1 = QtGui.QSpacerItem(20, 40, QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Expanding)
+        self.gridLayout_2.addItem(spacerItem1, 3, 0, 1, 1)
         self.horizontalLayout_4.addWidget(self.groupBox)
+        self.groupBox_3 = QtGui.QGroupBox(self.frame)
+        self.groupBox_3.setObjectName(_fromUtf8("groupBox_3"))
+        self.horizontalLayout_7 = QtGui.QHBoxLayout(self.groupBox_3)
+        self.horizontalLayout_7.setObjectName(_fromUtf8("horizontalLayout_7"))
+        self.layoutList = QtGui.QListWidget(self.groupBox_3)
+        self.layoutList.setObjectName(_fromUtf8("layoutList"))
+        self.horizontalLayout_7.addWidget(self.layoutList)
+        self.horizontalLayout_4.addWidget(self.groupBox_3)
         self.groupBox_2 = QtGui.QGroupBox(self.frame)
         self.groupBox_2.setObjectName(_fromUtf8("groupBox_2"))
         self.verticalLayout_5 = QtGui.QVBoxLayout(self.groupBox_2)
@@ -150,8 +160,8 @@ class Ui_MainWindow(object):
         self.sampleCount.setObjectName(_fromUtf8("sampleCount"))
         self.horizontalLayout_11.addWidget(self.sampleCount)
         self.verticalLayout_5.addLayout(self.horizontalLayout_11)
-        spacerItem1 = QtGui.QSpacerItem(20, 40, QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Expanding)
-        self.verticalLayout_5.addItem(spacerItem1)
+        spacerItem2 = QtGui.QSpacerItem(20, 40, QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Expanding)
+        self.verticalLayout_5.addItem(spacerItem2)
         self.horizontalLayout_4.addWidget(self.groupBox_2)
         self.horizontalLayout_4.setStretch(0, 1)
         self.verticalLayout_4.addWidget(self.frame)
@@ -249,8 +259,8 @@ class Ui_MainWindow(object):
         self.logConsole.setReadOnly(True)
         self.logConsole.setObjectName(_fromUtf8("logConsole"))
         self.verticalLayout_3.addWidget(self.logConsole)
-        spacerItem2 = QtGui.QSpacerItem(20, 40, QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Expanding)
-        self.verticalLayout_3.addItem(spacerItem2)
+        spacerItem3 = QtGui.QSpacerItem(20, 40, QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Expanding)
+        self.verticalLayout_3.addItem(spacerItem3)
         self.graphicsView = ZoomGraphicsView(self.splitter_2)
         sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding)
         sizePolicy.setHorizontalStretch(1)
@@ -305,7 +315,7 @@ class Ui_MainWindow(object):
         self.scrollArea.setWidgetResizable(True)
         self.scrollArea.setObjectName(_fromUtf8("scrollArea"))
         self.scrollAreaWidgetContents = QtGui.QWidget()
-        self.scrollAreaWidgetContents.setGeometry(QtCore.QRect(0, 0, 292, 105))
+        self.scrollAreaWidgetContents.setGeometry(QtCore.QRect(0, 0, 292, 100))
         self.scrollAreaWidgetContents.setObjectName(_fromUtf8("scrollAreaWidgetContents"))
         self.verticalLayout_2 = QtGui.QVBoxLayout(self.scrollAreaWidgetContents)
         self.verticalLayout_2.setObjectName(_fromUtf8("verticalLayout_2"))
@@ -328,6 +338,7 @@ class Ui_MainWindow(object):
         self.verticalLayout_7.addWidget(self.headerList)
         self.horizontalLayout_9.addWidget(self.splitter_2)
         self.verticalLayout_4.addLayout(self.horizontalLayout_9)
+        self.verticalLayout_4.setStretch(1, 1)
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtGui.QMenuBar(MainWindow)
         self.menubar.setGeometry(QtCore.QRect(0, 0, 1240, 20))
@@ -346,6 +357,7 @@ class Ui_MainWindow(object):
         self.groupBox.setTitle(QtGui.QApplication.translate("MainWindow", "Layup Items", None, QtGui.QApplication.UnicodeUTF8))
         self.addBarcode.setText(QtGui.QApplication.translate("MainWindow", "Add Barcode", None, QtGui.QApplication.UnicodeUTF8))
         self.addText.setText(QtGui.QApplication.translate("MainWindow", "Add Text", None, QtGui.QApplication.UnicodeUTF8))
+        self.groupBox_3.setTitle(QtGui.QApplication.translate("MainWindow", "Layouts", None, QtGui.QApplication.UnicodeUTF8))
         self.groupBox_2.setTitle(QtGui.QApplication.translate("MainWindow", "Print Options", None, QtGui.QApplication.UnicodeUTF8))
         self.createPdfBtn.setText(QtGui.QApplication.translate("MainWindow", "Create PDF", None, QtGui.QApplication.UnicodeUTF8))
         self.printButton.setText(QtGui.QApplication.translate("MainWindow", "Print", None, QtGui.QApplication.UnicodeUTF8))

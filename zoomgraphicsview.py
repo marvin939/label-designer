@@ -36,8 +36,7 @@ class ZoomGraphicsView(QtGui.QGraphicsView):
         #self.scene().addItem(self.permitText)
         font = QtGui.QFont("Arial Narrow")
         font.setPointSize(16)
-        #font.setLetterSpacing(font.AbsoluteSpacing,1.0)
-        print font.letterSpacing()
+
         self.permitText.setFont(font)
         self.permitText.setScale(.5)
         self.permitText.setTextWidth(self.dpmm[0]*48)

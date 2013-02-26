@@ -23,6 +23,7 @@ class LabelerItemMixin:
                 self.proporder = self.properties.keys()
                 self.proporder.sort()
         self.propWidgets = {}
+        self.suppress_address_errors = False
         
         self.create_property_widgets()
         self.merging = False

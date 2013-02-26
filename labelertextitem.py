@@ -5,8 +5,8 @@ class LabelerTextItem(QtGui.QGraphicsTextItem, LabelerItemMixin):
     def __init__(self, *args, **kwargs):
         self.editing = False
         super(LabelerTextItem, self).__init__(*args, **kwargs)
-        
-        self.lineSpacing = 1.2
+       
+        self.lineSpacing = 90
         self.currentFontSize = 9.0
         self.perfectFontSize = 16.0
         self.fontScale = 1.0
@@ -22,8 +22,10 @@ class LabelerTextItem(QtGui.QGraphicsTextItem, LabelerItemMixin):
                            'Font Bold':('boolean', self.font().bold(), self.set_font_bold),
                            'Font Italic':('boolean', self.font().italic(), self.set_font_italic),
                            'X Coord':('float', self.scenePos().x(), self.setX),
-                           'Y Coord':('float', self.scenePos().y(), self.setY)}
-        propOrder = ['Value', 'Skip Blanks', 'Font', 'Font Size', 'Font Bold', 'Font Italic', 'X Coord', 'Y Coord']
+                           'Y Coord':('float', self.scenePos().y(), self.setY),
+                           'Line Spacing':('integer', self.lineSpacing, self.line_space_changed)}
+                                    
+        propOrder = ['Value', 'Skip Blanks', 'Font', 'Font Size', 'Font Bold', 'Font Italic', 'X Coord', 'Y Coord', 'Line Spacing']
         LabelerItemMixin.__init__(self, properties, propOrder)
         
         
@@ -40,6 +42,10 @@ class LabelerTextItem(QtGui.QGraphicsTextItem, LabelerItemMixin):
         
         
         self.set_pos_by_mm(5,4)
+        
+    def line_space_changed(self):
+        self.lineSpacing = int(self.propWidgets["Line Spacing"].value())
+        self.update_block_formatting()
         
     def get_merge_text(self):
         if not self.merging:
@@ -76,7 +82,15 @@ class LabelerTextItem(QtGui.QGraphicsTextItem, LabelerItemMixin):
         matches = set(matches)
         for i in matches:
             field = i.replace("<<", "").replace(">>","")
-            text = text.replace(i, row[field])
+            if field not in row:
+                if self.suppress_address_errors:
+                    text = text.replace(i, "")
+                else:
+                    raise IndexError("Field %s not found in record" % field)
+            else:
+                text = text.replace(i, row[field])
+                    
+                
         
         
         finalText = ""
@@ -221,16 +235,36 @@ class LabelerTextItem(QtGui.QGraphicsTextItem, LabelerItemMixin):
         if size >= 16.0:
             font.setPointSizeF(self.currentFontSize)
         
+        
         super(LabelerTextItem, self).setFont(font)
             
         self.leading = self.font().pointSize()*self.lineSpacing
         
+    def update_block_formatting(self):
+        cur = self.textCursor()
+        cur.select(cur.Document)
+        
+        bf = cur.blockFormat()
+        bf.setLineHeight(self.lineSpacing, bf.ProportionalHeight)
+        cur.setBlockFormat(bf)  
+        
+        
     def setPlainText(self, text):
+    
         super(LabelerTextItem, self).setPlainText(text)
+        
         string = self.toPlainText()
         if not self.merging:
             if string <> self.propWidgets['Value'].toPlainText():
                 self.propWidgets['Value'].setPlainText(self.toPlainText())
+                
+        self.update_block_formatting()
+              
+        
+        #cur.clearSelection()
+        #self.setTextCursor(cur)
+        
+
         
         
     def itemChange(self, change, value):
