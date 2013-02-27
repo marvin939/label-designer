@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'LabelDesigner.ui'
 #
-# Created: Tue Feb 26 13:35:01 2013
+# Created: Wed Feb 27 09:53:17 2013
 #      by: PyQt4 UI code generator 4.9.4
 #
 # WARNING! All changes made in this file will be lost!
@@ -75,6 +75,20 @@ class Ui_MainWindow(object):
         self.layoutList = QtGui.QListWidget(self.groupBox_3)
         self.layoutList.setObjectName(_fromUtf8("layoutList"))
         self.horizontalLayout_7.addWidget(self.layoutList)
+        self.verticalLayout_6 = QtGui.QVBoxLayout()
+        self.verticalLayout_6.setObjectName(_fromUtf8("verticalLayout_6"))
+        self.loadLayout = QtGui.QPushButton(self.groupBox_3)
+        self.loadLayout.setObjectName(_fromUtf8("loadLayout"))
+        self.verticalLayout_6.addWidget(self.loadLayout)
+        self.saveLayout = QtGui.QPushButton(self.groupBox_3)
+        self.saveLayout.setObjectName(_fromUtf8("saveLayout"))
+        self.verticalLayout_6.addWidget(self.saveLayout)
+        self.RemoveLayout = QtGui.QPushButton(self.groupBox_3)
+        self.RemoveLayout.setObjectName(_fromUtf8("RemoveLayout"))
+        self.verticalLayout_6.addWidget(self.RemoveLayout)
+        spacerItem2 = QtGui.QSpacerItem(20, 40, QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Expanding)
+        self.verticalLayout_6.addItem(spacerItem2)
+        self.horizontalLayout_7.addLayout(self.verticalLayout_6)
         self.horizontalLayout_4.addWidget(self.groupBox_3)
         self.groupBox_2 = QtGui.QGroupBox(self.frame)
         self.groupBox_2.setObjectName(_fromUtf8("groupBox_2"))
@@ -160,8 +174,8 @@ class Ui_MainWindow(object):
         self.sampleCount.setObjectName(_fromUtf8("sampleCount"))
         self.horizontalLayout_11.addWidget(self.sampleCount)
         self.verticalLayout_5.addLayout(self.horizontalLayout_11)
-        spacerItem2 = QtGui.QSpacerItem(20, 40, QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Expanding)
-        self.verticalLayout_5.addItem(spacerItem2)
+        spacerItem3 = QtGui.QSpacerItem(20, 40, QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Expanding)
+        self.verticalLayout_5.addItem(spacerItem3)
         self.horizontalLayout_4.addWidget(self.groupBox_2)
         self.horizontalLayout_4.setStretch(0, 1)
         self.verticalLayout_4.addWidget(self.frame)
@@ -259,8 +273,8 @@ class Ui_MainWindow(object):
         self.logConsole.setReadOnly(True)
         self.logConsole.setObjectName(_fromUtf8("logConsole"))
         self.verticalLayout_3.addWidget(self.logConsole)
-        spacerItem3 = QtGui.QSpacerItem(20, 40, QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Expanding)
-        self.verticalLayout_3.addItem(spacerItem3)
+        spacerItem4 = QtGui.QSpacerItem(20, 40, QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Expanding)
+        self.verticalLayout_3.addItem(spacerItem4)
         self.graphicsView = ZoomGraphicsView(self.splitter_2)
         sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding)
         sizePolicy.setHorizontalStretch(1)
@@ -358,6 +372,9 @@ class Ui_MainWindow(object):
         self.addBarcode.setText(QtGui.QApplication.translate("MainWindow", "Add Barcode", None, QtGui.QApplication.UnicodeUTF8))
         self.addText.setText(QtGui.QApplication.translate("MainWindow", "Add Text", None, QtGui.QApplication.UnicodeUTF8))
         self.groupBox_3.setTitle(QtGui.QApplication.translate("MainWindow", "Layouts", None, QtGui.QApplication.UnicodeUTF8))
+        self.loadLayout.setText(QtGui.QApplication.translate("MainWindow", "Load Layout", None, QtGui.QApplication.UnicodeUTF8))
+        self.saveLayout.setText(QtGui.QApplication.translate("MainWindow", "Save Layout", None, QtGui.QApplication.UnicodeUTF8))
+        self.RemoveLayout.setText(QtGui.QApplication.translate("MainWindow", "Remove Layout", None, QtGui.QApplication.UnicodeUTF8))
         self.groupBox_2.setTitle(QtGui.QApplication.translate("MainWindow", "Print Options", None, QtGui.QApplication.UnicodeUTF8))
         self.createPdfBtn.setText(QtGui.QApplication.translate("MainWindow", "Create PDF", None, QtGui.QApplication.UnicodeUTF8))
         self.printButton.setText(QtGui.QApplication.translate("MainWindow", "Print", None, QtGui.QApplication.UnicodeUTF8))

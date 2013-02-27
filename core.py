@@ -173,7 +173,6 @@ class Labeler(QtGui.QApplication):
         self.MainWindow.show()
         
     def save_settings(self):
-        print "saving"
         self.settings.beginGroup("mainapp")
         self.settings.setValue("zoom", int(self.ui.zoomLevel.value()))
         self.settings.endGroup()
