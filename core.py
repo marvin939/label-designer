@@ -6,6 +6,10 @@ import random
 from labelertextitem import LabelerTextItem
 from labelerbarcodeitem import LabelerBarcodeItem
 from PyQt4 import QtCore, QtGui
+
+
+from labelitemproperty import LabelProp
+
 try:
     _fromUtf8 = QtCore.QString.fromUtf8
 except AttributeError:
@@ -152,7 +156,6 @@ class Labeler(QtGui.QApplication):
         #self.ui.permitEntry.setText("478")
         #self.ui.returnCheck.setChecked(True)
         #self.ui.returnAddress.setText("If Undelivered, Return To: Private Bag 39996, Wellington Mail Centre, Lower Hutt  5045")
-        
         
         self.ui.zoomLevel.setValue(160.0)
         self.ui.headersCheck.setChecked(True)
@@ -641,10 +644,14 @@ class Labeler(QtGui.QApplication):
                 if not obj.isSelected():
                     obj.scene().clearSelection()
                     obj.setSelected(True)
-            for field in obj.propOrder:
-                widget = obj.propWidgets[field]
-                self.ui.objectProperties.addRow(field, widget)
-                widget.setVisible(True)
+            for field in obj.properties:
+                for widget in field.widgets:
+                    self.ui.objectProperties.addRow("%s %s" % (field.name,widget), field.widgets[widget])
+                    field.widgets[widget].setVisible(True)
+            #for field in obj.propOrder:
+            #    widget = obj.propWidgets[field]
+            #    self.ui.objectProperties.addRow(field, widget)
+            #    widget.setVisible(True)
             
     def item_selection_cleared(self):
         self.ui.itemDetails.clear()

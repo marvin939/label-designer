@@ -1,32 +1,57 @@
 from PyQt4 import QtCore, QtGui
-from labeleritemmixin import LabelerItemMixin
+import math
+from labeleritemmixin import LabelerItemMixin, LabelProp
 
 class LabelerTextItem(QtGui.QGraphicsTextItem, LabelerItemMixin):
     def __init__(self, *args, **kwargs):
         self.editing = False
         super(LabelerTextItem, self).__init__(*args, **kwargs)
-       
+        LabelerItemMixin.__init__(self)
+        
         self.lineSpacing = 90
         self.currentFontSize = 9.0
-        self.perfectFontSize = 16.0
+        self.perfectFontSize = 20.0
         self.fontScale = 1.0
+        self.fontScaleX = 1.0
+        self.fontScaleY = 1.0
         font = self.font()
         font.setFamily("Arial")
         font.setPointSizeF(9.0)
         self.setFont(font)
+        self.skipBlanks = False
+#         OLD property management, left as a reference for now
+#        properties = {'Text':('text','', self.text_changed), 
+#                           'Skip Blanks':('boolean', False, None),
+#                           'Font Size':('float', 9.0, self.set_font_size),
+#                           'Font':('font', (self.font().family(),self.font().styleName(), self.font().pointSizeF()), self.set_font_family),
+#                           'Font Bold':('boolean', self.font().bold(), self.set_font_bold),
+#                           'Font Italic':('boolean', self.font().italic(), self.set_font_italic),
+#                           'X Coord':('float', self.scenePos().x(), self.setX),
+#                           'Y Coord':('float', self.scenePos().y(), self.setY),
+#                           'Line Spacing':('integer', self.lineSpacing, self.line_space_changed)}
+#        propOrder = ['Text', 'Skip Blanks', 'Font', 'Font Size', 'Font Bold', 'Font Italic', 'X Coord', 'Y Coord', 'Line Spacing']
         
-        properties = {'Value':('text','', self.text_changed), 
-                           'Skip Blanks':('boolean', False, None),
-                           'Font Size':('float', 9.0, self.set_font_size),
-                           'Font':('font', (self.font().family(),self.font().styleName(), self.font().pointSizeF()), self.set_font_family),
-                           'Font Bold':('boolean', self.font().bold(), self.set_font_bold),
-                           'Font Italic':('boolean', self.font().italic(), self.set_font_italic),
-                           'X Coord':('float', self.scenePos().x(), self.setX),
-                           'Y Coord':('float', self.scenePos().y(), self.setY),
-                           'Line Spacing':('integer', self.lineSpacing, self.line_space_changed)}
-                                    
-        propOrder = ['Value', 'Skip Blanks', 'Font', 'Font Size', 'Font Bold', 'Font Italic', 'X Coord', 'Y Coord', 'Line Spacing']
-        LabelerItemMixin.__init__(self, properties, propOrder)
+        
+        properties = [LabelProp(propName='Text', propType='textarea', propValue=self.toPlainText()),
+                      LabelProp(propName='Skip Blanks', propType='boolean', propValue=True),
+                      LabelProp(propName='Font', propType='font', propValue=None),
+                      LabelProp(propName='X Coord', propType='double', propValue=self.scenePos().x()),
+                      LabelProp(propName='Y Coord', propType='double', propValue=self.scenePos().y()),
+                      LabelProp(propName='Line Spacing', propType='double', propValue=100),
+                      ]
+        self.propCallbacks["Text"] = self.text_changed
+        self.propCallbacks["Skip Blanks"] = self.skip_blanks_toggle
+        self.propCallbacks["Font"] = self.font_changed
+        self.propCallbacks["X Coord"] = self.setX
+        self.propCallbacks["Y Coord"] = self.setY
+        self.propCallbacks["Line Spacing"] = self.line_space_changed                     
+        #self.propOrder = ['Text', 'Skip Blanks', 'Font', 'X Coord', 'Y Coord', 'Line Spacing']
+        self.load_properties(properties)
+        self.set_pos_by_mm(5,4)
+        # Prop callbacks are managed here because the conf file won't be storing any referene to a callback
+        
+        
+        
         
         
         
@@ -41,10 +66,26 @@ class LabelerTextItem(QtGui.QGraphicsTextItem, LabelerItemMixin):
         self.skipBlanks = False
         
         
-        self.set_pos_by_mm(5,4)
+    def setPos(self, *args, **kwargs):
+        
+        
+        super(LabelerTextItem, self).setPos(*args, **kwargs)
+        
+        # Disables updating of widgets to avoid an infinite loop
+        self.propNames["X Coord"].enable_updates(False)
+        self.propNames["Y Coord"].enable_updates(False)
+        
+        self.propNames["X Coord"].set_value(self.scenePos().x())
+        self.propNames["Y Coord"].set_value(self.scenePos().y())
+        
+        self.propNames["X Coord"].enable_updates(True)
+        self.propNames["Y Coord"].enable_updates(False)
+        
+    def skip_blanks_toggle(self, toggle):
+        self.skipBlanks = toggle
         
     def line_space_changed(self):
-        self.lineSpacing = int(self.propWidgets["Line Spacing"].value())
+        self.lineSpacing = int(self.propNames["Line Spacing"].get_value())
         self.update_block_formatting()
         
     def get_merge_text(self):
@@ -94,7 +135,8 @@ class LabelerTextItem(QtGui.QGraphicsTextItem, LabelerItemMixin):
         
         
         finalText = ""
-        if self.propWidgets['Skip Blanks'].isChecked():
+        #if self.propWidgets['Skip Blanks'].isChecked():
+        if self.propNames["Skip Blanks"].get_value():
             for line in text.split("\n"):
                 if line.strip() <> "":
                     finalText += line +"\n"
@@ -106,8 +148,8 @@ class LabelerTextItem(QtGui.QGraphicsTextItem, LabelerItemMixin):
             
         
         
-    def text_changed(self):
-        string = self.propWidgets['Value'].toPlainText()
+    def text_changed(self, string):
+        #string = self.propWidgets['Value'].toPlainText()
         if string <> self.toPlainText():
             self.setPlainText(string)
             
@@ -115,6 +157,10 @@ class LabelerTextItem(QtGui.QGraphicsTextItem, LabelerItemMixin):
         self.currentFontSize = size
         font = self.font()
         #font.setPointSizeF(size)
+        self.setFont(font)
+        
+    def font_changed(self, font):
+        print font.pointSizeF()
         self.setFont(font)
         
     def set_font_family(self, newFont):
@@ -131,46 +177,6 @@ class LabelerTextItem(QtGui.QGraphicsTextItem, LabelerItemMixin):
         font = self.font()
         font.setItalic(toggle)
         self.setFont(font)
-        
-            
-#    def create_property_widgets(self):
-#        for field in self.propOrder:
-#            propertyType, value, slot = self.properties[field]
-#            widget, signal = propertyTypes[propertyType]
-#            if propertyType == 'boolean':
-#                editor = widget()
-#                editor.setCheckState(value)
-#            elif propertyType == 'float' or propertyType == 'integer':
-#                editor = widget()
-#                editor.setValue(value)
-#                editor.setMinimum(-1000)
-#                editor.setMaximum(1000)
-#            elif propertyType == 'font':
-#                editor = widget()
-#                editor.setCurrentFont(fontDB.font(*value))
-#            else:
-#                editor = widget(value)
-#            editor.setVisible(False)
-#            if slot <> None:
-#                editor.connect(editor, signal, slot)
-#            self.propWidgets[field] = editor
-#        
-#    def get_pos_mm(self):
-#        """ returns position in millimeters """
-#        return self.pos().x() / self.dpmm[0], self.pos().y() / self.dpmm[1]
-#    
-#    def set_pos_by_mm(self, x, y):
-#        """ sets position in mm """
-#        self.setPos(x*self.dpmm[0], y*self.dpmm[1])
-#        
-#    def get_pos_for_pdf(self):
-#        """ same as get pos by mm? """
-#        #y = self.y() + self.boundingRect().height()
-#        return self.x()/self.dpmm[0], (self.y()/self.dpmm[1]) 
-#        
-    #def mouseDoubleClickEvent(self, event):
-    #    """ Overrided to make text editable after being double clicked TODO make sure cursor is showing """
-    #    self.start_edit()
     
     def mousePressEvent(self, event):
         if self.isSelected():
@@ -185,7 +191,7 @@ class LabelerTextItem(QtGui.QGraphicsTextItem, LabelerItemMixin):
         super(LabelerTextItem, self).keyReleaseEvent(event)
         if event.key() == QtCore.Qt.Key_Control:
                 self.setCursor(QtCore.Qt.ArrowCursor)
-        self.propWidgets['Value'].setPlainText(self.toPlainText())
+        self.propNames['Text'].set_text(self.toPlainText())
         
 #    def hoverLeaveEvent(self, event):
 #        self.setCursor(QtCore.Qt.ArrowCursor)
@@ -218,22 +224,47 @@ class LabelerTextItem(QtGui.QGraphicsTextItem, LabelerItemMixin):
         
     def setFont(self, font):
         """ Overrided to add calc for leading/line spacing, and to correct QT bug with letter spacing under 16pt """
-        #size = font.pointSizeF()
-        size = self.currentFontSize
+        size = font.pointSizeF()
+        metric = QtGui.QFontMetricsF(font)
+        width = metric.width(self.toPlainText())
+        height = metric.height()
+        #size = self.currentFontSize
         if size < 16.0:
-            if self.fontScale <> 1.0:
-                old = 1.0 / self.fontScale
-                self.scale(old, old)
-            new = size / self.perfectFontSize
-            self.scale(new, new)
-            self.fontScale = new
-            font.setPointSizeF(16.0)
-        elif self.fontScale <> 1:
-            new = 1.0 / self.fontScale
-            self.scale(new, new)
-            self.fontScale = 1.0
-        if size >= 16.0:
-            font.setPointSizeF(self.currentFontSize)
+            #if self.fontScaleX <> 1.0 or self.fontScaleY <> 1.0:
+            #    #old = 1.0 / self.fontScale
+            #    oldx = 1.0 / self.fontScaleX
+            #    oldy = 1.0 / self.fontScaleY
+            #    self.scale(oldx, oldy)
+            font.setPointSizeF(20.0)
+            metric = QtGui.QFontMetricsF(font)
+            newwidth = metric.width(self.toPlainText())
+            newheight = metric.height()
+            print width, newwidth, "height", height, newheight
+            if 0 in (width, newwidth, height, newheight) :
+                new = size / self.perfectFontSize
+                self.setScale(new)
+                #newx = newy = math.sqrt((new**2) + (new**2))
+            else:
+                #newx = width / newwidth
+                newy = height / newheight
+                self.setScale(newy)
+            #
+            #print newx, newy
+            #self.scale(newx, newy)
+            
+            #self.fontScaleX = newx
+            #self.fontScaleY = newy
+            
+        #elif self.fontScaleX <> 1 or self.fontScaleY <> 1:
+        #    newx = 1.0 / self.fontScaleX
+        #    newy = 1.0 / self.fontScaleY
+        else:
+            #self.scale(newx, newy)
+            self.setScale(1.0)
+            #self.fontScaleX = 1.0
+            #self.fontscaleY = 1.0
+        #elif size >= 16.0:
+        #    font.setPointSizeF(size)
         
         
         super(LabelerTextItem, self).setFont(font)
@@ -254,9 +285,9 @@ class LabelerTextItem(QtGui.QGraphicsTextItem, LabelerItemMixin):
         super(LabelerTextItem, self).setPlainText(text)
         
         string = self.toPlainText()
-        if not self.merging:
-            if string <> self.propWidgets['Value'].toPlainText():
-                self.propWidgets['Value'].setPlainText(self.toPlainText())
+        #if not self.merging:
+        #    if string <> self.propWidgets['Value'].toPlainText():
+        #        self.propWidgets['Value'].setPlainText(self.toPlainText())
                 
         self.update_block_formatting()
               
@@ -275,6 +306,8 @@ class LabelerTextItem(QtGui.QGraphicsTextItem, LabelerItemMixin):
                 self.end_edit()
                 self.clearFocus()
         elif change == QtGui.QGraphicsItem.ItemPositionHasChanged:
-            self.propWidgets['X Coord'].setValue(self.x())
-            self.propWidgets['Y Coord'].setValue(self.y())
+            #self.propWidgets['X Coord'].setValue(self.x())
+            #self.propWidgets['Y Coord'].setValue(self.y())
+            self.propNames['X Coord'].update_double(self.x())
+            self.propNames['Y Coord'].update_double(self.y())
         return value
