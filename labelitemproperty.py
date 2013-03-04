@@ -109,19 +109,21 @@ class LabelTextAreaProperty(LabelItemProperty):
             self.value = QtCore.QString(text)
         else:
             self.value = QtCore.QString()
+        self.type = QtCore.QString
             
         self.widgetOrder.append("Text")
         self.widgets["Value"] = QtGui.QTextEdit()
         self.widgets["Value"].setPlainText(self.value)
-        self.connect(self.widgets["Value"], QtCore.SIGNAL("textChanged(QString)"), self.update_text)
+        self.connect(self.widgets["Value"], QtCore.SIGNAL("textChanged()"), self.update_text)
         
         self.updateSignal = QtCore.SIGNAL("textChanged(QString)")
         
     def set_text(self, text):
         self.widgets["Value"].setPlainText(text)
+        self.emit_update()
         
-    def update_text(self, text):
-        self.value = QtCore.QString(text)
+    def update_text(self):
+        self.value = self.widgets["Value"].toPlainText()
         self.emit_update()
             
         
@@ -134,6 +136,8 @@ class LabelTextLineProperty(LabelItemProperty):
         else:
             self.value = QtCore.QString()
             
+        self.type = QtCore.QString
+            
         self.widgetOrder.append("Text")
         self.widgets["Text"] = QtGui.QLineEdit()
         self.widgets["Text"].setPlainText(self.value)
@@ -143,6 +147,7 @@ class LabelTextLineProperty(LabelItemProperty):
         
     def set_text(self, text):
         self.widgets["Text"].setPlainText(text)
+        self.emit_update()
         
     def update_text(self, text):
         self.value = QtCore.QString(text)

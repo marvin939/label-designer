@@ -19,6 +19,9 @@ class LabelerTextItem(QtGui.QGraphicsTextItem, LabelerItemMixin):
         font.setPointSizeF(9.0)
         self.setFont(font)
         self.skipBlanks = False
+        
+        self._setTextFromUpdate = False
+        
 #         OLD property management, left as a reference for now
 #        properties = {'Text':('text','', self.text_changed), 
 #                           'Skip Blanks':('boolean', False, None),
@@ -67,7 +70,6 @@ class LabelerTextItem(QtGui.QGraphicsTextItem, LabelerItemMixin):
         
         
     def setPos(self, *args, **kwargs):
-        
         
         super(LabelerTextItem, self).setPos(*args, **kwargs)
         
@@ -148,10 +150,12 @@ class LabelerTextItem(QtGui.QGraphicsTextItem, LabelerItemMixin):
             
         
         
-    def text_changed(self, string):
-        #string = self.propWidgets['Value'].toPlainText()
+    def text_changed(self):
+        string = self.propNames['Text'].get_value()
+        self._setTextFromUpdate = True
         if string <> self.toPlainText():
             self.setPlainText(string)
+        self._setTextFromUpdate = False
             
     def set_font_size(self, size):
         self.currentFontSize = size
@@ -283,9 +287,11 @@ class LabelerTextItem(QtGui.QGraphicsTextItem, LabelerItemMixin):
     def setPlainText(self, text):
     
         super(LabelerTextItem, self).setPlainText(text)
-        
-        string = self.toPlainText()
-        #if not self.merging:
+        if not self.merging and not self._setTextFromUpdate:
+            self.propNames["Text"].enable_updates(False)
+            self.propNames["Text"].set_text(text)
+            self.propNames["Text"].enable_updates(True)
+        #
         #    if string <> self.propWidgets['Value'].toPlainText():
         #        self.propWidgets['Value'].setPlainText(self.toPlainText())
                 

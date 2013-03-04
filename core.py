@@ -33,12 +33,13 @@ propertyTypes = {'string':(QtGui.QLineEdit, QtCore.SIGNAL('textChanged(QString)'
 
 class LabelMainWindow(QtGui.QMainWindow):
     def closeEvent(self, event):
-        quitBox = QtGui.QMessageBox(QtGui.QMessageBox.Warning, "Quit?", "Would you like to quit?", QtGui.QMessageBox.Yes|QtGui.QMessageBox.No|QtGui.QMessageBox.Cancel)
-        result = quitBox.exec_()
-        if result == quitBox.No or result == quitBox.Cancel:
-            event.ignore()
-        elif result == quitBox.Yes:
-            QtCore.QCoreApplication.instance().save_settings()
+#        quitBox = QtGui.QMessageBox(QtGui.QMessageBox.Warning, "Quit?", "Would you like to quit?", QtGui.QMessageBox.Yes|QtGui.QMessageBox.No|QtGui.QMessageBox.Cancel)
+#        result = quitBox.exec_()
+#        if result == quitBox.No or result == quitBox.Cancel:
+#            event.ignore()
+#        elif result == quitBox.Yes:
+#            QtCore.QCoreApplication.instance().save_settings()
+        pass
             
         
 

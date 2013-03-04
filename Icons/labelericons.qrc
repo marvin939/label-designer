@@ -1,0 +1,8 @@
+<RCC>
+  <qresource prefix="Icons">
+    <file>paragraph-center.png</file>
+    <file>paragraph-justify.png</file>
+    <file>paragraph-left.png</file>
+    <file>paragraph-right.png</file>
+  </qresource>
+</RCC>
