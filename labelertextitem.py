@@ -231,7 +231,8 @@ class LabelerTextItem(QtGui.QGraphicsTextItem, LabelerItemMixin):
         size = font.pointSizeF()
         metric = QtGui.QFontMetricsF(font)
         width = metric.width(self.toPlainText())
-        height = metric.height()
+        #height = metric.height()
+        height = metric.boundingRect(self.toPlainText()).height()
         #size = self.currentFontSize
         if size < 16.0:
             #if self.fontScaleX <> 1.0 or self.fontScaleY <> 1.0:
@@ -242,7 +243,7 @@ class LabelerTextItem(QtGui.QGraphicsTextItem, LabelerItemMixin):
             font.setPointSizeF(20.0)
             metric = QtGui.QFontMetricsF(font)
             newwidth = metric.width(self.toPlainText())
-            newheight = metric.height()
+            newheight = metric.boundingRect(self.toPlainText()).height()
             print width, newwidth, "height", height, newheight
             if 0 in (width, newwidth, height, newheight) :
                 new = size / self.perfectFontSize
