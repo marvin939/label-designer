@@ -48,6 +48,7 @@ class Labeler(QtGui.QApplication):
     def __init__(self, *args, **kwargs):
         super(Labeler, self).__init__(*args, **kwargs)
         self.objectCollection = []
+        self.objectTypes = {"Text":LabelerTextItem}
         self.ui = LabelDesigner.Ui_MainWindow()
         self.MainWindow = LabelMainWindow()
         self.merging = False
@@ -62,6 +63,7 @@ class Labeler(QtGui.QApplication):
         self.previewRow = 0
         self.rawData = [[]]
         self.layouts = []
+        self.itemNames = []
         
         ## Load in settings from conf or generate if missing
         self.defaultSettings = {'permit':478,
@@ -146,18 +148,17 @@ class Labeler(QtGui.QApplication):
         self.connect(self.ui.previewRecord, QtCore.SIGNAL('valueChanged(int)'), self.update_preview_record)
         self.connect(self.ui.previewCheck, QtCore.SIGNAL('toggled(bool)'), self.toggle_preview)
         self.connect(self.ui.layoutList, QtCore.SIGNAL('itemDoubleClicked(QListWidgetItem*)'), self.set_layout)
+        self.connect(self.ui.saveLayout, QtCore.SIGNAL('clicked()'), self.save_layout)
         
+        
+        # Setup a base progress window
         self.progressWindow = QtGui.QProgressDialog(self.MainWindow)
         self.progressWindow.setWindowTitle("PDF Generation Progress...")
         self.progressWindow.setMinimumWidth(300)
         self.connect(self.progressWindow, QtCore.SIGNAL('canceled()'), self.cancel_label)
         
         self.dataSetCount.setText("No data loaded.")
-        #self.ui.permitCheck.setChecked(True)
-        #self.ui.permitEntry.setText("478")
-        #self.ui.returnCheck.setChecked(True)
-        #self.ui.returnAddress.setText("If Undelivered, Return To: Private Bag 39996, Wellington Mail Centre, Lower Hutt  5045")
-        
+  
         self.ui.zoomLevel.setValue(160.0)
         self.ui.headersCheck.setChecked(True)
         
@@ -170,41 +171,68 @@ class Labeler(QtGui.QApplication):
         self.refresh_printer_list()
        
         self.load_settings()
-        
-        
-        #self.labelView.zoom_to(200.0)
 
         self.MainWindow.show()
         
-    def save_settings(self):
-        self.settings.beginGroup("mainapp")
-        self.settings.setValue("zoom", int(self.ui.zoomLevel.value()))
-        self.settings.endGroup()
+    def save_layout(self):
+        item = self.ui.layoutList.currentItem()
+        if item:
+            current = item.text()
+        else:
+            current = QtCore.QString()
+        text = ""
+        question = "Enter the name of the layout"
+        while str(text).strip() == "":
+            text, ok = QtGui.QInputDialog.getText(self.MainWindow, "Name of Layout", question, QtGui.QLineEdit.Normal, current)
+            if ok and str(text).strip() <> "":
+                print text
+                self.settings.beginGroup("mainapp")
+                self.settings.setValue("zoom", int(self.ui.zoomLevel.value()))
+                self.settings.endGroup()
+                self.settings.beginGroup("layouts")
+                self.settings.beginGroup(text)
+                self.settings.setValue("permit", self.ui.permitEntry.text())
+                self.settings.setValue("return", self.ui.returnAddress.toPlainText())
+                self.settings.setValue("usepermit", self.ui.permitCheck.isChecked())
+                self.settings.setValue("usereturn", self.ui.returnCheck.isChecked())
+                
+                for obj in self.objectCollection:
+                    self.settings.setValue("type", obj.objectType)
+                    self.settings.beginGroup(obj.name)
+                    #self.settings.setValue("name", obj.name)
+                    for name, prop in obj.propNames.items():
+                        
+                        self.settings.setValue(name, prop.get_value())
+                    self.settings.endGroup()
+                self.settings.endGroup()    
+                self.settings.endGroup()
+            elif ok:
+                question = "Value was blank, please enter in a non-blank name"
+            else:
+                break
         
         
     def create_defaults(self):
-        self.settings.beginGroup("default")
-        self.settings.setValue("name", "Default Layout")
+        self.settings.beginGroup("Default Layout")
         self.settings.setValue("permit", "478")
         self.settings.setValue("return", "If Undelivered, Return To: Private Bag 39996, Wellington Mail Centre, Lower Hutt  5045")
         self.settings.setValue("usepermit", True)
         self.settings.setValue("usereturn", True)
         
-        self.settings.beginGroup("properties")
         
-        self.beginGroup("Address Block")
-        self.settings.setValue("Value", "<<Address1>>\n<<Address2>>\n<<Address3>>\n<<Address4>>\n<<Address5>>\n<<Address6>>\n<<Address7>>\n<<Address8>>")
+        self.settings.beginGroup("Address Block")
+        self.settings.setValue("type", "Text")
+        self.settings.setValue("Text", "<<Address1>>\n<<Address2>>\n<<Address3>>\n<<Address4>>\n<<Address5>>\n<<Address6>>\n<<Address7>>\n<<Address8>>")
         self.settings.setValue("X Coord", 4.5)
         self.settings.setValue("Y Coord", 15.0)
         self.settings.setValue("Font", QtGui.QFont("Arial", 9.0, QtGui.QFont.Normal, False))
         self.settings.setValue("Skip Blanks", True)
-        self.settings.setValue("suppress_address_errors", "ignore")
+        self.settings.setValue("Line Spacing", 100.0)
         self.settings.endGroup()
         
         self.settings.endGroup()
         
         
-        self.settings.endGroup()
         
     def load_settings(self):
         
@@ -223,9 +251,9 @@ class Labeler(QtGui.QApplication):
         
         self.ui.zoomLevel.setValue(self.settings.value('zoom').toDouble()[0])
         self.ui.permitEntry.setText(self.settings.value('permit').toString())
-        self.ui.permitCheck.setChecked(self.settings.value('add permit').toBool())
-        self.ui.returnAddress.setText(self.settings.value('return address').toString())
-        self.ui.returnCheck.setChecked(self.settings.value('add return').toBool())
+        self.ui.permitCheck.setChecked(self.settings.value('usepermit').toBool())
+        self.ui.returnAddress.setText(self.settings.value('return').toString())
+        self.ui.returnCheck.setChecked(self.settings.value('usereturn').toBool())
         self.ui.copyCount.setValue(self.settings.value('copies').toInt()[0])
                 
         self.settings.endGroup()
@@ -237,13 +265,13 @@ class Labeler(QtGui.QApplication):
             layoutGroups.append(group)
         if len(layoutGroups) == 0:
             self.create_defaults()
-            layoutGroups.append('default')
+            layoutGroups.append('Default Layout')
             
         
         self.ui.layoutList.clear()
         for layout in layoutGroups:
             self.settings.beginGroup(layout)
-            item = QtGui.QListWidgetItem(self.settings.value('name').toString())
+            item = QtGui.QListWidgetItem(layout)
             item.setData(QtCore.Qt.UserRole, layout)
             self.ui.layoutList.addItem(item)
             self.settings.endGroup()
@@ -254,23 +282,23 @@ class Labeler(QtGui.QApplication):
     def set_layout(self, item):
         print item.text()
         self.clear_layout()
-        self.settings.beginGroup(str(item.data(QtCore.Qt.UserRole).toString()))
+        self.settings.beginGroup("layouts")
+        self.settings.beginGroup(item.text())
         
         self.ui.permitEntry.setText(self.settings.value("permit").toString())
         self.ui.permitCheck.setChecked(self.settings.value("usepermit").toBool())
         self.ui.returnAddress.setText(self.settings.value("return").toString())
         self.ui.returnCheck.setChecked(self.settings.value("useReturn").toBool())
-        if str(self.settings.value("block").toString()) <> "":
-            x = self.dpmm[0] * self.settings.value("blockx").toFloat()[0]
-            y = self.dpmm[1] * self.settings.value("blocky").toFloat()[0]
-            print x, y
-            obj = self.add_text(QtCore.QPoint(x,y), posType = "rel")
-            
-            obj.setPlainText(self.settings.value("block").toString())
-            obj.suppress_address_errors = self.settings.value("suppress_address_errors").toBool()
-                
-            
-            
+        
+        for objectName in self.settings.childGroups():
+            objType = self.settings.value("type").toString()
+            self.settings.beginGroup(objectName)
+            print objectName
+            obj = self.objectTypes[str(objType)](objectName)
+            self.objectCollection.append(obj)
+            for propName in self.settings.childKeys():
+                obj.propNames[str(propName)].set_value(self.settings.value(propName))
+        
         self.settings.endGroup()
         
         
@@ -550,7 +578,13 @@ class Labeler(QtGui.QApplication):
 
     def add_text(self, pos, posType="abs"):#text, x, y):
         """ add a text item at pos, returns a point to the object. Pos type can be "abs" for absolute window co-ords, or "rel" for on-paper co-ords """
-        obj = LabelerTextItem()
+        name = "Text"
+        count = 0
+        while name in self.itemNames:
+            count += 1
+            name = "Text%d" % count
+        self.itemNames.append(name)
+        obj = LabelerTextItem(name)
         
         self.labelView.scene().addItem(obj)
         
@@ -567,7 +601,7 @@ class Labeler(QtGui.QApplication):
         self.objectCollection.append(obj)
         
         item = QtGui.QTreeWidgetItem(self.ui.itemList)
-        item.setText(0, "TextObj1")
+        item.setText(0, obj.name)
         item.setData(1,0, obj)
         self.itemListObjects[obj] = item
         

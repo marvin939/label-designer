@@ -15,6 +15,10 @@ class LabelItemProperty(QtCore.QObject):
         self.value = None
         self.type = None
         
+    def override_value(self, value):
+        self.value = self.type(value)
+        self.emit_update()
+        
     def enable_updates(self, update = True):
         """ Call this before updating if you do not want a signal being emitted, call again to turn it on, update is whether to turn it on or off """
         self._updateEnabled = update
@@ -161,12 +165,14 @@ class LabelDoubleProperty(LabelItemProperty):
             self.value = float(value)
         else:
             self.value = 0.0
+            
         
         self.widgetOrder.append("Value")
         self.widgets["Value"] = QtGui.QDoubleSpinBox()
-        self.widgets["Value"].setValue(self.value)
         self.widgets["Value"].setMinimum(0.0)
         self.widgets["Value"].setMaximum(1000.0)
+        
+        self.widgets["Value"].setValue(self.value)
         self.connect(self.widgets["Value"], QtCore.SIGNAL("valueChanged(double)"), self.update_double)
         
         self.updateSignal = QtCore.SIGNAL("valueChanged(double)")
@@ -182,7 +188,7 @@ class LabelDoubleProperty(LabelItemProperty):
         self.widgets["Value"].setMinimum(float(minimum))
         self.widgets["Value"].setMaximum(float(maximum))
         
-    def set_value(self, value):
+    def set_double(self, value):
         self.widgets["Value"].setValue(value)
 
     def update_double(self, value):

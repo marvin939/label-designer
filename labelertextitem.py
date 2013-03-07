@@ -1,13 +1,12 @@
 from PyQt4 import QtCore, QtGui
-import math
 from labeleritemmixin import LabelerItemMixin, LabelProp
 
 class LabelerTextItem(QtGui.QGraphicsTextItem, LabelerItemMixin):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, name, *args, **kwargs):
         self.editing = False
         super(LabelerTextItem, self).__init__(*args, **kwargs)
-        LabelerItemMixin.__init__(self)
-        
+        LabelerItemMixin.__init__(self, name)
+        self.objectType = "Text"
         self.lineSpacing = 90
         self.currentFontSize = 9.0
         self.perfectFontSize = 20.0
@@ -77,11 +76,17 @@ class LabelerTextItem(QtGui.QGraphicsTextItem, LabelerItemMixin):
         self.propNames["X Coord"].enable_updates(False)
         self.propNames["Y Coord"].enable_updates(False)
         
-        self.propNames["X Coord"].set_value(self.scenePos().x())
-        self.propNames["Y Coord"].set_value(self.scenePos().y())
+        self.propNames["X Coord"].set_double(self.scenePos().x())
+        self.propNames["Y Coord"].set_double(self.scenePos().y())
         
         self.propNames["X Coord"].enable_updates(True)
-        self.propNames["Y Coord"].enable_updates(False)
+        self.propNames["Y Coord"].enable_updates(True)
+        
+    def setX(self, value):
+        self.setPos(value, self.y())
+        
+    def setY(self, value):
+        self.setPos(self.x(), value )
         
     def skip_blanks_toggle(self, toggle):
         self.skipBlanks = toggle

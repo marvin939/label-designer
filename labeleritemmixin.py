@@ -14,7 +14,7 @@ class LabelerItemMixin:
     
     
     headerRE = re.compile('<<.*?>>')
-    def __init__(self):
+    def __init__(self, name):
         
         self.propertyTypes = {'textarea':LabelTextAreaProperty,
                      'textline':LabelTextLineProperty,
@@ -28,6 +28,8 @@ class LabelerItemMixin:
         self.propCallbacks = {}
         self.properties = []
         self.propNames = {}
+        self.name = name
+        self.objectType = "ERROR"
         #if properties == None:
         #    self.properties = {}
         #    self.propOrder = []
@@ -55,7 +57,6 @@ class LabelerItemMixin:
         """ This method takes a dictionary object with  """
         #for key, value in properties.items():
         for prop in properties:
-            print prop.propName, prop.propValue
             propItem = self.propertyTypes[prop.propType](prop.propName, prop.propValue)
             propItem.connect(propItem, propItem.updateSignal, self.propCallbacks[prop.propName])
             self.properties.append(propItem)
