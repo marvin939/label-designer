@@ -64,6 +64,9 @@ class Labeler(QtGui.QApplication):
         self.rawData = [[]]
         self.layouts = []
         self.itemNames = []
+        fontTest = self.MainWindow.font()
+        fontTest.setFamily("Sans")
+        self.MainWindow.setFont(fontTest)
         
         ## Load in settings from conf or generate if missing
         self.defaultSettings = {'permit':478,
@@ -185,10 +188,11 @@ class Labeler(QtGui.QApplication):
         while str(text).strip() == "":
             text, ok = QtGui.QInputDialog.getText(self.MainWindow, "Name of Layout", question, QtGui.QLineEdit.Normal, current)
             if ok and str(text).strip() <> "":
+                # OK, Valid Name
                 print text
-                self.settings.beginGroup("mainapp")
-                self.settings.setValue("zoom", int(self.ui.zoomLevel.value()))
-                self.settings.endGroup()
+                #self.settings.beginGroup("mainapp")
+                #self.settings.setValue("zoom", int(self.ui.zoomLevel.value()))
+                #self.settings.endGroup()
                 self.settings.beginGroup("layouts")
                 self.settings.beginGroup(text)
                 self.settings.setValue("permit", self.ui.permitEntry.text())
@@ -197,8 +201,8 @@ class Labeler(QtGui.QApplication):
                 self.settings.setValue("usereturn", self.ui.returnCheck.isChecked())
                 
                 for obj in self.objectCollection:
-                    self.settings.setValue("type", obj.objectType)
                     self.settings.beginGroup(obj.name)
+                    self.settings.setValue("type", obj.objectType)
                     #self.settings.setValue("name", obj.name)
                     for name, prop in obj.propNames.items():
                         
@@ -206,21 +210,25 @@ class Labeler(QtGui.QApplication):
                     self.settings.endGroup()
                 self.settings.endGroup()    
                 self.settings.endGroup()
-            elif ok:
+            elif ok and str(text).strip() == "":
+                #OK, Invalid name, try again
                 question = "Value was blank, please enter in a non-blank name"
             else:
+                # Canceled
                 break
         
         
     def create_defaults(self):
         self.settings.beginGroup("Default Layout")
+        #
         self.settings.setValue("permit", "478")
         self.settings.setValue("return", "If Undelivered, Return To: Private Bag 39996, Wellington Mail Centre, Lower Hutt  5045")
         self.settings.setValue("usepermit", True)
         self.settings.setValue("usereturn", True)
-        
-        
+        #
+        #
         self.settings.beginGroup("Address Block")
+        ##
         self.settings.setValue("type", "Text")
         self.settings.setValue("Text", "<<Address1>>\n<<Address2>>\n<<Address3>>\n<<Address4>>\n<<Address5>>\n<<Address6>>\n<<Address7>>\n<<Address8>>")
         self.settings.setValue("X Coord", 4.5)
@@ -228,8 +236,9 @@ class Labeler(QtGui.QApplication):
         self.settings.setValue("Font", QtGui.QFont("Arial", 9.0, QtGui.QFont.Normal, False))
         self.settings.setValue("Skip Blanks", True)
         self.settings.setValue("Line Spacing", 100.0)
+        ##
         self.settings.endGroup()
-        
+        #
         self.settings.endGroup()
         
         
@@ -280,32 +289,42 @@ class Labeler(QtGui.QApplication):
             
             
     def set_layout(self, item):
-        print item.text()
-        self.clear_layout()
-        self.settings.beginGroup("layouts")
-        self.settings.beginGroup(item.text())
-        
-        self.ui.permitEntry.setText(self.settings.value("permit").toString())
-        self.ui.permitCheck.setChecked(self.settings.value("usepermit").toBool())
-        self.ui.returnAddress.setText(self.settings.value("return").toString())
-        self.ui.returnCheck.setChecked(self.settings.value("useReturn").toBool())
-        
-        for objectName in self.settings.childGroups():
-            objType = self.settings.value("type").toString()
-            self.settings.beginGroup(objectName)
-            print objectName
-            obj = self.objectTypes[str(objType)](objectName)
-            self.objectCollection.append(obj)
-            for propName in self.settings.childKeys():
-                obj.propNames[str(propName)].set_value(self.settings.value(propName))
-        
-        self.settings.endGroup()
-        
+        try:
+            #self.MainWindow.setUpdatesEnabled(False)
+            self.clear_layout()
+            self.settings.beginGroup("layouts")
+            self.settings.beginGroup(item.text())
+            
+            self.ui.permitEntry.setText(self.settings.value("permit").toString())
+            self.ui.permitCheck.setChecked(self.settings.value("usepermit").toBool())
+            self.ui.returnAddress.setText(self.settings.value("return").toString())
+            self.ui.returnCheck.setChecked(self.settings.value("useReturn").toBool())
+            for objectName in self.settings.childGroups():
+                self.settings.beginGroup(objectName)
+                objType = str(self.settings.value("type").toString())
+                
+                print objType, "Fgfg"
+                obj = self.objectTypes[str(objType)](objectName)
+                #self.objectCollection.append(obj)
+                self.add_object(obj)
+                for propName in self.settings.childKeys():
+                    if str(propName) == "type":
+                        continue
+                    obj.propNames[str(propName)].set_value(self.settings.value(propName))
+                self.settings.endGroup()
+            self.settings.endGroup()
+            self.settings.endGroup()
+            #self.MainWindow.setUpdatesEnabled(True)
+        except Exception as e:
+            #self.MainWindow.setUpdatesEnabled(True)
+            import traceback
+            print traceback.print_tb(sys.exc_info()[2])
         
     def clear_layout(self):
         for obj in self.objectCollection[:]:
-            
             self.remove_object(obj)
+            
+        self.log_message("cleared")
         
         
     def remove_object(self, obj):
@@ -313,9 +332,8 @@ class Labeler(QtGui.QApplication):
         self.labelView.scene().removeItem(obj)
         self.objectCollection.remove(obj)
         self.ui.itemList.takeTopLevelItem(self.ui.itemList.indexOfTopLevelItem(self.itemListObjects[obj]))
-
+        self.itemNames.remove(obj.name)
         del self.itemListObjects[obj]
-        del obj
         
     def log_message(self, message, level="log"):
         """ Logs a message to the console, levels include log, warning, and error """
@@ -586,8 +604,9 @@ class Labeler(QtGui.QApplication):
         self.itemNames.append(name)
         obj = LabelerTextItem(name)
         
-        self.labelView.scene().addItem(obj)
+       
         
+        self.add_object(obj)
         
         if posType == "abs":
             obj.setPos(self.labelView.mapToScene(pos))
@@ -598,12 +617,12 @@ class Labeler(QtGui.QApplication):
         obj.setPlainText("Enter Text")
         
         
-        self.objectCollection.append(obj)
+        #self.objectCollection.append(obj)
         
-        item = QtGui.QTreeWidgetItem(self.ui.itemList)
-        item.setText(0, obj.name)
-        item.setData(1,0, obj)
-        self.itemListObjects[obj] = item
+        #item = QtGui.QTreeWidgetItem(self.ui.itemList)
+        #item.setText(0, obj.name)
+        #item.setData(1,0, obj)
+        #self.itemListObjects[obj] = item
         
         
         obj.start_edit()
@@ -618,12 +637,17 @@ class Labeler(QtGui.QApplication):
     def add_barcode(self, pos):
         """ Add a barcode item """
         obj = LabelerBarcodeItem()
-        self.labelView.scene().addItem(obj)
+        
+        self.add_object(obj)
         
         obj.setPos(self.labelView.mapToScene(pos))
         
+        
+        
+    def add_object(self, obj):
+        self.labelView.scene().addItem(obj)
         item = QtGui.QTreeWidgetItem(self.ui.itemList)
-        item.setText(0, "BarcodeObj1")
+        item.setText(0, obj.name)
         item.setData(1,0, obj)
         self.itemListObjects[obj] = item
         

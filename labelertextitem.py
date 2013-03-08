@@ -169,7 +169,6 @@ class LabelerTextItem(QtGui.QGraphicsTextItem, LabelerItemMixin):
         self.setFont(font)
         
     def font_changed(self, font):
-        print font.pointSizeF()
         self.setFont(font)
         
     def set_font_family(self, newFont):
@@ -249,7 +248,6 @@ class LabelerTextItem(QtGui.QGraphicsTextItem, LabelerItemMixin):
             metric = QtGui.QFontMetricsF(font)
             newwidth = metric.width(self.toPlainText())
             newheight = metric.boundingRect(self.toPlainText()).height()
-            print width, newwidth, "height", height, newheight
             if 0 in (width, newwidth, height, newheight) :
                 new = size / self.perfectFontSize
                 self.setScale(new)

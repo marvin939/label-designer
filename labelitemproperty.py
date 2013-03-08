@@ -26,6 +26,10 @@ class LabelItemProperty(QtCore.QObject):
     def get_value(self):
         """ Returns a copy of the underlying value """
         return self.type(self.value)
+    
+    def set_value(self, value):
+        """ This must be overridden to set the value, based on a value coming from QSettings """
+        print "ERRRRRR"
         
     def emit_update(self):
         """ Convenience Method, This will call the properties' self.updateSignal, with a copy of self.value, using self.type to create, as its only argument """
@@ -103,6 +107,14 @@ class LabelFontProperty(LabelItemProperty):
     def get_value(self):
         """ Returns the font """
         return QtGui.QFont(self.value)
+    
+    def set_value(self, value):
+        self.value = QtGui.QFont(value)
+        self.widgets["Family"].setCurrentFont(self.value)
+        self.widgets["Point Size"].setValue(self.value.pointSizeF())
+        self.widgets["Bold"].setChecked(self.value.bold())
+        self.widgets["Italic"].setChecked(self.value.italic())
+        self.emit_update()
         
         
 class LabelTextAreaProperty(LabelItemProperty):
@@ -129,7 +141,11 @@ class LabelTextAreaProperty(LabelItemProperty):
     def update_text(self):
         self.value = self.widgets["Value"].toPlainText()
         self.emit_update()
-            
+        
+    def set_value(self, value):
+        self.value = QtCore.QString(value.toString())
+        self.widgets["Value"].setPlainText(self.value)
+        self.emit_update()
         
 class LabelTextLineProperty(LabelItemProperty):
     def __init__(self, name, text=None):
@@ -155,6 +171,11 @@ class LabelTextLineProperty(LabelItemProperty):
         
     def update_text(self, text):
         self.value = QtCore.QString(text)
+        self.emit_update()
+        
+    def set_value(self, value):
+        self.value = QtCore.QString(value)
+        self.widgets["Text"].setPlainText(self.value)
         self.emit_update()
         
 class LabelDoubleProperty(LabelItemProperty):
@@ -195,6 +216,11 @@ class LabelDoubleProperty(LabelItemProperty):
         self.value = float(value)
         self.emit_update()
         
+    def set_value(self, value):
+        self.value = value.toFloat()[0]
+        self.widgets["Value"].setValue(self.value)
+        self.emit_update()
+        
 class LabelIntegerProperty(LabelItemProperty):
     def __init__(self, name, value=None):
         super(LabelIntegerProperty, self).__init__(name)
@@ -228,6 +254,11 @@ class LabelIntegerProperty(LabelItemProperty):
         self.widgets["Value"].setMinimum(int(minimum))
         self.widgets["Value"].setMaximum(int(maximum))
         
+    def set_value(self, value):
+        self.value = int(value)
+        self.widgets["Value"].setValue(self.value)
+        self.emit_update()
+        
 class LabelListProperty(LabelItemProperty):
     def __init__(self, name, value=None):
         super(LabelListProperty, self).__init__(name)
@@ -249,5 +280,10 @@ class LabelBooleanProperty(LabelItemProperty):
         
     def update_checked(self, toggle):
         self.value = bool(toggle)
+        self.emit_update()
+        
+    def set_value(self, value):
+        self.value = bool(value)
+        self.widgets["Value"].setChecked(self.value)
         self.emit_update()
         
