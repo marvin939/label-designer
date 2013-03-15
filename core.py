@@ -2,6 +2,7 @@ import LabelDesigner
 import sys, os, csv
 import xlrd
 import re
+import datetime
 import random
 from labelertextitem import LabelerTextItem
 from labelerbarcodeitem import LabelerBarcodeItem
@@ -39,6 +40,7 @@ class LabelMainWindow(QtGui.QMainWindow):
 #            event.ignore()
 #        elif result == quitBox.Yes:
 #            QtCore.QCoreApplication.instance().save_settings()
+        print "closing"
         pass
             
         
@@ -53,10 +55,13 @@ class Labeler(QtGui.QApplication):
         self.MainWindow = LabelMainWindow()
         self.merging = False
         self.currentRecordNumber = None
+        self.objectGarbage = []
         
         self.itemListObjects = {}
         self.dataSet = []
-        self.currentDirectory = os.getcwd()
+        thisYear = datetime.date.today().strftime('%Y')
+        thisMonth = datetime.date.today().strftime('%B %Y')
+        self.currentDirectory = '\\\\pldmpp\\data\\%s\\%s' % (thisYear, thisMonth)
         self.currentFile = None
         self.headers = []
         self.previewMode = False
@@ -92,7 +97,7 @@ class Labeler(QtGui.QApplication):
         self.fileLoaders = {}
         self.fileLoaders[".csv"] = self.load_csv
         self.fileLoaders[".xls"] = self.load_xls
-        
+        self.fileLoaders[".xlsx"] = self.load_xls
         
         #Set DPMM(dots per mm) based on QT's DPI
         self.dpi  = (self.MainWindow.logicalDpiX(), self.MainWindow.logicalDpiY())
@@ -167,7 +172,7 @@ class Labeler(QtGui.QApplication):
         
         self.logAppendCursor = self.ui.logConsole.cursorForPosition(QtCore.QPoint(0,0))
         self.logScrollBar = self.ui.logConsole.verticalScrollBar()
-        self.ui.logConsole.setLineWrapMode(self.ui.logConsole.NoWrap)
+        #self.ui.logConsole.setLineWrapMode(self.ui.logConsole.NoWrap)
         
         
         
@@ -176,6 +181,7 @@ class Labeler(QtGui.QApplication):
         self.load_settings()
 
         self.MainWindow.show()
+        
         
     def save_layout(self):
         item = self.ui.layoutList.currentItem()
@@ -290,7 +296,7 @@ class Labeler(QtGui.QApplication):
             
     def set_layout(self, item):
         try:
-            #self.MainWindow.setUpdatesEnabled(False)
+            print "Trying"
             self.clear_layout()
             self.settings.beginGroup("layouts")
             self.settings.beginGroup(item.text())
@@ -303,7 +309,6 @@ class Labeler(QtGui.QApplication):
                 self.settings.beginGroup(objectName)
                 objType = str(self.settings.value("type").toString())
                 
-                print objType, "Fgfg"
                 obj = self.objectTypes[str(objType)](objectName)
                 #self.objectCollection.append(obj)
                 self.add_object(obj)
@@ -314,10 +319,9 @@ class Labeler(QtGui.QApplication):
                 self.settings.endGroup()
             self.settings.endGroup()
             self.settings.endGroup()
-            #self.MainWindow.setUpdatesEnabled(True)
         except Exception as e:
-            #self.MainWindow.setUpdatesEnabled(True)
             import traceback
+            print "dunno"
             print traceback.print_tb(sys.exc_info()[2])
         
     def clear_layout(self):
@@ -328,12 +332,14 @@ class Labeler(QtGui.QApplication):
         
         
     def remove_object(self, obj):
-        """ Removes an item from the layup """
+        """ Removes an object from the scene, and object collections """
         self.labelView.scene().removeItem(obj)
         self.objectCollection.remove(obj)
         self.ui.itemList.takeTopLevelItem(self.ui.itemList.indexOfTopLevelItem(self.itemListObjects[obj]))
+        print self.itemNames
         self.itemNames.remove(obj.name)
         del self.itemListObjects[obj]
+        self.objectGarbage.append(obj)
         
     def log_message(self, message, level="log"):
         """ Logs a message to the console, levels include log, warning, and error """
@@ -352,6 +358,12 @@ class Labeler(QtGui.QApplication):
         self.logScrollBar.setValue(self.logScrollBar.maximum())    
  
     def toggle_preview(self, toggle):
+        if toggle:
+            # If trying to enable a preview. This check also prevents an infinite loop
+            if not self.field_check():
+                # If not all fields were found, re-disable the preview check and exit
+                self.ui.previewCheck.setChecked(False)
+                return
         self.lock_editing(toggle)
         self.ui.addText.setEnabled(not toggle)
         self.ui.addBarcode.setEnabled(not toggle)
@@ -359,11 +371,13 @@ class Labeler(QtGui.QApplication):
         self.labelView.scene().clearSelection()
         if toggle:
             self.start_merge(preview=True)
-            
+            print "EGADS"
             self.currentRecordNumber = self.ui.previewRecord.value()
-            self.merge_row(self.dataSet[self.ui.previewRecord.value()-1])
+            if len(self.dataSet) > 0:
+                self.merge_row(self.dataSet[self.ui.previewRecord.value()-1])
         else:
-            self.end_merge()
+            if self.merging:
+                self.end_merge()
         
     def lock_editing(self, lock=True):
         self.labelView.setInteractive(not lock)
@@ -382,7 +396,8 @@ class Labeler(QtGui.QApplication):
         self.ui.headerList.setUpdatesEnabled(True)
             
         if self.merging:
-            self.merge_row(self.dataSet[val-1])
+            if len(self.dataSet) > 0:
+                self.merge_row(self.dataSet[val-1])
         
         
     def update_subset_bottom(self, val):
@@ -434,6 +449,7 @@ class Labeler(QtGui.QApplication):
         self.labelView.set_permit_number(str(text))
         
     def return_address_changed(self):
+        print "woha"
         self.labelView.set_return_address(self.ui.returnAddress.toPlainText())
         
         
@@ -448,12 +464,21 @@ class Labeler(QtGui.QApplication):
         """ Shows an open file dialog, then proceeds to load the file as data """
         filename = str(QtGui.QFileDialog.getOpenFileName(self.MainWindow, "Select File", self.currentDirectory))
         if filename <> "":
+            # Preserve preview state
+            previewState = self.ui.previewCheck.isChecked()
+            # Now disable it
+            self.ui.previewCheck.setChecked(False)
+            
+            # Set the current file directory and filename
             self.currentDirectory = os.path.split(filename)[0]
+            self.currentFile = filename
             self.load_dataset(filename)
+            # Now restore the preview state
+            self.ui.previewCheck.setChecked(previewState)
         
     def load_dataset(self, filename):
         """ Loads the file, datatype determined by extension """
-        self.currentFile = filename
+        
         ext = os.path.splitext(filename)[1].lower()
         self.rawData = []
         self.dataSet = []
@@ -565,10 +590,14 @@ class Labeler(QtGui.QApplication):
             
         
     def load_xls(self, filename):
-        """ loads XLS only, not xlsx, uses xlrd TODO use win32com for xlsx and others """
+        """ loads both xls and xlsx, providing that xlrd 0.9+ is used """
         xlfile = xlrd.open_workbook(filename)
         sheets = xlfile.sheet_names()
-        name, result = QtGui.QInputDialog.getItem(self.MainWindow, "Select which sheet you would like to use", "Which sheet would you like to use?", sheets, editable=False)
+        # Ask the user which sheet to use
+        name, result = QtGui.QInputDialog.getItem(self.MainWindow, 
+                                                  "Select which sheet you would like to use", 
+                                                  "Which sheet would you like to use?", 
+                                                  sheets, editable=False)
         if result == True:
             sheetname = str(name)
             sheet = xlfile.sheet_by_name(sheetname)
@@ -578,16 +607,20 @@ class Labeler(QtGui.QApplication):
                 newrow = []
                 for cell in row:
                     if cell.ctype == 3:
+                        # Type is a date, so it will read into a datetime.datetime object
                         newrow.append(xlrd.xldate_as_tuple(cell.value, xlfile.datemode))
                     elif cell.ctype == 4:
+                        # cell is a boolean type
                         newrow.append("TRUE") if cell.value else newrow.append("FALSE")
                     elif cell.ctype == 2:
+                        # cell is a number type
                         val = int(cell.value)
                         if val == cell.value:
                             newrow.append(str(int(cell.value)))
                         else:
                             newrow.append(str(cell.value))
                     else:
+                        # cell is probably a text/string value
                         newrow.append(cell.value)
                 data.append(newrow)
             return data
@@ -601,7 +634,7 @@ class Labeler(QtGui.QApplication):
         while name in self.itemNames:
             count += 1
             name = "Text%d" % count
-        self.itemNames.append(name)
+        #self.itemNames.append(name)
         obj = LabelerTextItem(name)
         
        
@@ -645,12 +678,14 @@ class Labeler(QtGui.QApplication):
         
         
     def add_object(self, obj):
+        """ Adds the object to the Scene, list of objects,  """
         self.labelView.scene().addItem(obj)
         item = QtGui.QTreeWidgetItem(self.ui.itemList)
         item.setText(0, obj.name)
         item.setData(1,0, obj)
+        item.setFlags(item.flags() | QtCore.Qt.ItemIsEditable)
         self.itemListObjects[obj] = item
-        
+        self.itemNames.append(obj.name)
         
         self.objectCollection.append(obj)
         
@@ -684,6 +719,7 @@ class Labeler(QtGui.QApplication):
             
         
     def merge_row(self, row):
+        """ calls the merge_row method on every object in the collection, using row as data """
         for obj in self.objectCollection:
             obj.merge_row(row)
     
@@ -724,66 +760,108 @@ class Labeler(QtGui.QApplication):
         self.ui.zoomLevel.setValue(zoom)
         
     def start_progress_bar(self, minimum, maximum):
+        """ Opens the progress window, setting the current number of stages the
+            progress will go through, this is usually used when merging """
+        
         self.progressWindow.setRange(minimum, maximum)
         newValue = 1
         progressText = "Generating Page %d of %d" % (newValue, self.progressWindow.maximum())
         self.progressWindow.setLabelText(progressText)
         self.progressWindow.show()
         
-    def increment_progress_bar(self):
-        newValue = self.progressWindow.value() + 1
+    def increment_progress_bar(self, amount=1):
+        """ This should be called each time the progress increases by one stage """
+        newValue = self.progressWindow.value() + amount
         progressText = "Generating Page %d of %d" % (newValue, self.progressWindow.maximum())
         self.progressWindow.setValue(newValue)
         self.progressWindow.setLabelText(progressText)
-        self.progressWindow.update()
+        #self.progressWindow.update()
         
-    def render_pdf(self):
-        self.labelView.scene().render(self.scenepainter)
+    #def render_pdf(self):
+    #    self.labelView.scene().render(self.scenepainter)
         
     def create_pdf(self):
         """ Generates a pdf file based on data and layup """
         self.make_labels()
         
     def print_labels(self):
+        """ Calls make labels, telling it to also send to the printer, 
+            this is a convenience method for a QT signal """
         self.make_labels("PRINT")
         
-        
-    def make_labels(self, method="PDF"):
-        """ Starts making labels, if method is set to "PRINT", it will also print to the selected printer """
-            
-        ## test text objects for header names as well as unselect everything
+    def field_check(self):
+        """ Will check all objects' merge fields to make sure that the fields are available. 
+            returns True if all headers used were found, otherwise False, then will log an
+            error message to the console """
         headersMatched = True
-        errorMessage = ""
+        # For each object
+        message = ""
         for obj in self.objectCollection:
-            # if obj is type text
+            # Unselect it
             obj.setSelected(False)
+            
+            # Test text for any merge fields, then test that against the header listing
             text = str(obj.get_merge_text())
             matches = self.headerRE.findall(text)
-            matches = set(matches)
+            matches = sorted(set(matches))
             for i in matches:
                 x = i.replace("<<", "").replace(">>","")
                 if not x in self.headers:
                     if not obj.suppress_address_errors:
-                        errorMessage += "Error, could not find header %s, please check your spelling.\n" % i
+                        # Was unable to find a match for this header, so issue a warning
+                        message += " %s," % x
+                        #self.log_message("Error, could not find header %s, please check your spelling.\n" % x, "error")
                         headersMatched = False
         if not headersMatched:
-            QtGui.QMessageBox.critical(self.MainWindow, "Error Header Not Found", errorMessage)
+            message = self.log_message("Error, the following fields could not be found: " + message[1:-1], "error")
+                
+            self.beep()
+             
+        return headersMatched
+        
+    def make_labels(self, method="PDF"):
+        """ Starts making labels, if method is set to "PRINT", it will also 
+            print to the selected printer """
+        if not self.field_check():
+            # field matching failed, abort
+            
             return
+        
+        # preserve preview state    
+        previewState = self.ui.previewCheck.isChecked()
+        
+        # now disable it
+        self.ui.previewCheck.setChecked(False)
+        
+        
+        
         
         printer = None
         if method == "PRINT":
+            # If method type is set to PRINT, also set up a printer to the currently 
+            # selected printer
             printer = QtGui.QPrinter()
             printer.setPrinterName(self.currentPrinter)
             printer.setOrientation(printer.Portrait)
+            # Due to something to do with the Avery printer, we need to set the 
+            # dimensions to be 2x their normal width and height
             printer.setPaperSize(QtCore.QSizeF(90, 180), QtGui.QPrinter.Millimeter)
             printer.setFullPage(True)
             
             painter = QtGui.QPainter()
             painter.begin(printer)
 
+        # Set up a printer to output to PDF
         pdfPrint = QtGui.QPrinter()
-        pdfPrint.setOutputFileName("Testing.pdf")
+        outputName = "Testing.pdf"
+        
+        # Set pdf name to inputname + '_labels.pdf' if currentFile is not none
+        if self.currentFile <> None:
+            outputName = os.path.splitext(self.currentFile)[0] +'_labels.pdf'
+
+        pdfPrint.setOutputFileName(outputName)
         pdfPrint.setOrientation(pdfPrint.Landscape)
+        
         pdfPrint.setPaperSize(QtCore.QSizeF(45, 90), QtGui.QPrinter.Millimeter)
         pdfPrint.setFullPage(True)
         pdfPainter = QtGui.QPainter()
@@ -792,15 +870,20 @@ class Labeler(QtGui.QApplication):
         self.start_merge()
         first = True
         self.labelInProgress = True
+        # Start merging!
         for row in self.mergeDataSet:
+            
             
             self.merge_row(row)
             
             copies = self.ui.copyCount.value()
             if self.ui.copyUseField.isChecked():
+                # use field in the database if asked to
                 copies = int(row[str(self.ui.copyField.currentText())])
-            
+            # Repeat for as many copies as needed
             for i in range(copies):
+                # If this is not the first time looping, make sure to call "newPage" on the printer
+                # the printer variable tells us if we are printing to a "Printer" as well as a PDF
                 if first:
                     first = False
                 else:
@@ -814,20 +897,27 @@ class Labeler(QtGui.QApplication):
                 self.labelView.scene().render(pdfPainter)
             self.increment_progress_bar()
             if not self.labelInProgress:
+                # If at any point the merging is canceled, this will break the merge loop.
                 break
             self.currentRecordNumber += 1
             
+        # Clean up merging
         self.end_merge()
         if printer <> None:
             painter.end()
         pdfPainter.end()
         
+        #Restore state of widget
         self.labelView.show_bg()
+        self.ui.previewCheck.setChecked(previewState)
 
         
-MainApp = Labeler(sys.argv)      
+     
         
 if __name__ == '__main__':
-    
-    
-    sys.exit(MainApp.exec_())
+    MainApp = Labeler(sys.argv) 
+    try:
+        sys.exit(MainApp.exec_())
+    except:
+        import traceback
+        print traceback.print_tb(sys.exc_info()[2])

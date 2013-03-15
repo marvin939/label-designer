@@ -52,6 +52,10 @@ class LabelerItemMixin:
         self.dpi = QtCore.QCoreApplication.instance().dpi
         self.dpmm = QtCore.QCoreApplication.instance().dpmm
         
+    def clean_up_widgets(self):
+        for i in self.propItems:
+            i.clean_up()
+        
         
     def load_properties(self, properties):
         """ This method takes a dictionary object with  """

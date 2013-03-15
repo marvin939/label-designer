@@ -32,10 +32,10 @@ class ReturnText(QtGui.QGraphicsTextItem):
         topRightPrev = self.boundingRect().topRight()
         self.setTextWidth(-1)
         self.setTextWidth(self.boundingRect().width())
-        self.setAlignment(self.alignment_)
+        #self.setAlignment(self.alignment_)
         topRight = self.boundingRect().topRight()
         if self.boundingRect().width() > self.dpmm[0] * 90 * (1.0/self.scale()):
-            self.setTextWidth(self.dpmm[0] * 90 * (1.0/self.scale))
+            self.setTextWidth(self.dpmm[0] * 90 * (1.0/self.scale()))
         width = self.boundingRect().width() * self.scale()
         height = self.boundingRect().height() * self.scale()
         
@@ -45,12 +45,12 @@ class ReturnText(QtGui.QGraphicsTextItem):
         elif self.alignment_ == QtCore.Qt.AlignCenter:
             self.setPos(self.pos() - QtCore.QPointF(((width - widthPrev)/2),(height-heightPrev)))
             
-    def setAlignment(self, alignment):
-        self.alignment_ = alignment
-        blockformat = QtGui.QTextBlockFormat()
-        blockformat.setAlignment(alignment)
-        cursor = self.textCursor()
-        cursor.select(QtGui.QTextCursor.Document)
-        cursor.mergeBlockFormat(blockformat)
-        cursor.clearSelection()
-        self.setTextCursor(cursor)
+    #def setAlignment(self, alignment):
+    #    self.alignment_ = alignment
+    #    blockformat = QtGui.QTextBlockFormat()
+    #    blockformat.setAlignment(alignment)
+    #    cursor = self.textCursor()
+    #    cursor.select(QtGui.QTextCursor.Document)
+    #    cursor.mergeBlockFormat(blockformat)
+    #    cursor.clearSelection()
+    #    self.setTextCursor(cursor)

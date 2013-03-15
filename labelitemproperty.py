@@ -15,6 +15,10 @@ class LabelItemProperty(QtCore.QObject):
         self.value = None
         self.type = None
         
+    def clean_up(self):
+        for widget in self.widgets.values():
+            widget.setParent(None)
+        
     def override_value(self, value):
         self.value = self.type(value)
         self.emit_update()
