@@ -40,7 +40,6 @@ class LabelMainWindow(QtGui.QMainWindow):
 #            event.ignore()
 #        elif result == quitBox.Yes:
 #            QtCore.QCoreApplication.instance().save_settings()
-        print "closing"
         pass
             
         
@@ -160,10 +159,7 @@ class Labeler(QtGui.QApplication):
         
         
         # Setup a base progress window
-        self.progressWindow = QtGui.QProgressDialog(self.MainWindow)
-        self.progressWindow.setWindowTitle("PDF Generation Progress...")
-        self.progressWindow.setMinimumWidth(300)
-        self.connect(self.progressWindow, QtCore.SIGNAL('canceled()'), self.cancel_label)
+        
         
         self.dataSetCount.setText("No data loaded.")
   
@@ -296,7 +292,6 @@ class Labeler(QtGui.QApplication):
             
     def set_layout(self, item):
         try:
-            print "Trying"
             self.clear_layout()
             self.settings.beginGroup("layouts")
             self.settings.beginGroup(item.text())
@@ -321,7 +316,6 @@ class Labeler(QtGui.QApplication):
             self.settings.endGroup()
         except Exception as e:
             import traceback
-            print "dunno"
             print traceback.print_tb(sys.exc_info()[2])
         
     def clear_layout(self):
@@ -336,7 +330,6 @@ class Labeler(QtGui.QApplication):
         self.labelView.scene().removeItem(obj)
         self.objectCollection.remove(obj)
         self.ui.itemList.takeTopLevelItem(self.ui.itemList.indexOfTopLevelItem(self.itemListObjects[obj]))
-        print self.itemNames
         self.itemNames.remove(obj.name)
         del self.itemListObjects[obj]
         self.objectGarbage.append(obj)
@@ -371,7 +364,6 @@ class Labeler(QtGui.QApplication):
         self.labelView.scene().clearSelection()
         if toggle:
             self.start_merge(preview=True)
-            print "EGADS"
             self.currentRecordNumber = self.ui.previewRecord.value()
             if len(self.dataSet) > 0:
                 self.merge_row(self.dataSet[self.ui.previewRecord.value()-1])
@@ -412,11 +404,15 @@ class Labeler(QtGui.QApplication):
         
     def refresh_printer_list(self):
         """ Refreshes the list of printers, setting it to default on the first printer with "Avery" in its name, if any """
+        # Clear the list and query a new one
         self.ui.printerList.clear()
         printers = QtGui.QPrinterInfo.availablePrinters()
+        # Sort alphabetically, as the order seems to be reversed, at least on windows
         printers.sort(key=lambda x: str(x.printerName()))
         for i in printers:
+            # add to the list
             self.ui.printerList.addItem(i.printerName())
+        # Loop through, looking for an "Avery" printer first
         for i in printers:
             name = i.printerName()
             if "avery" in str(name).lower():
@@ -427,18 +423,19 @@ class Labeler(QtGui.QApplication):
         self.currentPrinter = printerName
         
     def toggle_return_address(self, toggle):
+        # enable/disable the return address entry and remove it from the layup
         self.showReturn = toggle
         self.ui.returnAddress.setEnabled(toggle)
         self.labelView.toggle_return_address(toggle)
         
     def scene_selection_changed(self):
-        """ Called when the selection of the scene has changed, to select the correct item in the object list """
+        """ Called when the a new object is selected, and brings up its properties page """
         items = self.labelView.scene().selectedItems()
         if len(items) == 1:
             self.ui.itemList.setCurrentItem(self.itemListObjects[items[0]])
         
     def toggle_permit(self, toggle):
-        """ Called to toggle the on/off status of the permit label """
+        """ Toggles the permit on and off """
         self.showPermit = toggle
         #self.ui.permitPosition.setEnabled(toggle)
         self.ui.permitEntry.setEnabled(toggle)
@@ -449,7 +446,7 @@ class Labeler(QtGui.QApplication):
         self.labelView.set_permit_number(str(text))
         
     def return_address_changed(self):
-        print "woha"
+        """ Called to update the return address """
         self.labelView.set_return_address(self.ui.returnAddress.toPlainText())
         
         
@@ -472,6 +469,7 @@ class Labeler(QtGui.QApplication):
             # Set the current file directory and filename
             self.currentDirectory = os.path.split(filename)[0]
             self.currentFile = filename
+            # Set up the data
             self.load_dataset(filename)
             # Now restore the preview state
             self.ui.previewCheck.setChecked(previewState)
@@ -479,14 +477,12 @@ class Labeler(QtGui.QApplication):
     def load_dataset(self, filename):
         """ Loads the file, datatype determined by extension """
         
+        # Determine extension to open file
         ext = os.path.splitext(filename)[1].lower()
         self.rawData = []
         self.dataSet = []
-        try:
+        if ext in self.fileLoaders:
             self.rawData = self.fileLoaders[ext](filename)
-        except KeyError:
-            print 'unknown format %s' % ext
-        else:
             maxLen = 0
             for row in self.rawData:
                 maxLen = max(maxLen,len(row))
@@ -494,6 +490,10 @@ class Labeler(QtGui.QApplication):
                 if len(row) < maxLen:
                     row += [""] * (maxLen-len(row))
             self.setup_data()
+        else:
+            # Extension not recognised
+            self.log_message('unknown format %s' % ext, "error") 
+            
                     
     def setup_data(self):
         """ Takes the raw data and arranges it into a dict, based on whether or not it has headers """
@@ -501,6 +501,8 @@ class Labeler(QtGui.QApplication):
         
         offset = 0
         if self.hasHeaders:
+            # Create unique names for any conflicting headers, adds "1", "2" etc on to each repeated name
+            # If the header is blank, it simply creates "Field 1" etc names
             offset = 1
             self.headers = []
             for i in self.rawData[0]:
@@ -521,24 +523,25 @@ class Labeler(QtGui.QApplication):
         emptyFieldCount = 0
         headEnum = []
         
+        # Clear out the current list of headers, and re-update with the new ones
         self.ui.headerList.setUpdatesEnabled(False)
         self.ui.headerList.clear()
         self.ui.headerList.setRowCount(len(self.headers))
         self.ui.headerList.setColumnCount(2)
         self.ui.headerList.setHorizontalHeaderLabels(["Header", "Record"])
         
-        row = 0
         
-        for i in range(len(self.headers)):
+        for row in range(len(self.headers)):
             self.ui.headerList.verticalHeader().resizeSection(row, 15)
-            if self.headers[i].strip() == "":
+            if self.headers[row].strip() == "":
                 emptyFieldCount += 1
-                self.headers[i] = "Field%d" % emptyFieldCount
-            headEnum.append((i,self.headers[i]))
-            item = QtGui.QTableWidgetItem(self.headers[i])
+                self.headers[row] = "Field%d" % emptyFieldCount
+            headEnum.append((row,self.headers[row]))
+            item = QtGui.QTableWidgetItem(self.headers[row])
             self.ui.headerList.setItem(row, 0, item)
-            row += 1
             
+        # Loop through the data, convert each row to a dict, and add it to the set
+        # Uses offset to determine if it has headers or not
         for row in self.rawData[offset:]:
             newrow = {}
             for col, field in headEnum:
@@ -546,6 +549,8 @@ class Labeler(QtGui.QApplication):
             self.dataSet.append(newrow)
             
         if len(self.dataSet) == 0:
+            # There is not data, except maybe headers
+            # Set all row based entry fields to 0
             self.dataSetCount.setText("Dataset is empty.")
             self.ui.subsetBottom.setMinimum(0)
             self.ui.subsetBottom.setMaximum(0)
@@ -567,6 +572,7 @@ class Labeler(QtGui.QApplication):
             row = 0
             self.ui.copyField.setUpdatesEnabled(False)
             self.ui.copyField.clear()
+            # Populate the combo box for determining copies based on a field
             for i in self.headers:
                 record = str(self.dataSet[self.ui.previewRecord.value()-1][i])
                 item = QtGui.QTableWidgetItem(record)
@@ -762,7 +768,10 @@ class Labeler(QtGui.QApplication):
     def start_progress_bar(self, minimum, maximum):
         """ Opens the progress window, setting the current number of stages the
             progress will go through, this is usually used when merging """
-        
+        self.progressWindow = QtGui.QProgressDialog(self.MainWindow)
+        self.progressWindow.setWindowTitle("PDF Generation Progress...")
+        self.progressWindow.setMinimumWidth(300)
+        self.connect(self.progressWindow, QtCore.SIGNAL('canceled()'), self.cancel_label)
         self.progressWindow.setRange(minimum, maximum)
         newValue = 1
         progressText = "Generating Page %d of %d" % (newValue, self.progressWindow.maximum())
@@ -776,6 +785,10 @@ class Labeler(QtGui.QApplication):
         self.progressWindow.setValue(newValue)
         self.progressWindow.setLabelText(progressText)
         #self.progressWindow.update()
+        
+    def end_progress_window(self):
+        self.progressWindow.setParent(None)
+        del self.progressWindow
         
     #def render_pdf(self):
     #    self.labelView.scene().render(self.scenepainter)
@@ -835,7 +848,7 @@ class Labeler(QtGui.QApplication):
         
         
         
-        
+        self.MainWindow.hide()
         printer = None
         if method == "PRINT":
             # If method type is set to PRINT, also set up a printer to the currently 
@@ -871,9 +884,11 @@ class Labeler(QtGui.QApplication):
         first = True
         self.labelInProgress = True
         # Start merging!
+        count = 0
         for row in self.mergeDataSet:
-            
-            
+            count += 1
+            if count % 200 == 0:
+                self.processEvents()
             self.merge_row(row)
             
             copies = self.ui.copyCount.value()
@@ -890,6 +905,8 @@ class Labeler(QtGui.QApplication):
                     if printer <> None:
                         printer.newPage()
                     pdfPrint.newPage()
+                    
+                
             
                 if printer <> None:
                     self.labelView.scene().render(painter)
@@ -906,6 +923,9 @@ class Labeler(QtGui.QApplication):
         if printer <> None:
             painter.end()
         pdfPainter.end()
+        self.end_progress_window()
+        self.labelView.setVisible(True)
+        self.MainWindow.show()
         
         #Restore state of widget
         self.labelView.show_bg()
