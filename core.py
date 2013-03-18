@@ -7,6 +7,7 @@ import random
 from labelertextitem import LabelerTextItem
 from labelerbarcodeitem import LabelerBarcodeItem
 from PyQt4 import QtCore, QtGui
+from propertylistitem import PropertyListItem
 
 
 from labelitemproperty import LabelProp
@@ -156,6 +157,9 @@ class Labeler(QtGui.QApplication):
         self.connect(self.ui.previewCheck, QtCore.SIGNAL('toggled(bool)'), self.toggle_preview)
         self.connect(self.ui.layoutList, QtCore.SIGNAL('itemDoubleClicked(QListWidgetItem*)'), self.set_layout)
         self.connect(self.ui.saveLayout, QtCore.SIGNAL('clicked()'), self.save_layout)
+        self.connect(self.ui.loadLayout, QtCore.SIGNAL('clicked()'), self.load_layout)
+        self.connect(self.ui.itemList, QtCore.SIGNAL('itemChanged(QTreeWidgetItem*, int)'), self.item_name_changed)
+        self.connect(self.ui.removeLayout, QtCore.SIGNAL('clicked()'), self.remove_layout)
         
         
         # Setup a base progress window
@@ -178,6 +182,18 @@ class Labeler(QtGui.QApplication):
 
         self.MainWindow.show()
         
+    def remove_layout(self):
+        layoutItem = self.ui.layoutList.currentItem()
+        if layoutItem <> None:
+            ret = QtGui.QMessageBox.warning(self.MainWindow, 'Remove Layout', 
+                                     'Are you sure you would like to remove the \'%s\' layout?' % str(layoutItem.text()), 
+                                     QtGui.QMessageBox.Yes|QtGui.QMessageBox.No, QtGui.QMessageBox.No )
+            if ret == QtGui.QMessageBox.Yes:
+                print "Well done"
+        else:
+            self.log_message('No layout selected', 'error')
+            self.beep()
+        
         
     def save_layout(self):
         item = self.ui.layoutList.currentItem()
@@ -191,11 +207,8 @@ class Labeler(QtGui.QApplication):
             text, ok = QtGui.QInputDialog.getText(self.MainWindow, "Name of Layout", question, QtGui.QLineEdit.Normal, current)
             if ok and str(text).strip() <> "":
                 # OK, Valid Name
-                print text
-                #self.settings.beginGroup("mainapp")
-                #self.settings.setValue("zoom", int(self.ui.zoomLevel.value()))
-                #self.settings.endGroup()
                 self.settings.beginGroup("layouts")
+                self.settings.remove(text)
                 self.settings.beginGroup(text)
                 self.settings.setValue("permit", self.ui.permitEntry.text())
                 self.settings.setValue("return", self.ui.returnAddress.toPlainText())
@@ -203,7 +216,9 @@ class Labeler(QtGui.QApplication):
                 self.settings.setValue("usereturn", self.ui.returnCheck.isChecked())
                 
                 for obj in self.objectCollection:
+                    print obj.name
                     self.settings.beginGroup(obj.name)
+                    
                     self.settings.setValue("type", obj.objectType)
                     #self.settings.setValue("name", obj.name)
                     for name, prop in obj.propNames.items():
@@ -288,6 +303,15 @@ class Labeler(QtGui.QApplication):
             self.settings.endGroup()
             
         self.settings.endGroup()
+        
+    def load_layout(self):
+        item = self.ui.layoutList.currentItem()
+        if item <> None:
+            self.set_layout(item)
+        else:
+            self.log_message('No layout selected', 'error')
+            self.beep()
+            
             
             
     def set_layout(self, item):
@@ -319,10 +343,13 @@ class Labeler(QtGui.QApplication):
             print traceback.print_tb(sys.exc_info()[2])
         
     def clear_layout(self):
+        print self.itemNames
         for obj in self.objectCollection[:]:
             self.remove_object(obj)
+        print self.itemNames
+        
             
-        self.log_message("cleared")
+        self.log_message("Layout Cleared")
         
         
     def remove_object(self, obj):
@@ -330,9 +357,10 @@ class Labeler(QtGui.QApplication):
         self.labelView.scene().removeItem(obj)
         self.objectCollection.remove(obj)
         self.ui.itemList.takeTopLevelItem(self.ui.itemList.indexOfTopLevelItem(self.itemListObjects[obj]))
+        print obj.name
         self.itemNames.remove(obj.name)
         del self.itemListObjects[obj]
-        self.objectGarbage.append(obj)
+        #self.objectGarbage.append(obj)
         
     def log_message(self, message, level="log"):
         """ Logs a message to the console, levels include log, warning, and error """
@@ -343,8 +371,8 @@ class Labeler(QtGui.QApplication):
         elif level == "warning":
             color = 'orange'
             
-        
-        text = "<FONT COLOR='%s'>%s</FONT><BR />" % (color, message)
+        timestamp = datetime.datetime.now().strftime("%Y/%m/%d-%H:%M:%S - ")
+        text = timestamp + "<FONT COLOR='%s'>%s</FONT><BR />" % (color, message)
             
         self.logAppendCursor.movePosition(self.logAppendCursor.End)
         self.logAppendCursor.insertHtml(text)
@@ -430,8 +458,10 @@ class Labeler(QtGui.QApplication):
         
     def scene_selection_changed(self):
         """ Called when the a new object is selected, and brings up its properties page """
+        # Get the list of selected items
         items = self.labelView.scene().selectedItems()
         if len(items) == 1:
+            # If only one is selected, then sets the selection 
             self.ui.itemList.setCurrentItem(self.itemListObjects[items[0]])
         
     def toggle_permit(self, toggle):
@@ -502,7 +532,7 @@ class Labeler(QtGui.QApplication):
         offset = 0
         if self.hasHeaders:
             # Create unique names for any conflicting headers, adds "1", "2" etc on to each repeated name
-            # If the header is blank, it simply creates "Field 1" etc names
+            # If the header is blank, it simply creates "Field 1" etc names, which is done a little late on
             offset = 1
             self.headers = []
             for i in self.rawData[0]:
@@ -530,7 +560,8 @@ class Labeler(QtGui.QApplication):
         self.ui.headerList.setColumnCount(2)
         self.ui.headerList.setHorizontalHeaderLabels(["Header", "Record"])
         
-        
+        # This is where is will create field names for any blank fields, and for databases
+        # that do not have field names
         for row in range(len(self.headers)):
             self.ui.headerList.verticalHeader().resizeSection(row, 15)
             if self.headers[row].strip() == "":
@@ -560,7 +591,9 @@ class Labeler(QtGui.QApplication):
             self.ui.previewRecord.setMaximum(0)
             self.ui.copyField.clear()
         else:
+            # Set the hint in the status bar to reflect how many records there are
             self.dataSetCount.setText("The dataset contains %d record%s."%(len(self.dataSet),"s" if len(self.dataSet) > 1 else ""))
+            # Now set the min and maxes for the subset input boxes and preview record number
             self.ui.subsetBottom.setMinimum(1)
             self.ui.subsetBottom.setMaximum(len(self.dataSet))
             self.ui.subsetTop.setMinimum(1)
@@ -572,7 +605,7 @@ class Labeler(QtGui.QApplication):
             row = 0
             self.ui.copyField.setUpdatesEnabled(False)
             self.ui.copyField.clear()
-            # Populate the combo box for determining copies based on a field
+            # Populate the combo box for selecting the field which contains the amount of copies
             for i in self.headers:
                 record = str(self.dataSet[self.ui.previewRecord.value()-1][i])
                 item = QtGui.QTableWidgetItem(record)
@@ -588,6 +621,7 @@ class Labeler(QtGui.QApplication):
         itemSelection = self.labelView.scene().selectedItems()
         if len(itemSelection) == 1:
             itemSelection[0].textCursor().insertText("<<%s>>" % str(item.text()))
+            itemSelection[0].update_text()
             self.labelView.setFocus(True)
             itemSelection[0].setFocus(True)
         
@@ -686,14 +720,33 @@ class Labeler(QtGui.QApplication):
     def add_object(self, obj):
         """ Adds the object to the Scene, list of objects,  """
         self.labelView.scene().addItem(obj)
-        item = QtGui.QTreeWidgetItem(self.ui.itemList)
-        item.setText(0, obj.name)
-        item.setData(1,0, obj)
-        item.setFlags(item.flags() | QtCore.Qt.ItemIsEditable)
-        self.itemListObjects[obj] = item
+        #item = PropertyListItem(self.ui.itemList)
+        
         self.itemNames.append(obj.name)
+        item = QtGui.QTreeWidgetItem(self.ui.itemList)
+        
+        item.setFlags(item.flags() | QtCore.Qt.ItemIsEditable)
+        item.setText(0, obj.name)
+        item.setData(0, QtCore.Qt.UserRole, obj)
+        self.itemListObjects[obj] = item
         
         self.objectCollection.append(obj)
+        
+    def item_name_changed(self, item, col):
+        
+        obj = item.data(col, QtCore.Qt.UserRole).toPyObject()
+        if obj <> None:
+            newName = item.text(col)
+            oldName =  obj.name
+            if newName not in self.itemNames:
+                if oldName in self.itemNames:
+                    self.itemNames.remove(oldName)
+                obj.name = newName
+                self.itemNames.append(newName)
+            elif newName <> oldName:
+                self.log_message("An item already exists with the name %s" % newName, "error")
+                self.beep()
+                item.setText(col, oldName)
         
     
     def start_merge(self, preview=False):
@@ -731,28 +784,37 @@ class Labeler(QtGui.QApplication):
     
         
     def item_selected(self, currentItem, previousItem):
-        """ sets selection in the graphicsview/scene when chosen from treeview """
+        """ Selects the currentItem on the label view, and populates its properties """
+        self.ui.objectPropertyArea.setUpdatesEnabled(False)
         if currentItem <> None:
-            for i in range(self.ui.objectProperties.rowCount()):
+            print self.ui.objectProperties.rowCount()
+            #for i in range(self.ui.objectProperties.rowCount()):
+            while True:
+                # Loops through all the current properties on the property page, and hides them
                 widgetItem = self.ui.objectProperties.takeAt(0)
+                # This check is made due to a bug with the formlayout incorrectly 
+                # keeping track of how many items it has
                 if widgetItem <> None:
                     widget = widgetItem.widget()
                     widget.setVisible(False)
+                    print widget
                 else:
                     break
-            obj = currentItem.data(1,0).toPyObject()
+            # Get a reference to the object
+            obj = currentItem.data(0,QtCore.Qt.UserRole).toPyObject()
             if self.labelView.isInteractive():
+                # The label view is currently in edit mode
                 if not obj.isSelected():
+                    # Select the object if it isn't already
                     obj.scene().clearSelection()
                     obj.setSelected(True)
             for field in obj.properties:
-                for widget in field.widgets:
+                # Populate the property list for this widgets items
+                for widget in field.widgetOrder:
                     self.ui.objectProperties.addRow("%s %s" % (field.name,widget), field.widgets[widget])
                     field.widgets[widget].setVisible(True)
-            #for field in obj.propOrder:
-            #    widget = obj.propWidgets[field]
-            #    self.ui.objectProperties.addRow(field, widget)
-            #    widget.setVisible(True)
+            self.ui.objectPropertyArea.update()
+            self.ui.objectPropertyArea.setUpdatesEnabled(True)
             
     def item_selection_cleared(self):
         self.ui.itemDetails.clear()
@@ -936,8 +998,4 @@ class Labeler(QtGui.QApplication):
         
 if __name__ == '__main__':
     MainApp = Labeler(sys.argv) 
-    try:
-        sys.exit(MainApp.exec_())
-    except:
-        import traceback
-        print traceback.print_tb(sys.exc_info()[2])
+    sys.exit(MainApp.exec_())

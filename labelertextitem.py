@@ -291,10 +291,7 @@ class LabelerTextItem(QtGui.QGraphicsTextItem, LabelerItemMixin):
     def setPlainText(self, text):
     
         super(LabelerTextItem, self).setPlainText(text)
-        if not self.merging and not self._setTextFromUpdate:
-            self.propNames["Text"].enable_updates(False)
-            self.propNames["Text"].set_text(text)
-            self.propNames["Text"].enable_updates(True)
+        self.update_text()
         #
         #    if string <> self.propWidgets['Value'].toPlainText():
         #        self.propWidgets['Value'].setPlainText(self.toPlainText())
@@ -304,6 +301,12 @@ class LabelerTextItem(QtGui.QGraphicsTextItem, LabelerItemMixin):
         
         #cur.clearSelection()
         #self.setTextCursor(cur)
+        
+    def update_text(self):
+        if not self.merging and not self._setTextFromUpdate:
+            self.propNames["Text"].enable_updates(False)
+            self.propNames["Text"].set_text(self.toPlainText())
+            self.propNames["Text"].enable_updates(True)
         
 
         

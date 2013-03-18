@@ -54,7 +54,7 @@ class LabelFontProperty(LabelItemProperty):
             self.value = QtGui.QFont(font)
         else:
             self.value = QtGui.QFont("Arial", 9, QtGui.QFont.Normal, False)
-        for i in  ["Family", "Size", "Bold", "Italic"]:
+        for i in  ["Family", "Point Size", "Bold", "Italic"]:
             self.widgetOrder.append(i)
         #self.widgets = {}
         
@@ -131,7 +131,7 @@ class LabelTextAreaProperty(LabelItemProperty):
             self.value = QtCore.QString()
         self.type = QtCore.QString
             
-        self.widgetOrder.append("Text")
+        self.widgetOrder.append("Value")
         self.widgets["Value"] = QtGui.QTextEdit()
         self.widgets["Value"].setPlainText(self.value)
         self.connect(self.widgets["Value"], QtCore.SIGNAL("textChanged()"), self.update_text)
@@ -162,15 +162,15 @@ class LabelTextLineProperty(LabelItemProperty):
             
         self.type = QtCore.QString
             
-        self.widgetOrder.append("Text")
-        self.widgets["Text"] = QtGui.QLineEdit()
-        self.widgets["Text"].setPlainText(self.value)
-        self.connect(self.widgets["Text"], QtCore.SIGNAL("textChanged(QString)"), self.update_text)
+        self.widgetOrder.append("Value")
+        self.widgets["Value"] = QtGui.QLineEdit()
+        self.widgets["Value"].setPlainText(self.value)
+        self.connect(self.widgets["Value"], QtCore.SIGNAL("textChanged(QString)"), self.update_text)
         
         self.updateSignal = QtCore.SIGNAL("textChanged(QString)")
         
     def set_text(self, text):
-        self.widgets["Text"].setPlainText(text)
+        self.widgets["Value"].setPlainText(text)
         self.emit_update()
         
     def update_text(self, text):
@@ -179,7 +179,7 @@ class LabelTextLineProperty(LabelItemProperty):
         
     def set_value(self, value):
         self.value = QtCore.QString(value)
-        self.widgets["Text"].setPlainText(self.value)
+        self.widgets["Value"].setPlainText(self.value)
         self.emit_update()
         
 class LabelDoubleProperty(LabelItemProperty):
