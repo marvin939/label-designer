@@ -50,7 +50,7 @@ class ZoomGraphicsView(QtGui.QGraphicsView):
         self.addItemList = None
         
         self.returnAddress = ReturnText()
-        self.returnAddress.setPos(45*self.dpmm[0], 42*self.dpmm[1])
+        self.returnAddress.setPos(45*self.dpmm[0], 41*self.dpmm[1])
         
         self.scene().addItem(self.returnAddress)
         

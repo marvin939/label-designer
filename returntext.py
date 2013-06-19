@@ -10,7 +10,7 @@ class ReturnText(QtGui.QGraphicsTextItem):
         font.setPointSize(20)
         
         self.setFont(font)
-        self.setScale(.25)
+        self.setScale(.3)
         
         
         self.dpi  = QtCore.QCoreApplication.instance().dpi
