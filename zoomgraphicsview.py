@@ -71,7 +71,8 @@ class ZoomGraphicsView(QtGui.QGraphicsView):
         self.permitText.setPlainText(self.permitPlainText)
         
     def set_return_address(self, text):
-        self.returnAddress.setPlainText(text)
+        #self.returnAddress.setPlainText(text)
+        self.returnAddress.setHtml("<center>" + text + "</center>")
         
         
     def start_merge(self, preview):
