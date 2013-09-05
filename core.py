@@ -4,6 +4,7 @@ import xlrd
 import re
 import datetime
 import random
+import shutil
 from labelertextitem import LabelerTextItem
 from labelerbarcodeitem import LabelerBarcodeItem
 from PyQt4 import QtCore, QtGui
@@ -132,7 +133,7 @@ class Labeler(QtGui.QApplication):
         
         
         # A RegEx for looking for headers in items
-        self.headerRE = re.compile('<<.*?>>')
+        self.headerRE = re.compile('\{.*?\}')
         
         
         
@@ -211,7 +212,7 @@ class Labeler(QtGui.QApplication):
                 self.settings.remove(text)
                 self.settings.beginGroup(text)
                 self.settings.setValue("permit", self.ui.permitEntry.text())
-                self.settings.setValue("return", self.ui.returnAddress.toPlainText())
+                self.settings.setValue("return", self.ui.returnAddress.toHtml())
                 self.settings.setValue("usepermit", self.ui.permitCheck.isChecked())
                 self.settings.setValue("usereturn", self.ui.returnCheck.isChecked())
                 
@@ -247,7 +248,7 @@ class Labeler(QtGui.QApplication):
         self.settings.beginGroup("Address Block")
         ##
         self.settings.setValue("type", "Text")
-        self.settings.setValue("Text", "<<Address1>>\n<<Address2>>\n<<Address3>>\n<<Address4>>\n<<Address5>>\n<<Address6>>\n<<Address7>>\n<<Address8>>")
+        self.settings.setValue("Text", "{Address1}\n{Address2}\n{Address3}\n{Address4}\n{Address5}\n{Address6}\n{Address7}\n{Address8}")
         self.settings.setValue("X Coord", 4.5)
         self.settings.setValue("Y Coord", 15.0)
         self.settings.setValue("Font", QtGui.QFont("Arial", 9.0, QtGui.QFont.Normal, False))
@@ -262,6 +263,8 @@ class Labeler(QtGui.QApplication):
         
     def load_settings(self):
         
+        currentTime = datetime.datetime.now().strftime("%Y-%m-%d %H-%M-%S")
+        shutil.copy("labelcore.conf", "confArchive\\labelcore.conf.bak.%s" % currentTime)
         
         self.settings = QtCore.QSettings("labelcore.conf", QtCore.QSettings.IniFormat)
       
@@ -278,7 +281,7 @@ class Labeler(QtGui.QApplication):
         self.ui.zoomLevel.setValue(self.settings.value('zoom').toDouble()[0])
         self.ui.permitEntry.setText(self.settings.value('permit').toString())
         self.ui.permitCheck.setChecked(self.settings.value('usepermit').toBool())
-        self.ui.returnAddress.setText(self.settings.value('return').toString())
+        self.ui.returnAddress.setHtml(self.settings.value('return').toString())
         self.ui.returnCheck.setChecked(self.settings.value('usereturn').toBool())
         self.ui.copyCount.setValue(self.settings.value('copies').toInt()[0])
                 
@@ -338,6 +341,8 @@ class Labeler(QtGui.QApplication):
                 self.settings.endGroup()
             self.settings.endGroup()
             self.settings.endGroup()
+            for prop in obj.propNames:
+                QtCore.QTimer.singleShot(100, obj.propNames[prop].emit_update)
         except Exception as e:
             import traceback
             print traceback.print_tb(sys.exc_info()[2])
@@ -620,7 +625,7 @@ class Labeler(QtGui.QApplication):
     def add_header_text(self, item):
         itemSelection = self.labelView.scene().selectedItems()
         if len(itemSelection) == 1:
-            itemSelection[0].textCursor().insertText("<<%s>>" % str(item.text()))
+            itemSelection[0].textCursor().insertText("{%s}" % str(item.text()))
             itemSelection[0].update_text()
             self.labelView.setFocus(True)
             itemSelection[0].setFocus(True)
@@ -880,7 +885,7 @@ class Labeler(QtGui.QApplication):
             matches = self.headerRE.findall(text)
             matches = sorted(set(matches))
             for i in matches:
-                x = i.replace("<<", "").replace(">>","")
+                x = i.replace("{", "").replace("}","")
                 if not x in self.headers:
                     if not obj.suppress_address_errors:
                         # Was unable to find a match for this header, so issue a warning
@@ -939,6 +944,7 @@ class Labeler(QtGui.QApplication):
         
         pdfPrint.setPaperSize(QtCore.QSizeF(45, 90), QtGui.QPrinter.Millimeter)
         pdfPrint.setFullPage(True)
+        pdfPrint.setColorMode(pdfPrint.GrayScale)
         pdfPainter = QtGui.QPainter()
         pdfPainter.begin(pdfPrint)
         
