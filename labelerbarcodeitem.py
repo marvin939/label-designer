@@ -67,7 +67,7 @@ class LabelerBarcodeItem(QtGui.QGraphicsPixmapItem, LabelerItemMixin):
         matches = self.headerRE.findall(text)
         matches = set(matches)
         for i in matches:
-            field = i.replace("<<", "").replace(">>","")
+            field = i.replace("{", "").replace("}","")
             text = text.replace(i, row[field])
         
         self.propWidgets['Data'].setPlainText(text)

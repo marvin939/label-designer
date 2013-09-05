@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>1240</width>
-    <height>684</height>
+    <height>720</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -241,6 +241,9 @@
               <property name="minimum">
                <number>1</number>
               </property>
+              <property name="maximum">
+               <number>99999</number>
+              </property>
              </widget>
             </item>
             <item>
@@ -285,6 +288,9 @@
              <widget class="QSpinBox" name="sampleCount">
               <property name="minimum">
                <number>1</number>
+              </property>
+              <property name="maximum">
+               <number>99999999</number>
               </property>
              </widget>
             </item>
@@ -689,7 +695,7 @@
                     <x>0</x>
                     <y>0</y>
                     <width>342</width>
-                    <height>171</height>
+                    <height>194</height>
                    </rect>
                   </property>
                   <layout class="QVBoxLayout" name="verticalLayout_2">

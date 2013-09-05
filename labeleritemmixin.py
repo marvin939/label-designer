@@ -13,7 +13,7 @@ class LabelerItemMixin:
                  'font':(QtGui.QFontComboBox, QtCore.SIGNAL('currentFontChanged(QFont)'))}
     
     
-    headerRE = re.compile('<<.*?>>')
+    headerRE = re.compile('\{.*?\}')
     def __init__(self, name):
         
         self.propertyTypes = {'textarea':LabelTextAreaProperty,

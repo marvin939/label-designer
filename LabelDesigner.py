@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'LabelDesigner.ui'
 #
-# Created: Mon Mar 18 17:14:44 2013
+# Created: Mon Aug 26 14:17:42 2013
 #      by: PyQt4 UI code generator 4.9.4
 #
 # WARNING! All changes made in this file will be lost!
@@ -17,7 +17,7 @@ except AttributeError:
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName(_fromUtf8("MainWindow"))
-        MainWindow.resize(1240, 684)
+        MainWindow.resize(1240, 720)
         MainWindow.setTabShape(QtGui.QTabWidget.Rounded)
         MainWindow.setUnifiedTitleAndToolBarOnMac(False)
         self.centralwidget = QtGui.QWidget(MainWindow)
@@ -154,6 +154,7 @@ class Ui_MainWindow(object):
         self.horizontalLayout_5.addWidget(self.label_2)
         self.copyCount = QtGui.QSpinBox(self.groupBox_2)
         self.copyCount.setMinimum(1)
+        self.copyCount.setMaximum(99999)
         self.copyCount.setObjectName(_fromUtf8("copyCount"))
         self.horizontalLayout_5.addWidget(self.copyCount)
         self.copyUseField = QtGui.QCheckBox(self.groupBox_2)
@@ -179,6 +180,7 @@ class Ui_MainWindow(object):
         self.horizontalLayout_11.addWidget(self.label_6)
         self.sampleCount = QtGui.QSpinBox(self.groupBox_2)
         self.sampleCount.setMinimum(1)
+        self.sampleCount.setMaximum(99999999)
         self.sampleCount.setObjectName(_fromUtf8("sampleCount"))
         self.horizontalLayout_11.addWidget(self.sampleCount)
         self.verticalLayout_5.addLayout(self.horizontalLayout_11)
@@ -368,7 +370,7 @@ class Ui_MainWindow(object):
         self.objectPropertyArea.setWidgetResizable(True)
         self.objectPropertyArea.setObjectName(_fromUtf8("objectPropertyArea"))
         self.scrollAreaWidgetContents = QtGui.QWidget()
-        self.scrollAreaWidgetContents.setGeometry(QtCore.QRect(0, 0, 342, 171))
+        self.scrollAreaWidgetContents.setGeometry(QtCore.QRect(0, 0, 342, 194))
         self.scrollAreaWidgetContents.setObjectName(_fromUtf8("scrollAreaWidgetContents"))
         self.verticalLayout_2 = QtGui.QVBoxLayout(self.scrollAreaWidgetContents)
         self.verticalLayout_2.setObjectName(_fromUtf8("verticalLayout_2"))

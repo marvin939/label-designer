@@ -341,8 +341,8 @@ class Labeler(QtGui.QApplication):
                 self.settings.endGroup()
             self.settings.endGroup()
             self.settings.endGroup()
-            for prop in obj.propNames:
-                QtCore.QTimer.singleShot(100, obj.propNames[prop].emit_update)
+            #for prop in obj.propNames:
+            #    QtCore.QTimer.singleShot(100, obj.propNames[prop].emit_update)
         except Exception as e:
             import traceback
             print traceback.print_tb(sys.exc_info()[2])
@@ -927,6 +927,7 @@ class Labeler(QtGui.QApplication):
             # dimensions to be 2x their normal width and height
             printer.setPaperSize(QtCore.QSizeF(90, 180), QtGui.QPrinter.Millimeter)
             printer.setFullPage(True)
+            printer.setColorMode(printer.GrayScale)
             
             painter = QtGui.QPainter()
             painter.begin(printer)
