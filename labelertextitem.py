@@ -90,7 +90,7 @@ class LabelerTextItem(QtGui.QGraphicsTextItem, LabelerItemMixin):
         
     def strip_html(self):
         """ This function takes the html for this text box, and strips out anything before/after what goes on the label, writing back to self.coreHtml """
-        html = str(self.toHtml())
+        html = unicode(self.toHtml(), 'latin-1')
         html = brTagRE.sub("<BR />\n", html)
         html.replace("{ white-space: pre-wrap; }", "")
         # This will strip out everything thats unecessary for the user to be looking at, e.g. header, body, html, etc.

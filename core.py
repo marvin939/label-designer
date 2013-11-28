@@ -965,7 +965,7 @@ class Labeler(QtGui.QApplication):
                 # use field in the database if asked to
                 copies = int(row[str(self.ui.copyField.currentText())])
             # Repeat for as many copies as needed
-            for i in range(copies):
+            for _ in range(copies):
                 # If this is not the first time looping, make sure to call "newPage" on the printer
                 # the printer variable tells us if we are printing to a "Printer" as well as a PDF
                 if first:
