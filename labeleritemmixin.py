@@ -4,13 +4,13 @@ from labelitemproperty import *
 
 class LabelerItemMixin:
     fontDB = QtGui.QFontDatabase()
-    propertyTypes = {'string':(QtGui.QLineEdit, QtCore.SIGNAL('textChanged(QString)')),
-                 'text':(QtGui.QTextEdit, QtCore.SIGNAL('textChanged()')), 
-                 'integer':(QtGui.QSpinBox, QtCore.SIGNAL('valueChanged(int)')), 
-                 'float':(QtGui.QDoubleSpinBox, QtCore.SIGNAL('valueChanged(double)')), 
-                 'list':(QtGui.QComboBox, QtCore.SIGNAL('currentIndexChanged(int)')), 
-                 'boolean':(QtGui.QCheckBox, QtCore.SIGNAL('toggled(bool)')),
-                 'font':(QtGui.QFontComboBox, QtCore.SIGNAL('currentFontChanged(QFont)'))}
+#    propertyTypes = {'string':(QtGui.QLineEdit, QtCore.SIGNAL('textChanged(QString)')),
+#                 'text':(QtGui.QTextEdit, QtCore.SIGNAL('textChanged()')), 
+#                 'integer':(QtGui.QSpinBox, QtCore.SIGNAL('valueChanged(int)')), 
+#                 'float':(QtGui.QDoubleSpinBox, QtCore.SIGNAL('valueChanged(double)')), 
+#                 'list':(QtGui.QComboBox, QtCore.SIGNAL('currentIndexChanged(int)')), 
+#                 'boolean':(QtGui.QCheckBox, QtCore.SIGNAL('toggled(bool)')),
+#                 'font':(QtGui.QFontComboBox, QtCore.SIGNAL('currentFontChanged(QFont)'))}
     
     
     headerRE = re.compile('\{.*?\}')
@@ -22,7 +22,8 @@ class LabelerItemMixin:
                      'double':LabelDoubleProperty,
                      'list':LabelListProperty,
                      'font':LabelFontProperty,
-                     'boolean':LabelBooleanProperty}
+                     'boolean':LabelBooleanProperty,
+                     'list':LabelListProperty}
         
         self.propItems = []
         self.propCallbacks = {}

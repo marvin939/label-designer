@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>1240</width>
-    <height>720</height>
+    <height>749</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -118,9 +118,16 @@
              </widget>
             </item>
             <item>
-             <widget class="QPushButton" name="removeLayout">
+             <widget class="QPushButton" name="renameLayout">
               <property name="text">
-               <string>Remove Layout</string>
+               <string>Rename Layout</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="refreshLayoutList">
+              <property name="text">
+               <string>Refresh List</string>
               </property>
              </widget>
             </item>
@@ -136,6 +143,13 @@
                </size>
               </property>
              </spacer>
+            </item>
+            <item>
+             <widget class="QPushButton" name="removeLayout">
+              <property name="text">
+               <string>Remove Layout</string>
+              </property>
+             </widget>
             </item>
            </layout>
           </item>
@@ -171,12 +185,9 @@
              </widget>
             </item>
             <item>
-             <widget class="QComboBox" name="printerList">
-              <property name="sizePolicy">
-               <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-                <horstretch>1</horstretch>
-                <verstretch>0</verstretch>
-               </sizepolicy>
+             <widget class="QPushButton" name="pageSetup">
+              <property name="text">
+               <string>Page Setup</string>
               </property>
              </widget>
             </item>
@@ -230,26 +241,9 @@
           <item>
            <layout class="QHBoxLayout" name="horizontalLayout_5">
             <item>
-             <widget class="QLabel" name="label_2">
-              <property name="text">
-               <string>Copies</string>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QSpinBox" name="copyCount">
-              <property name="minimum">
-               <number>1</number>
-              </property>
-              <property name="maximum">
-               <number>99999</number>
-              </property>
-             </widget>
-            </item>
-            <item>
              <widget class="QCheckBox" name="copyUseField">
               <property name="text">
-               <string>Use Field</string>
+               <string>Use Field for Copies</string>
               </property>
              </widget>
             </item>
@@ -375,7 +369,7 @@
               </item>
              </layout>
             </item>
-            <item row="7" column="0">
+            <item row="8" column="0">
              <layout class="QHBoxLayout" name="horizontalLayout_12">
               <item>
                <widget class="QCheckBox" name="previewCheck">
@@ -399,20 +393,27 @@
               </item>
              </layout>
             </item>
-            <item row="1" column="0">
+            <item row="2" column="0">
              <widget class="QPushButton" name="loadData">
               <property name="text">
                <string>Load Data</string>
               </property>
              </widget>
             </item>
-            <item row="2" column="0">
+            <item row="3" column="0">
              <widget class="QCheckBox" name="headersCheck">
               <property name="layoutDirection">
                <enum>Qt::LeftToRight</enum>
               </property>
               <property name="text">
                <string>Has Headers?</string>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="0">
+             <widget class="QPushButton" name="createCartonLabels">
+              <property name="text">
+               <string>Create Carton Labels</string>
               </property>
              </widget>
             </item>
@@ -695,7 +696,7 @@
                     <x>0</x>
                     <y>0</y>
                     <width>342</width>
-                    <height>194</height>
+                    <height>213</height>
                    </rect>
                   </property>
                   <layout class="QVBoxLayout" name="verticalLayout_2">

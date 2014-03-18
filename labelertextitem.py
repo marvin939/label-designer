@@ -71,6 +71,8 @@ class LabelerTextItem(QtGui.QGraphicsTextItem, LabelerItemMixin):
         
         
         
+        #self.setFont(font)
+        self.propNames["Font"].set_value(font)
         self.setFont(font)
         
         
@@ -132,7 +134,8 @@ class LabelerTextItem(QtGui.QGraphicsTextItem, LabelerItemMixin):
     def get_merge_text(self):
         if not self.merging:
             #return self.toPlainText()
-            return self.coreHtml
+            #return self.coreHtml
+            return str(self.propNames["Text"].get_value())
         else:
             return self.mergeText
         
@@ -287,12 +290,11 @@ class LabelerTextItem(QtGui.QGraphicsTextItem, LabelerItemMixin):
         #width = metric.width(self.toHtml())
         #height = metric.height()
         #height = self.document().size().width()
-        
         height = metric.boundingRect(self.toPlainText()).width()
         
         #height = metric.boundingRect(self.toHtml()).height()
         size = font.pointSizeF()
-        if size < 20.0:
+        if size < 20.0 and str(self.toPlainText()) <> "":
             font.setPointSizeF(20.0)
             super(LabelerTextItem, self).setFont(font)
             metric = QtGui.QFontMetricsF(font)
@@ -330,8 +332,8 @@ class LabelerTextItem(QtGui.QGraphicsTextItem, LabelerItemMixin):
         super(LabelerTextItem, self).setHtml(text)
         #if not self.setUp:
         #    print "DDDDDDDDDD"
-        self.strip_html()
-        self.update_text()
+        #self.strip_html()
+        #self.update_text()
         #print self.toHtml()
         #
         #    if string <> self.propWidgets['Value'].toPlainText():

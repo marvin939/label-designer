@@ -167,6 +167,9 @@ class ZoomGraphicsView(QtGui.QGraphicsView):
         zoom = (percentage/100.0)/ self.zoomLevel
         self.scale(zoom, zoom) 
         
+    def getPageSize(self):
+        return self.pageSize
+        
     def setPageSize(self, pagesize):
         """ sets up the page border, setting current pagesize to pagesize """
         self.pageSize = pagesize

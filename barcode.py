@@ -196,7 +196,7 @@ _128ValueEncodings = {  0:'11011001100',  1:'11001101100',  2:'11001100110',
                         }
 
 
-def bar_Code128(data, checksum=False):
+def bar_Code128(data, checksum=True):
     """ Returns a QPixmap containing the barcode
         charSet can be 'A', 'B', or 'C' to denote a preference"""
     _dpi = (QtCore.QCoreApplication.instance().desktop().physicalDpiX(), QtCore.QCoreApplication.instance().desktop().physicalDpiY())
@@ -205,7 +205,7 @@ def bar_Code128(data, checksum=False):
     
     #n = 2.4 # narrow to wide ratio
     c = len(datatext) # number of characters
-    x = 2.0 # bar size
+    x = 6.0 # bar size
   
     
     
@@ -214,19 +214,24 @@ def bar_Code128(data, checksum=False):
     if datatext[:2].isdigit() and len(datatext[:2]) == 2:
         code = "11010011100" # start with set C
         currentSet = "C"
+        checksumTotal = 105
     else:
         if datatext[0] in _128CharSetB:
             code = "11010010000" # start with set B
             currentSet = "B"
+            checksumTotal = 104
         else:
             code = "11010000100" # start with set A
             currentSet = "A"
+            checksumTotal = 103
             
     completed = False
     index = 0
-    checksumTotal = 0
+    
     weight = 1
     while not completed:
+        changeWeight = 0
+        changeVal = None
         if currentSet == "C":
             val = _128CharSetC[datatext[index:index+2]]
             index += 2
@@ -239,8 +244,12 @@ def bar_Code128(data, checksum=False):
             else:
                 if datatext[index] in _128CharSetB:
                     currentSet = "B"
+                    changeVal = _128CharSetC["Code B"]
+                    changeWeight = 100
                 else:
                     currentSet = "A"
+                    changeVal = _128CharSetC["Code A"]
+                    changeWeight = 101
         elif currentSet == "B":
             val = _128CharSetB[datatext[index]]
             index += 1
@@ -249,11 +258,15 @@ def bar_Code128(data, checksum=False):
             
             elif datatext[index:index+2].isdigit() and len(datatext[index:index+2]) == 2:
                 currentSet = "C"
+                changeVal = _128CharSetB["Code C"]
+                changeWeight = 99
             else:
                 if datatext[index] in _128CharSetB:
                     currentSet = "B"
                 else:
                     currentSet = "A"
+                    changeVal = _128CharSetB["Code A"]
+                    changeWeight = 101
         elif currentSet == "A":
             val = _128CharSetA[datatext[index]]
             index += 1
@@ -262,17 +275,31 @@ def bar_Code128(data, checksum=False):
                 completed = True
             
             elif datatext[index:index+2].isdigit() and len(datatext[index:index+2]) == 2:
+                changeVal = _128CharSetA["Code C"]
                 currentSet = "C"
+                changeWeight = 99
             else:
                 if datatext[index] in _128CharSetA:
                     currentSet = "A"
                 else:
                     currentSet = "B"
+                    changeVal = _128CharSetA["Code B"]
+                    changeWeight = 100
         code += _128ValueEncodings[val]
             
         checksumTotal += weight*val
         weight += 1
+        if changeWeight:
+            checksumTotal += changeWeight*weight
+            weight += 1
+            code += _128ValueEncodings[changeVal]
             
+    
+    checksumVal = _128ValueEncodings[checksumTotal % 103]
+    
+    if checksum:
+        code += checksumVal
+        
     
     code += "1100011101011"
     
@@ -289,7 +316,7 @@ def bar_Code128(data, checksum=False):
             
     width = x * len(code)
     
-    height = 10.0
+    height = 20.0
     
     bitmap = QtGui.QPixmap(width, height)
     
@@ -302,6 +329,7 @@ def bar_Code128(data, checksum=False):
     pen = painter.pen()
     pen.setWidthF(x)
     painter.setPen(pen)
+
     
     for group in codeGroups:
         if group[0] == "1": # bar

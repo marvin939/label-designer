@@ -1,15 +1,23 @@
 import LabelDesigner
+import PageSetup
+import CartonLabel
 import sys, os, csv
 import xlrd
 import re
 import datetime
 import random
 import shutil
+import math
+
 from labelertextitem import LabelerTextItem
 from labelerbarcodeitem import LabelerBarcodeItem
 from PyQt4 import QtCore, QtGui
 from propertylistitem import PropertyListItem
 
+import tables
+
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy import create_engine
 
 from labelitemproperty import LabelProp
 
@@ -46,12 +54,26 @@ class LabelMainWindow(QtGui.QMainWindow):
             
         
 
+class LabelLayout(object):
+    def __init__(self, name, permit, returnAddress, permitEnabled, returnEnabled, pageWidth, pageHeight, objectList, ):
+        self.name = name
+        self.permit = permit
+        self.returnAddress = returnAddress
+        self.permitEnabled = permitEnabled
+        self.returnEnabled = returnEnabled
+        self.pageWidth = pageWidth
+        self.pageHeight = pageHeight
+        
+        self.objectList = objectList
+        
+        pass
+
 
 class Labeler(QtGui.QApplication):
     def __init__(self, *args, **kwargs):
         super(Labeler, self).__init__(*args, **kwargs)
         self.objectCollection = []
-        self.objectTypes = {"Text":LabelerTextItem}
+        self.objectTypes = {"Text":LabelerTextItem, "Barcode":LabelerBarcodeItem}
         self.ui = LabelDesigner.Ui_MainWindow()
         self.MainWindow = LabelMainWindow()
         self.merging = False
@@ -73,6 +95,10 @@ class Labeler(QtGui.QApplication):
         fontTest = self.MainWindow.font()
         fontTest.setFamily("Sans")
         self.MainWindow.setFont(fontTest)
+        
+        # Set up the database connection
+        self.dbEngine = create_engine("postgresql://labeldesigner:labelmaker666@10.89.1.59:5432/labelmaker")
+        self.sessionMaker = sessionmaker(self.dbEngine)
         
         ## Load in settings from conf or generate if missing
         self.defaultSettings = {'permit':478,
@@ -117,8 +143,9 @@ class Labeler(QtGui.QApplication):
         
         
         # Sets up the base widget for the layup
+        self.currentPageSize = (90,45)
         self.labelView = self.ui.graphicsView
-        self.labelView.setPageSize((self.dpmm[0]*90, self.dpmm[1]*45))
+        self.labelView.setPageSize((self.dpmm[0]*self.currentPageSize[0], self.dpmm[1]*self.currentPageSize[1]))
         
         #set up list of add item buttons
         self.addItemList = []
@@ -136,10 +163,64 @@ class Labeler(QtGui.QApplication):
         self.headerRE = re.compile('\{.*?\}')
         
         
+        self.ui.subsetBottom.setKeyboardTracking(False)
+        self.ui.subsetTop.setKeyboardTracking(False)
+        
+        
+        
+        # Set up printer
+        
+        printers = QtGui.QPrinterInfo.availablePrinters()
+        
+        defaultPrinter = None
+        for i in printers:
+            name = i.printerName()
+            if "avery" in str(name).lower():
+                defaultPrinter = name
+                
+        if not defaultPrinter:
+            for i in printers:
+                name = i.printerName()
+                if "zdesigner" in str(name).lower():
+                    defaultPrinter = name
+
+        if not defaultPrinter:
+            defaultPrinter = QtGui.QPrinterInfo.defaultPrinter().printerName()
+
+        
+        self.printer = QtGui.QPrinter()
+        self.printer.setPrinterName(defaultPrinter)
+        
+        
+        self.pageSetupUi = PageSetup.Ui_Dialog()
+        self.pageProperties = QtGui.QDialog(self.MainWindow)
+        self.pageSetupUi.setupUi(self.pageProperties)
+        pageSize = self.currentPageSize
+        self.pageSetupUi.pageWidth.setValue(pageSize[0])
+        self.pageSetupUi.pageHeight.setValue(pageSize[1])
+        
+        
+        self.connect(self.pageProperties, QtCore.SIGNAL('accepted()'), self.set_page_size)
+        self.connect(self.pageProperties, QtCore.SIGNAL('rejected()'), self.reset_page_properties)
+        
+        
+        # Set up carton label dialog
+        self.cartonDialog = QtGui.QDialog(self.MainWindow)
+        self.cartonUi = CartonLabel.Ui_Dialog()
+        self.cartonUi.setupUi(self.cartonDialog)
+        
+        
+        self.connect(self.ui.createCartonLabels, QtCore.SIGNAL('clicked()'), self.show_carton_dialog)
+        
+        self.connect(self.cartonDialog, QtCore.SIGNAL('finished(int)'), self.create_carton_labels)
+        
+        
+        self.printProperties = QtGui.QPrintDialog(self.printer, self.MainWindow)
+        #self.pageProperties = QtGui.QPageSetupDialog(self.printer, self.MainWindow)
+        
         
         self.connect(self.ui.loadData, QtCore.SIGNAL('clicked()'), self.open_file)
         #self.connect(self.ui.addTextBtn, QtCore.SIGNAL('clicked()'), self.add_text_dialog)
-        self.connect(self.ui.createPdfBtn, QtCore.SIGNAL('clicked()'), self.create_pdf)
         self.connect(self.ui.zoomLevel, QtCore.SIGNAL('valueChanged(double)'), self.zoom_spin_changed)
         self.connect(self.labelView, QtCore.SIGNAL("zoomUpdated(PyQt_PyObject)"), self.zoom_from_mouse)
         self.connect(self.labelView.scene(), QtCore.SIGNAL("selectionChanged()"), self.scene_selection_changed)
@@ -150,17 +231,28 @@ class Labeler(QtGui.QApplication):
         self.connect(self.ui.returnCheck, QtCore.SIGNAL('toggled(bool)'), self.toggle_return_address)
         self.connect(self.ui.returnAddress, QtCore.SIGNAL('textChanged()'), self.return_address_changed)
         self.connect(self.ui.headerList, QtCore.SIGNAL('itemDoubleClicked(QTableWidgetItem*)'), self.add_header_text)
-        self.connect(self.ui.printerList, QtCore.SIGNAL('currentIndexChanged(QString)'), self.set_printer)
-        self.connect(self.ui.printButton, QtCore.SIGNAL('clicked()'), self.print_labels)        
+        #self.connect(self.ui.printerList, QtCore.SIGNAL('currentIndexChanged(QString)'), self.set_printer)
+             
         self.connect(self.ui.subsetBottom, QtCore.SIGNAL('valueChanged(int)'), self.update_subset_bottom)
         self.connect(self.ui.subsetTop, QtCore.SIGNAL('valueChanged(int)'), self.update_subset_top)
         self.connect(self.ui.previewRecord, QtCore.SIGNAL('valueChanged(int)'), self.update_preview_record)
         self.connect(self.ui.previewCheck, QtCore.SIGNAL('toggled(bool)'), self.toggle_preview)
-        self.connect(self.ui.layoutList, QtCore.SIGNAL('itemDoubleClicked(QListWidgetItem*)'), self.set_layout)
+        self.connect(self.ui.layoutList, QtCore.SIGNAL('itemDoubleClicked(QListWidgetItem*)'), self.load_layout)
+        
+        self.connect(self.ui.itemList, QtCore.SIGNAL('itemChanged(QTreeWidgetItem*, int)'), self.item_name_changed)
+        
+        # Layout management
         self.connect(self.ui.saveLayout, QtCore.SIGNAL('clicked()'), self.save_layout)
         self.connect(self.ui.loadLayout, QtCore.SIGNAL('clicked()'), self.load_layout)
-        self.connect(self.ui.itemList, QtCore.SIGNAL('itemChanged(QTreeWidgetItem*, int)'), self.item_name_changed)
         self.connect(self.ui.removeLayout, QtCore.SIGNAL('clicked()'), self.remove_layout)
+        self.connect(self.ui.renameLayout, QtCore.SIGNAL('clicked()'), self.rename_layout)
+        self.connect(self.ui.refreshLayoutList, QtCore.SIGNAL('clicked()'), self.refresh_layout_list)
+        
+        # Printer related signals
+        self.connect(self.ui.pageSetup, QtCore.SIGNAL('clicked()'), self.show_page_setup)
+        self.connect(self.ui.printButton, QtCore.SIGNAL('clicked()'), self.show_printer_properties)#self.print_labels)  
+        self.connect(self.printProperties, QtCore.SIGNAL('accepted()'), self.print_labels)
+        self.connect(self.ui.createPdfBtn, QtCore.SIGNAL('clicked()'), self.create_pdf)
         
         
         # Setup a base progress window
@@ -177,11 +269,121 @@ class Labeler(QtGui.QApplication):
         
         
         
-        self.refresh_printer_list()
+        #self.refresh_printer_list()
+        
+        # Printer Properties Dialog
+        
        
         self.load_settings()
 
         self.MainWindow.show()
+        
+    def show_carton_dialog(self):
+        self.cartonDialog.show()
+        self.cartonUi.jobNo.setFocus()
+        
+        
+    def create_carton_labels(self, accepted):
+        if accepted:
+            
+            self.ui.previewCheck.setChecked(False)
+            
+            self.clear_layout()
+            
+            logo = None
+            if self.cartonUi.bluestarLogo.isChecked():
+                logo = "bluestar.png"
+            elif self.cartonUi.printlinkLogo.isChecked():
+                logo = "printlink.png"
+            
+            stock = self.cartonUi.stockName.text()
+            total = self.cartonUi.totalQuantity.value()
+            cartonQuantity = self.cartonUi.cartonQuantity.value()
+            jobNo = self.cartonUi.jobNo.text()
+            largeLabel = self.cartonUi.largeLabel.isChecked()
+            if largeLabel:
+                self.pageSetupUi.pageWidth.setValue(102)
+                self.pageSetupUi.pageHeight.setValue(73)
+            else:
+                self.pageSetupUi.pageWidth.setValue(90)
+                self.pageSetupUi.pageHeight.setValue(45)
+            self.set_page_size()
+            
+            cartons = int(math.ceil(float(total) / cartonQuantity))
+            
+            
+            data = [["Total", "CartonQuantity", "CartonNumber", "Total Cartons"]]
+            
+            for i in range(cartons):
+                row = []
+                row.append(str(total))
+                
+                if i+1 <> cartons:
+                    row.append(str(cartonQuantity))
+                else:
+                    val = total % cartonQuantity
+                    if val:
+                        row.append(str(val))
+                    else:
+                        row.append(str(cartonQuantity))
+                row.append(str(i+1))
+                row.append(str(cartons))
+
+                data.append(row)
+            self.rawData = data
+            self.setup_data()
+            
+            jobNoLabel = self.add_text((5,14), "relmm", select=False)
+            jobNoLabel.propNames["Text"].set_value("Job:")
+            
+            jobNoText = self.add_text((38,14), "relmm", select=False)
+            jobNoText.propNames["Text"].set_value("%s" % jobNo)
+            font = jobNoText.propNames["Font"].get_value()
+            font.setPointSize(12)
+            font.setBold(True)
+            #jobNoText.propNames["Font"].set_value(font)
+            
+            stockLabel = self.add_text((5, 20), "relmm", select=False)
+            stockLabel.propNames["Text"].set_value("Description:")
+            
+            stockText = self.add_text((38, 20), "relmm", select=False)
+            stockText.propNames["Text"].set_value("%s" % stock)
+            font = stockText.propNames["Font"].get_value()
+            font.setPointSize(10)
+            font.setBold(True)
+            #stockText.propNames["Font"].set_value(font)
+            
+            qtyTextLabel1 = self.add_text((5, 26), "relmm", select=False)
+            qtyTextLabel1.propNames["Text"].set_value("Quantity in carton:")
+            
+            qtyTextLabel2 = self.add_text((5, 32), "relmm", select=False)
+            qtyTextLabel2.propNames["Text"].set_value("Carton:")
+            
+            qtyText1 = self.add_text((38, 26), "relmm", select=False)
+            qtyText1.propNames["Text"].set_value("{CartonQuantity}")
+            
+            qtyText2 = self.add_text((38, 32), "relmm", select=False)
+            qtyText2.propNames["Text"].set_value("{CartonNumber} of {Total Cartons}" )
+            
+            if logo:
+                logoText = self.add_text((50 + (largeLabel*13), 5), "relmm", select=False)
+                logoText.propNames["Text"].set_value("<IMG SRC='%s'>" % logo)
+            
+            
+            self.ui.previewCheck.setChecked(True)
+            
+            
+            
+        self.cartonUi.printlinkLogo.setChecked(True)
+        self.cartonUi.stockName.setText("")
+        self.cartonUi.totalQuantity.setValue(1)
+        self.cartonUi.cartonQuantity.setValue(1)
+        self.cartonUi.jobNo.setText("")
+        self.cartonUi.largeLabel.setChecked(True)
+        
+        
+        
+        
         
     def remove_layout(self):
         layoutItem = self.ui.layoutList.currentItem()
@@ -190,44 +392,131 @@ class Labeler(QtGui.QApplication):
                                      'Are you sure you would like to remove the \'%s\' layout?' % str(layoutItem.text()), 
                                      QtGui.QMessageBox.Yes|QtGui.QMessageBox.No, QtGui.QMessageBox.No )
             if ret == QtGui.QMessageBox.Yes:
-                print "Well done"
+                self.settings.beginGroup("layouts")
+                self.settings.remove(layoutItem.text())
+                self.settings.endGroup()
+                self.load_settings()
         else:
             self.log_message('No layout selected', 'error')
             self.beep()
+            
+    def save_layout_to_conf(self, layout):
+        self.settings.beginGroup("layouts")
+        self.settings.remove(layout.name)
+        self.settings.beginGroup(layout.name)
         
+        self.settings.setValue("permit", layout.permit)
+        self.settings.setValue("return", layout.returnAddress)
+        self.settings.setValue("usepermit", layout.permitEnabled)
+        self.settings.setValue("usereturn", layout.returnEnabled)
+        
+        for objName, objType, props in layout.objectList:
+            self.settings.beginGroup(objName)
+            self.settings.setValue("type", objType)
+            for propName, propVal in props:
+                self.settings.setValue(propName, propVal)
+            self.settings.endGroup()
+        self.settings.endGroup()    
+        self.settings.endGroup()
+        
+    def save_layout_to_db(self, layout):
+        session = self.sessionMaker()
+        
+        # First Test to see if a layout by this name already exists
+        q = session.query(tables.Layout).filter_by(name=layout.name).first()
+        if q:
+            session.delete(q)
+            session.commit()
+        
+        newLayout = tables.Layout(layout.name, layout.permit, layout.returnAddress, layout.permitEnabled, layout.returnEnabled, layout.pageWidth, layout.pageHeight)
+        session.add(newLayout)
+        session.commit()
+        for objName, objType, props in layout.objectList:
+            obj = tables.LayoutObject(newLayout.id, objName, objType)
+            session.add(obj)
+            session.commit()
+            
+            for propName, propVal in props:
+                prop = tables.ObjectProperty(obj.id, propName, propVal)
+                session.add(prop)
+                session.commit()
+        
+    def rename_layout(self):
+        selected = self.ui.layoutList.selectedItems()
+        if len(selected) == 0:
+            QtGui.QMessageBox.critical(self.MainWindow, "Error, no layout selected.", 
+                                               "Error, there is no layout selected, please select one first!")
+            return
+        
+        oldName = str(selected[0].text())
+        
+        newName, useName = QtGui.QInputDialog.getText(self.MainWindow, "Enter in new name", "Please enter in the new label name", text=oldName)
+        
+        newName = str(newName)
+        if useName:
+            session = self.sessionMaker()
+            res = session.query(tables.Layout).filter_by(name=newName).first()
+            if res:
+                QtGui.QMessageBox.critical(self.MainWindow, "Error, name is in use.", 
+                                               "Error, the layout name is already in use, try again!")
+                return
+            else:
+                layout = session.query(tables.Layout).filter_by(name=oldName).first()
+                if layout:
+                    layout.name = newName
+                    session.commit()
+                    self.refresh_layout_list()
+                else:
+                    QtGui.QMessageBox.critical(self.MainWindow, "Error!.", 
+                                               "There was an error renaming '%s', it could not be found!" % oldName)
+                
+            
         
     def save_layout(self):
         item = self.ui.layoutList.currentItem()
         if item:
             current = item.text()
+            itemText = item.text()
         else:
             current = QtCore.QString()
+            itemText = None
         text = ""
         question = "Enter the name of the layout"
         while str(text).strip() == "":
             text, ok = QtGui.QInputDialog.getText(self.MainWindow, "Name of Layout", question, QtGui.QLineEdit.Normal, current)
             if ok and str(text).strip() <> "":
+                layoutName = str(text).strip()
                 # OK, Valid Name
-                self.settings.beginGroup("layouts")
-                self.settings.remove(text)
-                self.settings.beginGroup(text)
-                self.settings.setValue("permit", self.ui.permitEntry.text())
-                self.settings.setValue("return", self.ui.returnAddress.toHtml())
-                self.settings.setValue("usepermit", self.ui.permitCheck.isChecked())
-                self.settings.setValue("usereturn", self.ui.returnCheck.isChecked())
+                permit = str(self.ui.permitEntry.text())
+                returnAddress = str(self.ui.returnAddress.toPlainText())
+                permitEnabled = self.ui.permitCheck.isChecked()
+                returnEnabled = self.ui.returnCheck.isChecked()
+                pageWidth = self.currentPageSize[0]
+                pageHeight = self.currentPageSize[1]
+                
+                objects = []
                 
                 for obj in self.objectCollection:
-                    print obj.name
-                    self.settings.beginGroup(obj.name)
+                    objName = obj.name
+                    objType = obj.objectType
+                    props = []
                     
-                    self.settings.setValue("type", obj.objectType)
+                    
                     #self.settings.setValue("name", obj.name)
                     for name, prop in obj.propNames.items():
+                        print name, prop.get_value(), prop
                         
-                        self.settings.setValue(name, prop.get_value())
-                    self.settings.endGroup()
-                self.settings.endGroup()    
-                self.settings.endGroup()
+                        props.append((name, str(QtCore.QVariant(prop.get_value()).toString())))
+                    objects.append((objName, objType, props))
+                layout = LabelLayout(layoutName, permit, returnAddress, permitEnabled, returnEnabled, pageWidth, pageHeight, objects)
+                
+                #self.save_layout_to_conf(layout)
+                self.save_layout_to_db(layout)
+                #self.load_settings()
+                self.refresh_layout_list()
+                if itemText:
+                    item = self.ui.layoutList.findItems(itemText, QtCore.Qt.MatchExactly)[0]
+                    self.ui.layoutList.setCurrentItem(item)
             elif ok and str(text).strip() == "":
                 #OK, Invalid name, try again
                 question = "Value was blank, please enter in a non-blank name"
@@ -260,11 +549,23 @@ class Labeler(QtGui.QApplication):
         self.settings.endGroup()
         
         
+    def refresh_layout_list(self):
+        session = self.sessionMaker()
+        
+        layouts = sorted([x.name for x in session.query(tables.Layout).all()])
+        
+        self.ui.layoutList.clear()
+        for layout in layouts:
+            item = QtGui.QListWidgetItem(layout)
+            item.setData(QtCore.Qt.UserRole, layout)
+            self.ui.layoutList.addItem(item)
+ 
+        
         
     def load_settings(self):
         
-        currentTime = datetime.datetime.now().strftime("%Y-%m-%d %H-%M-%S")
-        shutil.copy("labelcore.conf", "confArchive\\labelcore.conf.bak.%s" % currentTime)
+        #currentTime = datetime.datetime.now().strftime("%Y-%m-%d %H-%M-%S")
+        #shutil.copy("labelcore.conf", "confArchive\\labelcore.conf.bak.%s" % currentTime)
         
         self.settings = QtCore.QSettings("labelcore.conf", QtCore.QSettings.IniFormat)
       
@@ -277,13 +578,15 @@ class Labeler(QtGui.QApplication):
                 self.settings.setValue(key, value)
         self.settings.sync()
         
+        self.refresh_layout_list()
+        
         
         self.ui.zoomLevel.setValue(self.settings.value('zoom').toDouble()[0])
         self.ui.permitEntry.setText(self.settings.value('permit').toString())
         self.ui.permitCheck.setChecked(self.settings.value('usepermit').toBool())
-        self.ui.returnAddress.setHtml(self.settings.value('return').toString())
+        self.ui.returnAddress.setPlainText(self.settings.value('return').toString())
         self.ui.returnCheck.setChecked(self.settings.value('usereturn').toBool())
-        self.ui.copyCount.setValue(self.settings.value('copies').toInt()[0])
+        #self.ui.copyCount.setValue(self.settings.value('copies').toInt()[0])
                 
         self.settings.endGroup()
         layoutGroups = []
@@ -297,62 +600,175 @@ class Labeler(QtGui.QApplication):
             layoutGroups.append('Default Layout')
             
         
-        self.ui.layoutList.clear()
-        for layout in layoutGroups:
-            self.settings.beginGroup(layout)
-            item = QtGui.QListWidgetItem(layout)
-            item.setData(QtCore.Qt.UserRole, layout)
-            self.ui.layoutList.addItem(item)
-            self.settings.endGroup()
+        #self.ui.layoutList.clear()
+        #for layout in layoutGroups:
+        #    self.settings.beginGroup(layout)
+        #    item = QtGui.QListWidgetItem(layout)
+        #    item.setData(QtCore.Qt.UserRole, layout)
+        #    self.ui.layoutList.addItem(item)
+        #    self.settings.endGroup()
             
         self.settings.endGroup()
         
-    def load_layout(self):
-        item = self.ui.layoutList.currentItem()
+    def load_layout(self, item=None):
+        if not item:
+            item = self.ui.layoutList.currentItem()
         if item <> None:
-            self.set_layout(item)
+            #self.set_layout(item)
+            #self.load_layout_from_conf(item)
+            layout = self.load_layout_from_db(item)
+            if layout:
+                self.set_layout(layout)
+            else:
+                self.log_message("Error loading layout from database", "error")
+            
         else:
             self.log_message('No layout selected', 'error')
             self.beep()
             
+    def load_layout_from_db(self, item):
+        """ Creates a layout from the db connection """
+        session = self.sessionMaker()
+        
+        name = str(item.text())
+        
+        results = session.query(tables.Layout, tables.LayoutObject, 
+                          tables.ObjectProperty).filter(tables.Layout.id == tables.LayoutObject.layoutId, 
+                                                        tables.LayoutObject.id == tables.ObjectProperty.layoutObjectId,
+                                                        tables.Layout.name == name).all()
+                                                        
+        if results == []:
+            # Layout possibly has no objects, so lets just grab the layout details
+            results = [(x, None, None) for x in session.query(tables.Layout).filter(tables.Layout.name==name)]
             
+        name = None
+        
+        objects = []
+        objName = None
+        objType = None
+        props = None
+        permit = None
+        returnAddress = None
+        permitEnabled = None
+        returnEnabled = None
+        pageWidth = None
+        pageHeight = None
+        for layout, layoutobject, objectproperty in results:
+            if name == None:
+                name = layout.name
+                permit = layout.permit
+                returnAddress = layout.returnAddress
+                permitEnabled = layout.permitEnable
+                returnEnabled = layout.returnEnable
+                pageWidth = layout.pageWidth
+                pageHeight = layout.pageHeight 
             
-    def set_layout(self, item):
-        try:
-            self.clear_layout()
-            self.settings.beginGroup("layouts")
-            self.settings.beginGroup(item.text())
-            
-            self.ui.permitEntry.setText(self.settings.value("permit").toString())
-            self.ui.permitCheck.setChecked(self.settings.value("usepermit").toBool())
-            self.ui.returnAddress.setText(self.settings.value("return").toString())
-            self.ui.returnCheck.setChecked(self.settings.value("useReturn").toBool())
-            for objectName in self.settings.childGroups():
-                self.settings.beginGroup(objectName)
-                objType = str(self.settings.value("type").toString())
+            if layoutobject <> None:
+                if objName <> layoutobject.name:
+                    #objAdded.append(objName)
+                    if objName <> None:
+                        objects.append((objName, objType, props))
+                    objName = layoutobject.name
+                    objType = layoutobject.objType
+                    props = []
                 
-                obj = self.objectTypes[str(objType)](objectName)
-                #self.objectCollection.append(obj)
-                self.add_object(obj)
-                for propName in self.settings.childKeys():
-                    if str(propName) == "type":
-                        continue
-                    obj.propNames[str(propName)].set_value(self.settings.value(propName))
-                self.settings.endGroup()
+            if objectproperty <> None:
+                props.append((objectproperty.propType, objectproperty.propVal))
+                
+                
+            
+            
+            
+            
+            
+        if name <> None:
+            if objName <> None: 
+                objects.append((objName, objType, props))
+            layoutObj = LabelLayout(name, permit, returnAddress, permitEnabled, returnEnabled, pageWidth, pageHeight, objects)
+            
+            return layoutObj
+        
+        else:
+            
+            
+            return False
+        
+            
+            
+            
+        
+            
+    def load_layout_from_conf(self, item):
+        """ Creates a layout from a conf file """
+        name = item.text()
+        self.clear_layout()
+        self.settings.beginGroup("layouts")
+        self.settings.beginGroup(name)
+        
+        permit = self.settings.value("permit").toString()
+        returnAddress = self.settings.value("return").toString()
+        permitEnabled = self.settings.value("usepermit").toBool()
+        returnEnabled = self.settings.value("useReturn").toBool()
+        pageWidth = 90
+        pageHeight = 45
+        
+        objects = []
+        for objectName in self.settings.childGroups():
+            self.settings.beginGroup(objectName)
+            
+            objType = str(self.settings.value("type").toString())
+            
+            props = []
+            for propName in self.settings.childKeys():
+                if str(propName) == "type":
+                    continue
+                propVal = self.settings.value(propName)
+                props.append((propName, propVal))
+            objectDesc = (objectName, objType, props)
+            objects.append(objectDesc)
             self.settings.endGroup()
-            self.settings.endGroup()
-            #for prop in obj.propNames:
-            #    QtCore.QTimer.singleShot(100, obj.propNames[prop].emit_update)
-        except Exception as e:
-            import traceback
-            print traceback.print_tb(sys.exc_info()[2])
+        self.settings.endGroup()
+        self.settings.endGroup()
+            
+        layout = LabelLayout(name, permit, returnAddress, permitEnabled, returnEnabled, pageWidth, pageHeight, objects)
+        return layout
+    
+        #self.set_layout(layout)
+        
+            
+    def set_layout(self, layout):
+        self.clear_layout()
+        self.currentLayout = layout
+        
+        self.ui.permitEntry.setText(layout.permit)
+        self.ui.permitCheck.setChecked(layout.permitEnabled)
+        if "<html>" in str(layout.returnAddress).lower(): 
+            self.ui.returnAddress.setHtml(layout.returnAddress) 
+        else:
+            self.ui.returnAddress.setPlainText(layout.returnAddress)
+        self.ui.returnCheck.setChecked(layout.returnEnabled)
+        self.currentPageSize = (layout.pageWidth, layout.pageHeight)
+        for objectName, objType, props in layout.objectList:
+            
+            obj = self.objectTypes[str(objType)](objectName)
+            
+            self.add_object(obj)
+            for propName, propVal in props:
+                if str(propName) == "type":
+                    continue
+                obj.propNames[str(propName)].set_value(QtCore.QVariant(propVal))
+                
         
     def clear_layout(self):
-        print self.itemNames
         for obj in self.objectCollection[:]:
             self.remove_object(obj)
-        print self.itemNames
+            
+        self.ui.permitCheck.setChecked(False)
+        self.ui.returnCheck.setChecked(False)
+        self.ui.returnAddress.setHtml("") 
+        self.ui.permitEntry.setText("")
         
+        self.clear_object_properties()
             
         self.log_message("Layout Cleared")
         
@@ -362,9 +778,10 @@ class Labeler(QtGui.QApplication):
         self.labelView.scene().removeItem(obj)
         self.objectCollection.remove(obj)
         self.ui.itemList.takeTopLevelItem(self.ui.itemList.indexOfTopLevelItem(self.itemListObjects[obj]))
-        print obj.name
+
         self.itemNames.remove(obj.name)
         del self.itemListObjects[obj]
+        self.clear_object_properties()
         #self.objectGarbage.append(obj)
         
     def log_message(self, message, level="log"):
@@ -623,12 +1040,18 @@ class Labeler(QtGui.QApplication):
             
         
     def add_header_text(self, item):
-        itemSelection = self.labelView.scene().selectedItems()
-        if len(itemSelection) == 1:
-            itemSelection[0].textCursor().insertText("{%s}" % str(item.text()))
-            itemSelection[0].update_text()
-            self.labelView.setFocus(True)
-            itemSelection[0].setFocus(True)
+        #itemSelection = self.labelView.scene().selectedItems()
+        
+        currentItem = self.ui.itemList.currentItem()
+        if currentItem:
+            obj = currentItem.data(0,QtCore.Qt.UserRole).toPyObject()
+            if obj.objectType == "Text":
+                obj.propNames["Text"].insert_text("{%s}<BR \>\n" % str(item.text()))
+        #if len(itemSelection) == 1:
+        #    itemSelection[0].textCursor().insertText("{%s}" % str(item.text()))
+        #    itemSelection[0].update_text()
+        #    self.labelView.setFocus(True)
+        #    itemSelection[0].setFocus(True)
         
     def load_csv(self, filename):
         return [row for row in csv.reader(open(filename, "rb"))]
@@ -672,7 +1095,7 @@ class Labeler(QtGui.QApplication):
             
         
 
-    def add_text(self, pos, posType="abs"):#text, x, y):
+    def add_text(self, pos, posType="abs", select = True):#text, x, y):
         """ add a text item at pos, returns a point to the object. Pos type can be "abs" for absolute window co-ords, or "rel" for on-paper co-ords """
         name = "Text"
         count = 0
@@ -682,7 +1105,6 @@ class Labeler(QtGui.QApplication):
         #self.itemNames.append(name)
         obj = LabelerTextItem(name)
         
-       
         
         self.add_object(obj)
         
@@ -690,35 +1112,39 @@ class Labeler(QtGui.QApplication):
             obj.setPos(self.labelView.mapToScene(pos))
         elif posType == "rel":
             obj.setPos(QtCore.QPointF(pos))
+        elif posType == "relmm":
+            ## Set by mm
+            obj.set_pos_by_mm(*pos)
         else:
             raise ValueError("Unrecognised position type %s" %posType)
-        obj.setPlainText("Enter Text")
+        obj.setHtml("Enter Text")
         
         
-        #self.objectCollection.append(obj)
-        
-        #item = QtGui.QTreeWidgetItem(self.ui.itemList)
-        #item.setText(0, obj.name)
-        #item.setData(1,0, obj)
-        #self.itemListObjects[obj] = item
+        obj.propNames["Font"].set_value(obj.propNames["Font"].get_font())
+        if select:
+            item = self.ui.itemList.findItems(name, QtCore.Qt.MatchExactly)[0]
+            self.ui.itemList.setCurrentItem(item)
         
         
-        obj.start_edit()
-        cursor = obj.textCursor()
-        
-        cursor.movePosition(QtGui.QTextCursor.Start)
-        cursor.movePosition(QtGui.QTextCursor.End, QtGui.QTextCursor.KeepAnchor)
-        
-        obj.setTextCursor(cursor)
         return obj
         
     def add_barcode(self, pos):
         """ Add a barcode item """
-        obj = LabelerBarcodeItem()
+        
+        name = "Barcode"
+        count = 0
+        while name in self.itemNames:
+            count += 1
+            name = "Barcode%d" % count
+        
+        obj = LabelerBarcodeItem(name)
         
         self.add_object(obj)
         
         obj.setPos(self.labelView.mapToScene(pos))
+        
+        item = self.ui.itemList.findItems(name, QtCore.Qt.MatchExactly)[0]
+        self.ui.itemList.setCurrentItem(item)
         
         
         
@@ -753,6 +1179,22 @@ class Labeler(QtGui.QApplication):
                 self.beep()
                 item.setText(col, oldName)
         
+    def show_printer_properties(self):
+        
+        #self.printProperties.set
+        self.printProperties.show()
+        
+    def show_page_setup(self):
+        self.pageProperties.show()
+
+    def set_page_size(self):
+        self.currentPageSize = (self.pageSetupUi.pageWidth.value(), self.pageSetupUi.pageHeight.value())
+        self.labelView.setPageSize((self.dpmm[0]*self.currentPageSize[0], self.dpmm[1]*self.currentPageSize[1]))
+    
+    def reset_page_properties(self):
+        pageSize = self.currentPageSize
+        self.pageSetupUi.pageWidth.setValue(pageSize[0])
+        self.pageSetupUi.pageHeight.setValue(pageSize[1])
     
     def start_merge(self, preview=False):
         self.labelView.start_merge(preview)
@@ -786,25 +1228,26 @@ class Labeler(QtGui.QApplication):
         """ calls the merge_row method on every object in the collection, using row as data """
         for obj in self.objectCollection:
             obj.merge_row(row)
-    
+            
+    def clear_object_properties(self):
+        while True:
+            # Loops through all the current properties on the property page, and hides them
+            widgetItem = self.ui.objectProperties.takeAt(0)
+            # This check is made due to a bug with the formlayout incorrectly 
+            # keeping track of how many items it has
+            if widgetItem <> None:
+                widget = widgetItem.widget()
+                widget.setVisible(False)
+            else:
+                break
         
     def item_selected(self, currentItem, previousItem):
         """ Selects the currentItem on the label view, and populates its properties """
         self.ui.objectPropertyArea.setUpdatesEnabled(False)
         if currentItem <> None:
-            print self.ui.objectProperties.rowCount()
+            #print self.ui.objectProperties.rowCount()
             #for i in range(self.ui.objectProperties.rowCount()):
-            while True:
-                # Loops through all the current properties on the property page, and hides them
-                widgetItem = self.ui.objectProperties.takeAt(0)
-                # This check is made due to a bug with the formlayout incorrectly 
-                # keeping track of how many items it has
-                if widgetItem <> None:
-                    widget = widgetItem.widget()
-                    widget.setVisible(False)
-                    print widget
-                else:
-                    break
+            self.clear_object_properties()
             # Get a reference to the object
             obj = currentItem.data(0,QtCore.Qt.UserRole).toPyObject()
             if self.labelView.isInteractive():
@@ -819,7 +1262,7 @@ class Labeler(QtGui.QApplication):
                     self.ui.objectProperties.addRow("%s %s" % (field.name,widget), field.widgets[widget])
                     field.widgets[widget].setVisible(True)
             self.ui.objectPropertyArea.update()
-            self.ui.objectPropertyArea.setUpdatesEnabled(True)
+        self.ui.objectPropertyArea.setUpdatesEnabled(True)
             
     def item_selection_cleared(self):
         self.ui.itemDetails.clear()
@@ -886,7 +1329,7 @@ class Labeler(QtGui.QApplication):
             matches = sorted(set(matches))
             for i in matches:
                 x = i.replace("{", "").replace("}","")
-                if not x in self.headers:
+                if x not in self.headers:
                     if not obj.suppress_address_errors:
                         # Was unable to find a match for this header, so issue a warning
                         message += " %s," % x
@@ -902,35 +1345,38 @@ class Labeler(QtGui.QApplication):
     def make_labels(self, method="PDF"):
         """ Starts making labels, if method is set to "PRINT", it will also 
             print to the selected printer """
-        if not self.field_check():
-            # field matching failed, abort
             
-            return
-        
         # preserve preview state    
         previewState = self.ui.previewCheck.isChecked()
         
         # now disable it
         self.ui.previewCheck.setChecked(False)
         
+            
+        if not self.field_check():
+            # field matching failed, abort
+            self.ui.previewCheck.setChecked(previewState)
+            return
+        
+        
         
         
         self.MainWindow.hide()
-        printer = None
         if method == "PRINT":
             # If method type is set to PRINT, also set up a printer to the currently 
             # selected printer
-            printer = QtGui.QPrinter()
-            printer.setPrinterName(self.currentPrinter)
-            printer.setOrientation(printer.Portrait)
+            #printer = QtGui.QPrinter()
+            #printer.setPrinterName(self.currentPrinter)
+            #printer.setOrientation(printer.Portrait)
+            
             # Due to something to do with the Avery printer, we need to set the 
             # dimensions to be 2x their normal width and height
-            printer.setPaperSize(QtCore.QSizeF(90, 180), QtGui.QPrinter.Millimeter)
-            printer.setFullPage(True)
-            printer.setColorMode(printer.GrayScale)
+            self.printer.setPaperSize(QtCore.QSizeF(self.currentPageSize[0], self.currentPageSize[1]), QtGui.QPrinter.Millimeter)
+            self.printer.setFullPage(True)
+            self.printer.setColorMode(self.printer.GrayScale)
             
             painter = QtGui.QPainter()
-            painter.begin(printer)
+            painter.begin(self.printer)
 
         # Set up a printer to output to PDF
         pdfPrint = QtGui.QPrinter()
@@ -941,9 +1387,9 @@ class Labeler(QtGui.QApplication):
             outputName = os.path.splitext(self.currentFile)[0] +'_labels.pdf'
 
         pdfPrint.setOutputFileName(outputName)
-        pdfPrint.setOrientation(pdfPrint.Landscape)
+        pdfPrint.setOrientation(pdfPrint.Portrait)
         
-        pdfPrint.setPaperSize(QtCore.QSizeF(45, 90), QtGui.QPrinter.Millimeter)
+        pdfPrint.setPaperSize(QtCore.QSizeF(self.currentPageSize[0], self.currentPageSize[1]), QtGui.QPrinter.Millimeter)
         pdfPrint.setFullPage(True)
         pdfPrint.setColorMode(pdfPrint.GrayScale)
         pdfPainter = QtGui.QPainter()
@@ -960,7 +1406,8 @@ class Labeler(QtGui.QApplication):
                 self.processEvents()
             self.merge_row(row)
             
-            copies = self.ui.copyCount.value()
+            #copies = self.ui.copyCount.value()
+            copies = 1
             if self.ui.copyUseField.isChecked():
                 # use field in the database if asked to
                 copies = int(row[str(self.ui.copyField.currentText())])
@@ -971,13 +1418,13 @@ class Labeler(QtGui.QApplication):
                 if first:
                     first = False
                 else:
-                    if printer <> None:
-                        printer.newPage()
+                    if method == "PRINT":
+                        self.printer.newPage()
                     pdfPrint.newPage()
                     
                 
             
-                if printer <> None:
+                if method == "PRINT":
                     self.labelView.scene().render(painter)
                 
                 self.labelView.scene().render(pdfPainter)
@@ -989,7 +1436,7 @@ class Labeler(QtGui.QApplication):
             
         # Clean up merging
         self.end_merge()
-        if printer <> None:
+        if method == "PRINT":
             painter.end()
         pdfPainter.end()
         self.end_progress_window()

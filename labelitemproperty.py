@@ -66,6 +66,7 @@ class LabelFontProperty(LabelItemProperty):
         self.widgets["Point Size"].setValue(self.value.pointSizeF())
         self.widgets["Point Size"].setMinimum(1.0)
         self.widgets["Point Size"].setMaximum(1000.0)
+        self.widgets["Point Size"].setKeyboardTracking(False)
         self.connect(self.widgets["Point Size"], QtCore.SIGNAL("valueChanged(double)"), self.update_font_point_size)
         
         self.widgets["Bold"] = QtGui.QCheckBox("")
@@ -85,7 +86,6 @@ class LabelFontProperty(LabelItemProperty):
         
         self.updateSignal = QtCore.SIGNAL("fontChanged(QFont)")
         
-    
         
     def update_font_family(self, font):
         """ This method takes a QFont and uses it to alter the font family of the underlying font """
@@ -146,8 +146,14 @@ class LabelTextAreaProperty(LabelItemProperty):
         self.value = self.widgets["Value"].toPlainText()
         self.emit_update()
         
+    def insert_text(self, text):
+        self.widgets["Value"].textCursor().insertText(text)
+        
     def set_value(self, value):
-        self.value = QtCore.QString(value.toString())
+        try:
+            self.value = QtCore.QString(value.toString())
+        except:
+            self.value = QtCore.QString(value)
         self.widgets["Value"].setPlainText(self.value)
         self.emit_update()
         
@@ -196,6 +202,7 @@ class LabelDoubleProperty(LabelItemProperty):
         self.widgets["Value"] = QtGui.QDoubleSpinBox()
         self.widgets["Value"].setMinimum(0.0)
         self.widgets["Value"].setMaximum(1000.0)
+        self.widgets["Value"].setKeyboardTracking(False)
         
         self.widgets["Value"].setValue(self.value)
         self.connect(self.widgets["Value"], QtCore.SIGNAL("valueChanged(double)"), self.update_double)
@@ -213,6 +220,9 @@ class LabelDoubleProperty(LabelItemProperty):
         self.widgets["Value"].setMinimum(float(minimum))
         self.widgets["Value"].setMaximum(float(maximum))
         
+    def set_step(self, step):
+        self.widgets["Value"].setSingleStep(step)
+        
     def set_double(self, value):
         self.widgets["Value"].setValue(value)
 
@@ -221,7 +231,10 @@ class LabelDoubleProperty(LabelItemProperty):
         self.emit_update()
         
     def set_value(self, value):
-        self.value = value.toFloat()[0]
+        try:
+            self.value = value.toFloat()[0]
+        except:
+            self.value = value
         self.widgets["Value"].setValue(self.value)
         self.emit_update()
         
@@ -239,6 +252,7 @@ class LabelIntegerProperty(LabelItemProperty):
         self.widgets["Value"].setMinimum(0)
         self.widgets["Value"].setMaximum(10000)
         self.widgets["Value"].setValue(self.value)
+        self.widgets["Value"].setKeyboardTracking(False)
         self.connect(self.widgets["Value"], QtCore.SIGNAL("valueChanged(int)"), self.update_integer)
         
         
@@ -266,7 +280,48 @@ class LabelIntegerProperty(LabelItemProperty):
 class LabelListProperty(LabelItemProperty):
     def __init__(self, name, value=None):
         super(LabelListProperty, self).__init__(name)
-        self.updateSignal = QtCore.SIGNAL("selectionChanged(QString)")
+        
+        self.type = QtCore.QString
+        self.updateSignal = QtCore.SIGNAL("selectionChanged(PyQt_PyObject)")
+        if value[1] == None:
+            self.value = QtCore.QString(value[0][0])
+        else:
+            self.value = QtCore.QString(value[1])
+        
+        self.widgetOrder.append("Value")
+        self.widgets["Value"] = QtGui.QComboBox()
+        self.widgets["Value"].addItems(value[0])
+        
+        if value[1] <> None:
+            index = self.widgets["Value"].findData(QtCore.QString(self.value))
+            if index <> -1:
+                self.widgets["Value"].setCurrentIndex(index)
+            else:
+                
+                raise ValueError("'%s', value not in list" % str(self.value))
+            
+        self.connect(self.widgets["Value"], QtCore.SIGNAL("currentIndexChanged(QString)"), self.update_selection)
+        
+    def update_selection(self, value):
+        self.value = QtCore.QString(value)
+        self.emit_update()
+        
+    def set_value(self, value):
+        try:
+            self.value = QtCore.QString(value)
+        except TypeError:
+            self.value = value.toString()
+        index = self.widgets["Value"].findText(str(self.value))
+        if index <> -1:
+            self.widgets["Value"].setCurrentIndex(index)
+        else:
+            raise ValueError("'%s', value not in list" % str(self.value))
+        self.emit_update()
+        
+    def get_value(self):
+        return self.value
+                
+        
 
 class LabelBooleanProperty(LabelItemProperty):
     def __init__(self, name, value=None):
