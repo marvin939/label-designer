@@ -1,5 +1,20 @@
 from PyQt4 import QtGui, QtCore
 import math
+#import qrcode
+from jpype import *
+
+#MultiFormatWriter = JClass("com.google.zxing.MultiFormatWriter")
+#BarcodeFormat = JClass("com.google.zxing.BarcodeFormat")
+#BitMatrix = JClass("com.google.zxing.common.BitMatrix")
+#File = JClass("java.io.File")
+#BufferedImage = JClass("java.awt.image.BufferedImage")
+#ImageIO = JClass("javax.imageio.ImageIO")
+#ByteArrayOutputStream = JClass("java.io.ByteArrayOutputStream")
+#MatrixToImageWriter = JClass("com.google.zxing.client.j2se.MatrixToImageWriter")
+#EncodeHintType = JClass("com.google.zxing.EncodeHintType")
+#Hashtable = JClass("java.util.Hashtable")
+#hints = JClass("java.util.Hashtable")()
+#hints.put(JClass("com.google.zxing.EncodeHintType").MARGIN, 0)
 
 _i2of5 = {'0':'nnwwn',
           '1':'wnnnw',
@@ -200,12 +215,14 @@ def bar_Code128(data, checksum=True):
     """ Returns a QPixmap containing the barcode
         charSet can be 'A', 'B', or 'C' to denote a preference"""
     _dpi = (QtCore.QCoreApplication.instance().desktop().physicalDpiX(), QtCore.QCoreApplication.instance().desktop().physicalDpiY())
+    _dpi = (203, 203)
     _dpmm = (_dpi[0] / 25.4, _dpi[1] / 25.4)
     datatext = str(data) 
     
     #n = 2.4 # narrow to wide ratio
     c = len(datatext) # number of characters
-    x = 6.0 # bar size
+    x = 1.0 # bar size
+    #x = _dpi[0] / 100.0
   
     
     
@@ -351,6 +368,7 @@ def bar_Code128(data, checksum=True):
 def bar_I2of5(data, checksum=False):
     """ Returns a QPixmap containing the barcode """
     _dpi = (QtCore.QCoreApplication.instance().desktop().physicalDpiX(), QtCore.QCoreApplication.instance().desktop().physicalDpiY())
+    _dpi = (203, 203)
     _dpmm = (_dpi[0] / 25.4, _dpi[1] / 25.4)
     datatext = str(data) 
     if not datatext.isdigit():
@@ -375,7 +393,7 @@ def bar_I2of5(data, checksum=False):
     
     n = 2.7 # narrow to wide ratio
     c = len(datatext) # number of characters
-    x = 5.0 # small bar size
+    x = 1.0 # small bar size
     
     width = math.ceil(((c * ((2*n) + 3)) + 6 + n ) * x)
     
@@ -413,7 +431,7 @@ def _draw_i2of5_line(painter, digitcode, currentPos):
     #_dpi = (QtCore.QCoreApplication.instance().desktop().physicalDpiX(), QtCore.QCoreApplication.instance().desktop().physicalDpiY())
     #_dpmm = (_dpi[0] / 25.4, _dpi[1] / 25.4)
     n = 2.7
-    x = 5.0 #0.508 * _dpmm[0]
+    x = 1.0 #0.508 * _dpmm[0]
     #x = 2.0
     height = 20.0
     newPos = currentPos
@@ -440,7 +458,7 @@ def _draw_i2of5_line(painter, digitcode, currentPos):
 def bar_3of9(data, checksum=False):
     datatext = str(data)
     n = 2.8
-    x = 5.0
+    x = 1.0
     c = len(datatext) + 2
     if checksum:
         c += 1
@@ -504,9 +522,23 @@ def bar_3of9(data, checksum=False):
                 currentPos += size
         
         currentPos += x
-    print currentPos-x, width
             
     return bitmap
+    
+def bar_qrcode(data, checksum=False):
+    ## For Java QR Code Stuff
+
+    #hints = Hashtable()
+    #hints.put(EncodeHintType.MARGIN, 0)
+    #matrix = JClass("com.google.zxing.MultiFormatWriter")().encode(unicode(data), JClass("com.google.zxing.BarcodeFormat").QR_CODE, 1, 1, hints)
+    #image = JClass("com.google.zxing.client.j2se.MatrixToImageWriter").toBufferedImage(matrix)
+    #JClass("javax.imageio.ImageIO").write(image, "png", JClass("java.io.File")("test.png"))
+    #pix = QtGui.QPixmap("test.png")
+    pix = QtGui.QPixmap()
+    #print pix
+    
+    return pix
+        
     
     
     

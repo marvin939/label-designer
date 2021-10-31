@@ -1,14 +1,18 @@
 from PyQt4 import QtCore, QtGui
+from PyQt4.QtCore import QRectF
 from returntext import ReturnText
 from labelertextitem import LabelerTextItem
+
+from constants import *
 
 import barcode
 
 class ZoomGraphicsView(QtGui.QGraphicsView):
     def __init__(self, *args, **kwargs):
         super(ZoomGraphicsView, self).__init__(*args, **kwargs)
-        self.dpi  = (self.logicalDpiX(), self.logicalDpiY())
-        self.dpmm = (self.dpi[0]/25.4, self.dpi[1]/25.4)
+        self.dpi = QtCore.QCoreApplication.instance().dpi
+        #self.dpi = (203, 203)
+        self.dpmm = QtCore.QCoreApplication.instance().dpmm
         self.setBackgroundBrush(QtGui.QBrush(QtCore.Qt.lightGray))
         self.setDragMode(QtGui.QGraphicsView.RubberBandDrag)
         self.setScene(QtGui.QGraphicsScene(0, 0, 0, 0))
@@ -18,10 +22,13 @@ class ZoomGraphicsView(QtGui.QGraphicsView):
         #self.permitImage.setPos(self.dpmm[0]*44, self.dpmm[1]*3)
         #self.scene().update()
         
+        self.pageSize_mm_height = 0
+        self.pageSize_mm_width = 0
         self.pageSizeRects = []
         
         if "pagesize" in kwargs:
             self.setPageSize(kwargs["pagesize"])
+        
         pix = QtGui.QPixmap("PermitPost.png")
         #self.permitImage = self.scene().addPixmap(pix.scaledToWidth(self.dpmm[0]*43))
         # setup permit image
@@ -30,17 +37,17 @@ class ZoomGraphicsView(QtGui.QGraphicsView):
         self.permitImage = self.scene().addPixmap(pix)
         self.permitImage.setTransformationMode(QtCore.Qt.SmoothTransformation)
         self.permitImage.scale((self.dpmm[0]*43)/self.permitImage.boundingRect().width(), (self.dpmm[1]*10)/self.permitImage.boundingRect().height())
-        self.permitImage.setPos(self.dpmm[0]*46, self.dpmm[1] * 3)
+        self.permitImage.setPos(self.dpmm[0]*46, self.dpmm[1] * 3)  # Modify this for position of Permit Image
         self.permitText = self.scene().addText("")
         #self.permitText = LabelerTextItem()
         #self.scene().addItem(self.permitText)
         font = QtGui.QFont("Arial Narrow")
         font.setPointSize(16)
-
+        font.setBold(True)
         self.permitText.setFont(font)
         self.permitText.setScale(.5)
         self.permitText.setTextWidth(self.dpmm[0]*48)
-        self.permitText.setPos(self.dpmm[0]*46.2, self.dpmm[1]*4)
+        self.permitText.setPos(self.dpmm[0]*46.2, self.dpmm[1]*4) # Modify this for position of Permit text
         self.zoomUpdate = QtCore.SIGNAL("zoomUpdated(PyQt_PyObject)")
         
         self.permitImage.setSelected(True)
@@ -49,21 +56,37 @@ class ZoomGraphicsView(QtGui.QGraphicsView):
         
         self.addItemList = None
         
-        self.returnAddress = ReturnText()
-        self.returnAddress.setPos(45*self.dpmm[0], 41*self.dpmm[1])
-        
+        # RECYCLABLE PACKAGING TEXT
+        # -------------------------
+        self.returnAddress = ReturnText(parent=self)
+        self.returnAddress.setPos(45*self.dpmm[0], 41*self.dpmm[1]) # Modify this for position of Return address
         self.scene().addItem(self.returnAddress)
         
+        # RECYCLABLE PACKAGING TEXT
+        # --------------------------
+        self.recyclablePackagingText = self.scene().addText("")
+        self.recyclablePackagingText.setHtml(RECYCLABLE_PACKAGING_TEXT_STRING)
+        rptFont = QtGui.QFont("Arial")
+        rptFont.setPointSize(RECYCLABLE_PACKAGING_TEXT_BOTTOM_FONT_SIZE)
+        self.recyclablePackagingText.setScale(0.3)
+        self.recyclablePackagingText.setFont(rptFont)
+        # self.recyclablePackagingText.setPos(0, (pageSize_mm_height - RETURN_ADDRESS_BOTTOM) * self.dpmm[1] - (self.boundingRect().height() * self.scale()))
+        self.recyclablePackagingText.visibleChanged.connect(self.recyclablePackagingText_visibleChanged)
+        # print "self.document(): %s" % self.document()
         
         self.update()
-        
+    
+    # def recyclablePackagingText_visible(self):
+        # # return "permitText visible: %s" % self.permitText.isVisible()
+        # return self.recyclablePackagingText.isVisible()
+    
     def set_add_item_list(self, itemList):
         self.addItemList = itemList
         
     def set_permit_number(self, val):
         """ sets the permit label to val """
-        if str(val).isdigit():
-            self.permitNo = str(val)
+        if unicode(val).isdigit():
+            self.permitNo = unicode(val)
         else:
             self.permitNo = ""
             
@@ -104,6 +127,9 @@ class ZoomGraphicsView(QtGui.QGraphicsView):
     def toggle_return_address(self, toggle):
         self.returnAddress.setVisible(toggle)
         
+    def toggle_recyclabl_packaging_text(self, toggle):
+        self.recyclablePackagingText.setVisible(toggle)
+        
         
     def keyPressEvent(self, event):
         super(ZoomGraphicsView, self).keyPressEvent(event)
@@ -120,6 +146,8 @@ class ZoomGraphicsView(QtGui.QGraphicsView):
                 for i in self.scene().selectedItems():
                     QtGui.QApplication.instance().remove_object(i)
         elif event.key() == QtCore.Qt.Key_Control:
+            print "no"
+            return
             item = self.itemAt(self.mapFromGlobal(self.cursor().pos()))
             if item <> None:
                 item.keyPressEvent(event)
@@ -138,6 +166,7 @@ class ZoomGraphicsView(QtGui.QGraphicsView):
                 adding = True
                 caller(event.pos())
                 item.toggle()
+                print "hi"
                 break
             
         if not adding:
@@ -173,6 +202,9 @@ class ZoomGraphicsView(QtGui.QGraphicsView):
     def setPageSize(self, pagesize):
         """ sets up the page border, setting current pagesize to pagesize """
         self.pageSize = pagesize
+        self.pageSize_mm_width = pagesize[0] / self.dpmm[0]
+        self.pageSize_mm_height = pagesize[1] / self.dpmm[1]
+        
         for i in self.pageSizeRects:
             self.scene().removeItem(i)
             del i
@@ -191,6 +223,48 @@ class ZoomGraphicsView(QtGui.QGraphicsView):
         for i in self.pageSizeRects:
             i.setZValue(-1)
         
+        self.readjustArtworkPos(pagesize)
+       
+    def readjustArtworkPos(self, pagesize):
+        pageSize_mm_width = self.pageSize_mm_width
+        pageSize_mm_height = self.pageSize_mm_height
+        
+        permitImagePos = (pageSize_mm_width - PERMIT_IMAGE_RIGHT_MM, PERMIT_IMAGE_TOP_MM)
+        self.permitImage.setPos(self.dpmm[0] * permitImagePos[0], self.dpmm[1] * permitImagePos[1])
+        
+        permitTextPos = (pageSize_mm_width - PERMIT_TEXT_RIGHT, PERMIT_TEXT_TOP)
+        self.permitText.setPos(self.dpmm[0] * permitTextPos[0], self.dpmm[1] * permitTextPos[1])
+                
+        # Bottom align the recyclable packging text
+        # -----------------------------------------
+        rpt = self.recyclablePackagingText
+        rptRect = rpt.boundingRect()
+        rptPos = (
+            (self.pageSize[0] - rptRect.width() * rpt.scale()) / 2, 
+            (pageSize_mm_height - RECYCLABLE_PACKAGING_TEXT_BOTTOM) * self.dpmm[1] - rptRect.height() * rpt.scale()
+        )
+        self.recyclablePackagingText.setPos(rptPos[0], rptPos[1])
+        
+        # Re-adjust return address position
+        # ---------------------------------
+        self.readjust_return_address_y_offset()
+        
+    
+    def readjust_return_address_y_offset(self):
+        # Function for when the return address gets hidden.
+    
+        rpt = self.recyclablePackagingText
+        rptRect = rpt.boundingRect()
+    
+        if self.recyclablePackagingText.isVisible():
+            self.returnAddress.y_offset = rptRect.height() * rpt.scale()
+        else:
+            self.returnAddress.y_offset = 0
+        self.returnAddress.updateGeometry() # Tell ReturnText obj to update with new values of pageSize (mm).
+    
+    
+    def recyclablePackagingText_visibleChanged(self):
+        self.readjust_return_address_y_offset()
     
     def wheelEvent(self, event):
         """ Overridden to allow for zooming when holding down ctrl """

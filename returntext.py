@@ -1,17 +1,24 @@
 from PyQt4 import QtCore, QtGui
+from constants import *
 
 class ReturnText(QtGui.QGraphicsTextItem):
-    def __init__(self, *args, **kwargs):
+    # Bottom-aligned Return Address text
+
+
+    def __init__(self, parent=None, y_offset=0, *args, **kwargs):
+    
         super(ReturnText, self).__init__(*args, **kwargs)
         self.alignment_ = QtCore.Qt.AlignCenter
         
         
+        self.parent = parent
         font = self.font()
         font.setPointSize(20)
         
         self.setFont(font)
         self.setScale(.3)
         
+        self.y_offset = 0
         
         self.dpi  = QtCore.QCoreApplication.instance().dpi
         self.dpmm = QtCore.QCoreApplication.instance().dpmm
@@ -19,7 +26,7 @@ class ReturnText(QtGui.QGraphicsTextItem):
         
     def init(self):
         self.updateGeometry()
-        self.connect(self.document(), QtCore.SIGNAL('contentsChange(int, int, int)'), self.updateGeometry)
+        # self.connect(self.document(), QtCore.SIGNAL('contentsChange(int, int, int)'), self.updateGeometry)
         
     #def setScale(self, scale):
     #    super(ReturnText, self).setScale(scale)
@@ -27,23 +34,24 @@ class ReturnText(QtGui.QGraphicsTextItem):
     #    self.dpmm = (self.dpmm[0]*scale, self.dpmm[1]*scale)
         
     def updateGeometry(self, x=None, y=None, z=None):
-        heightPrev = self.boundingRect().height() * self.scale()
-        widthPrev = self.boundingRect().width() * self.scale()
-        topRightPrev = self.boundingRect().topRight()
-        self.setTextWidth(-1)
-        self.setTextWidth(self.boundingRect().width())
-        #self.setAlignment(self.alignment_)
-        topRight = self.boundingRect().topRight()
-        if self.boundingRect().width() > self.dpmm[0] * 90 * (1.0/self.scale()):
-            self.setTextWidth(self.dpmm[0] * 90 * (1.0/self.scale()))
-        width = self.boundingRect().width() * self.scale()
-        height = self.boundingRect().height() * self.scale()
+        pageSize_mm_width = self.parent.pageSize_mm_width
+        pageSize_mm_height = self.parent.pageSize_mm_height
+        # print 'Parent pageSize_mm_width: %s' % pageSize_mm_width
+        # print 'Parent pageSize_mm_height: %s' % pageSize_mm_height
+        # print '[ReturnText] bounding rect: %s' % self.boundingRect()
+        self.setTextWidth(pageSize_mm_width * self.dpmm[0] * (1.0/self.scale()))
+        self.setPos(0, (pageSize_mm_height - RETURN_ADDRESS_BOTTOM) * self.dpmm[1] - (self.boundingRect().height() * self.scale()) - self.y_offset)
         
+        # print 'ReturnText height: %d' % self.boundingRect().height()
         
-        if self.alignment_ == QtCore.Qt.AlignRight:
-            self.setPos(self.pos() + (topRightPrev - topRight))
-        elif self.alignment_ == QtCore.Qt.AlignCenter:
-            self.setPos(self.pos() - QtCore.QPointF(((width - widthPrev)/2),(height-heightPrev)))
+        # Spaghetti code :-(
+        print 'From returntext.py: %d' % self.parent.pageSize_mm_height
+        # print 'recyclablePackagingText_visible: ' + self.parent.recyclablePackagingText_visible()
+        #print 'Parent recyclablePackagingText: ' + self.parent.recyclablePackagingText
+
+        # if self.parent.recyclablePackagingText.visible():
+            # print('spaghetti')
+    
             
     #def setAlignment(self, alignment):
     #    self.alignment_ = alignment

@@ -6,6 +6,8 @@ htmlFontRE = re.compile(r"<body style=\" font-family:'.*?';")
 spanRemoveRE = re.compile(r"<span style.*?>")
 
 class LabelerTextItem(QtGui.QGraphicsTextItem, LabelerItemMixin):
+    propLoadOrder = ["Skip Blanks","Line Spacing","Is Conditional","Condition","Wrap Text","Width","Rotation","X Coord","Y Coord","Text","Font"]
+    
     def __init__(self, name, *args, **kwargs):
         
         self.htmlLabelStart = "<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\">"
@@ -35,34 +37,30 @@ class LabelerTextItem(QtGui.QGraphicsTextItem, LabelerItemMixin):
         font.setPointSizeF(9.0)
         #self.coreHtml = self.htmlLabelStart + self.htmlLabelEnd
         #self.setHtml(self.coreHtml)
-        
-        
-#         OLD property management, left as a reference for now
-#        properties = {'Text':('text','', self.text_changed), 
-#                           'Skip Blanks':('boolean', False, None),
-#                           'Font Size':('float', 9.0, self.set_font_size),
-#                           'Font':('font', (self.font().family(),self.font().styleName(), self.font().pointSizeF()), self.set_font_family),
-#                           'Font Bold':('boolean', self.font().bold(), self.set_font_bold),
-#                           'Font Italic':('boolean', self.font().italic(), self.set_font_italic),
-#                           'X Coord':('float', self.scenePos().x(), self.setX),
-#                           'Y Coord':('float', self.scenePos().y(), self.setY),
-#                           'Line Spacing':('integer', self.lineSpacing, self.line_space_changed)}
-#        propOrder = ['Text', 'Skip Blanks', 'Font', 'Font Size', 'Font Bold', 'Font Italic', 'X Coord', 'Y Coord', 'Line Spacing']
-        
-        
+    
         properties = [LabelProp(propName='Text', propType='textarea', propValue=self.coreHtml),#LabelProp(propName='Text', propType='textarea', propValue=self.toPlainText()),
                       LabelProp(propName='Skip Blanks', propType='boolean', propValue=True),
                       LabelProp(propName='Font', propType='font', propValue=None),
                       LabelProp(propName='X Coord', propType='double', propValue=self.scenePos().x()),
                       LabelProp(propName='Y Coord', propType='double', propValue=self.scenePos().y()),
                       LabelProp(propName='Line Spacing', propType='double', propValue=100),
+                      LabelProp(propName='Is Conditional', propType='boolean', propValue=False),
+                      LabelProp(propName='Condition', propType='textarea', propValue=''),
+                      LabelProp(propName='Wrap Text', propType='boolean', propValue=False),
+                      LabelProp(propName='Width', propType='double', propValue=70),
+                      LabelProp(propName='Rotation', propType = 'double', propValue=0)
                       ]
         self.propCallbacks["Text"] = self.text_changed
         self.propCallbacks["Skip Blanks"] = self.skip_blanks_toggle
         self.propCallbacks["Font"] = self.font_changed
         self.propCallbacks["X Coord"] = self.setX
         self.propCallbacks["Y Coord"] = self.setY
-        self.propCallbacks["Line Spacing"] = self.line_space_changed                     
+        self.propCallbacks["Line Spacing"] = self.line_space_changed
+        self.propCallbacks["Is Conditional"] = self.conditional_toggle  
+        self.propCallbacks["Condition"] = self.update_condition
+        self.propCallbacks["Wrap Text"] = self.toggle_text_wrap
+        self.propCallbacks["Width"] = self.update_width
+        self.propCallbacks["Rotation"] = self.change_rotation
         #self.propOrder = ['Text', 'Skip Blanks', 'Font', 'X Coord', 'Y Coord', 'Line Spacing']
         self.load_properties(properties)
         #self.setUp = True
@@ -86,9 +84,31 @@ class LabelerTextItem(QtGui.QGraphicsTextItem, LabelerItemMixin):
         self.mergeText = self.coreHtml
         
         
-        
-        self.skipBlanks = False
+        self.conditional = self.propNames["Is Conditional"].get_value()
+        self.condition = self.propNames["Condition"].get_value()
+        self.skipBlanks = self.propNames["Skip Blanks"].get_value()
         self.setScale(1.0)
+        
+        
+    def change_rotation(self):
+        self.setRotation(self.propNames["Rotation"].get_value())
+        
+    def toggle_text_wrap(self, wrap):
+        if wrap:
+            self.setTextWidth(self.propNames["Width"].get_value()*self.dpmm[0])
+        else:
+            self.setTextWidth(-1)
+    
+    def update_width(self, value):
+        if self.propNames["Wrap Text"].get_value():
+            self.setTextWidth(value*self.dpmm[0])
+            
+        
+    def update_condition(self, value):
+        self.condition = value
+        
+    def conditional_toggle(self, toggle):
+        self.conditional = toggle
         
     def strip_html(self):
         """ This function takes the html for this text box, and strips out anything before/after what goes on the label, writing back to self.coreHtml """
@@ -135,7 +155,7 @@ class LabelerTextItem(QtGui.QGraphicsTextItem, LabelerItemMixin):
         if not self.merging:
             #return self.toPlainText()
             #return self.coreHtml
-            return str(self.propNames["Text"].get_value())
+            return unicode(self.propNames["Text"].get_value())
         else:
             return self.mergeText
         
@@ -165,20 +185,47 @@ class LabelerTextItem(QtGui.QGraphicsTextItem, LabelerItemMixin):
         #self.setPlainText(self.mergeText)
         self.setHtml(self.mergeText)
         self.merging = False
+        self.setVisible(True)
+        
+    
         
     def merge_row(self, row):
-        text = str(self.mergeText).replace("{ white-space: pre-wrap; }", "")
-        matches = self.headerRE.findall(text)
-        matches = set(matches)
-        for i in matches:
-            field = i.replace("{", "").replace("}","")
-            if field not in row:
-                if self.suppress_address_errors:
-                    text = text.replace(i, "")
+        if self.conditional:
+            try:
+                if "=" in self.condition:
+                    left, right = self.condition.split("=")
+                    left = self.get_merged_value(left, row)
+                    right = self.get_merged_value(right, row)
+                    if left <> right:
+                        self.setVisible(False)
+                        return
+                    else:
+                        self.setVisible(True)
+                elif "<>" in self.condition:
+                    left, right = self.condition.split("<>")
+                    left = self.get_merged_value(left, row)
+                    right = self.get_merged_value(right, row)
+                    if left <> right:
+                        self.setVisible(True)
+                    else:
+                        self.setVisible(False)
+                        return
+                elif "!=" in self.condition:
+                    left, right = self.condition.split("!=")
+                    left = self.get_merged_value(left, row)
+                    right = self.get_merged_value(right, row)
+                    if left <> right:
+                        self.setVisible(True)
+                    else:
+                        self.setVisible(False)
+                        return
                 else:
-                    raise IndexError("Field %s not found in record" % field)
-            else:
-                text = text.replace(i, row[field])
+                    raise ValueError("No operator found for comparrison in conditional")
+            except ValueError:
+                QtCore.QCoreApplication.instance().log_message("Incorrectly written condition on %s." % self.name, "error")
+                QtCore.QCoreApplication.instance().cancel_label()
+        
+        text = self.generate_merge_text(row)
                     
                 
         
@@ -186,6 +233,8 @@ class LabelerTextItem(QtGui.QGraphicsTextItem, LabelerItemMixin):
         finalText = ""
         #if self.propWidgets['Skip Blanks'].isChecked():
         if self.propNames["Skip Blanks"].get_value():
+        #print "TEST"
+        #if True:
             for line in text.split("\n"):
                 if line.strip() <> "":
                     finalText += line +"\n"
@@ -245,7 +294,7 @@ class LabelerTextItem(QtGui.QGraphicsTextItem, LabelerItemMixin):
         if event.key() == QtCore.Qt.Key_Control:
                 self.setCursor(QtCore.Qt.ArrowCursor)
         #self.propNames['Text'].set_text(self.toPlainText())
-        self.propNames['Text'].set_text(self.coreHtml.replace(self.htmlLabelEnd, "").replace(self.htmlLabelStart, ""))
+        #self.propNames['Text'].set_text(self.coreHtml.replace(self.htmlLabelEnd, "").replace(self.htmlLabelStart, ""))
         
 #    def hoverLeaveEvent(self, event):
 #        self.setCursor(QtCore.Qt.ArrowCursor)
@@ -264,11 +313,12 @@ class LabelerTextItem(QtGui.QGraphicsTextItem, LabelerItemMixin):
 #            self.setCursor(QtCore.Qt.ArrowCursor)
         
     def keyPressEvent(self, event):
+        print event
         if event.key() == QtCore.Qt.Key_Control:
             self.setCursor(QtCore.Qt.SizeAllCursor)
             self.update()
         
-        if event.key() in (QtCore.Qt.Key_Return, QtCore.Qt.Key_Enter):
+        elif event.key() in (QtCore.Qt.Key_Return, QtCore.Qt.Key_Enter):
             if event.modifiers() in (QtCore.Qt.NoModifier, QtCore.Qt.KeypadModifier):
                 self.end_edit()
             elif event.modifiers() in (QtCore.Qt.ControlModifier, QtCore.Qt.ControlModifier|QtCore.Qt.KeypadModifier):
@@ -279,7 +329,7 @@ class LabelerTextItem(QtGui.QGraphicsTextItem, LabelerItemMixin):
     def setFont(self, font):
         """ Overrided to add calc for leading/line spacing, and to correct QT bug with letter spacing under 16pt """
         #self.setScale(1)
-        self.setHtml(htmlFontRE.sub("<body style=\" font-family:'%s'; font-size:%d" % (font.family(), font.pointSizeF()), str(self.toHtml())))
+        self.setHtml(htmlFontRE.sub("<body style=\" font-family:'%s'; font-size:%d" % (font.family(), font.pointSizeF()), unicode(self.toHtml())))
         #super(LabelerTextItem, self).setFont(font)
         #width = float(self.document().size().height())
 
@@ -294,7 +344,7 @@ class LabelerTextItem(QtGui.QGraphicsTextItem, LabelerItemMixin):
         
         #height = metric.boundingRect(self.toHtml()).height()
         size = font.pointSizeF()
-        if size < 20.0 and str(self.toPlainText()) <> "":
+        if size < 20.0 and unicode(self.toPlainText()) <> "":
             font.setPointSizeF(20.0)
             super(LabelerTextItem, self).setFont(font)
             metric = QtGui.QFontMetricsF(font)

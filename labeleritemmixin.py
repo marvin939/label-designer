@@ -13,7 +13,7 @@ class LabelerItemMixin:
 #                 'font':(QtGui.QFontComboBox, QtCore.SIGNAL('currentFontChanged(QFont)'))}
     
     
-    headerRE = re.compile('\{.*?\}')
+    headerRE = re.compile('(\{.*?\})(\[.*?\])*')
     def __init__(self, name):
         
         self.propertyTypes = {'textarea':LabelTextAreaProperty,
@@ -23,7 +23,8 @@ class LabelerItemMixin:
                      'list':LabelListProperty,
                      'font':LabelFontProperty,
                      'boolean':LabelBooleanProperty,
-                     'list':LabelListProperty}
+                     'list':LabelListProperty,
+                     'filename':LabelFilenameProperty}
         
         self.propItems = []
         self.propCallbacks = {}
@@ -31,6 +32,7 @@ class LabelerItemMixin:
         self.propNames = {}
         self.name = name
         self.objectType = "ERROR"
+        self.mergeText = ""
         #if properties == None:
         #    self.properties = {}
         #    self.propOrder = []
@@ -69,6 +71,57 @@ class LabelerItemMixin:
             
     def void(self, *args, **kwargs):
         pass
+    
+    def get_merged_value(self, value, row):
+        value = unicode(value)
+        text = value.replace("{ white-space: pre-wrap; }", "")
+        matches = self.headerRE.findall(text)
+        matches = set(matches)
+        for fieldname, substring in matches:
+            field = fieldname.replace("{", "").replace("}","")
+            
+            replaceString = fieldname+substring
+            if substring:
+                vals = substring.replace("[", "").replace("]", "").split(":")
+                if len(vals) == 1:
+                    text = text.replace(fieldname+substring, row[field][int(vals[0])])
+                else:
+                    start, end = vals
+                    if start.strip() == "":
+                        text = text.replace(replaceString, row[field][:int(end)])
+                    elif end.strip() == "":
+                        text = text.replace(replaceString, row[field][int(start):])
+                    else:
+                        text = text.replace(replaceString, row[field][int(start):int(end)])
+                        
+            else:
+                text = text.replace(replaceString, row[field].replace("<", "&lt;").replace(">", "&gt;").replace("{",  "&#123;").replace("}", "&#125;"))
+        return text
+        
+    def generate_merge_text(self, row):
+#         text = unicode(self.mergeText).replace("{ white-space: pre-wrap; }", "")
+#         matches = self.headerRE.findall(text)
+#         matches = set(matches)
+#         for fieldname, substring in matches:
+#             field = fieldname.replace("{", "").replace("}","")
+#             
+#             replaceString = fieldname+substring
+#             if substring:
+#                 vals = substring.replace("[", "").replace("]", "").split(":")
+#                 if len(vals) == 1:
+#                     text = text.replace(fieldname+substring, row[field][int(vals[0])])
+#                 else:
+#                     start, end = vals
+#                     if start.strip() == "":
+#                         text = text.replace(replaceString, row[field][:int(end)])
+#                     elif end.strip() == "":
+#                         text = text.replace(replaceString, row[field][int(start):])
+#                     else:
+#                         text = text.replace(replaceString, row[field][int(start):int(end)])
+#                         
+#             else:
+#                 text = text.replace(replaceString, row[field])
+        return self.get_merged_value(self.mergeText, row)
         
     def get_merge_text(self):
         """ Override this method to return any merge values e.g. anything that will contain header text """

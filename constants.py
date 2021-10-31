@@ -1,0 +1,25 @@
+# Place global variables here
+
+DEFAULT_LABEL_WIDTH = 90
+DEFAULT_LABEL_HEIGHT = 45
+
+
+# LABEL PERMIT POSITIONS (mm)
+# ---------------------------
+PERMIT_IMAGE_RIGHT_MM = 44 # 1/11/2021 default: 44
+PERMIT_IMAGE_TOP_MM = 3
+
+PERMIT_TEXT_RIGHT = 43.8
+PERMIT_TEXT_TOP = 4
+
+
+# LABEL RETURN ADDRESS POSITION (mm)
+# ----------------------------------
+RETURN_ADDRESS_LEFT = 45
+RETURN_ADDRESS_BOTTOM = 0.5 # units, not sure if mm.
+
+# RECYCLABLE PACKAGING TEXT
+# ---------------------------------------
+RECYCLABLE_PACKAGING_TEXT_BOTTOM = 0.5 # mm
+RECYCLABLE_PACKAGING_TEXT_STRING = "<b>100% RECYCLABLE PACKAGING in soft plastics</b>"
+RECYCLABLE_PACKAGING_TEXT_BOTTOM_FONT_SIZE = 16

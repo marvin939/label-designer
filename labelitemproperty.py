@@ -1,6 +1,7 @@
 from PyQt4 import QtGui, QtCore
 from collections import namedtuple
-
+import os.path
+import defaults
 
 LabelProp = namedtuple("LabelProp", ("propName", "propType", "propValue"))
 
@@ -144,6 +145,7 @@ class LabelTextAreaProperty(LabelItemProperty):
         
     def update_text(self):
         self.value = self.widgets["Value"].toPlainText()
+        
         self.emit_update()
         
     def insert_text(self, text):
@@ -172,7 +174,6 @@ class LabelTextLineProperty(LabelItemProperty):
         self.widgets["Value"] = QtGui.QLineEdit()
         self.widgets["Value"].setPlainText(self.value)
         self.connect(self.widgets["Value"], QtCore.SIGNAL("textChanged(QString)"), self.update_text)
-        
         self.updateSignal = QtCore.SIGNAL("textChanged(QString)")
         
     def set_text(self, text):
@@ -186,6 +187,70 @@ class LabelTextLineProperty(LabelItemProperty):
     def set_value(self, value):
         self.value = QtCore.QString(value)
         self.widgets["Value"].setPlainText(self.value)
+        self.emit_update()
+        
+class LabelFilenameProperty(LabelItemProperty):
+    def __init__(self, name, text=None):
+        
+        super(LabelFilenameProperty, self).__init__(name)
+        
+        self.fileFilter = ""
+        self.fileDialog = QtGui.QFileDialog()
+        self.fileDialog.setFileMode(self.fileDialog.ExistingFile)
+        self.filterUsed = ""
+        if text <> None and text <> '':
+            self.currentDirectory = os.path.split(text)[0]
+            if self.currentDirectory == '':
+                self.currentDirectory = defaults.properties.imageDirectory
+            self.value = QtCore.QString(text)
+        else:
+            self.currentDirectory = defaults.properties.imageDirectory
+            self.value = QtCore.QString(defaults.properties.imageDirectory)
+        
+        self.fileDialog.setDirectory(self.currentDirectory)
+            
+        
+        self.type = QtCore.QString
+            
+        self.widgetOrder.append("Value")
+        self.widgetOrder.append("Select File...")
+        self.widgets["Value"] = QtGui.QLineEdit()
+        self.widgets["Select File..."] = QtGui.QPushButton("Select File...")
+        self.widgets["Value"].setText(self.value)
+        self.connect(self.widgets["Value"], QtCore.SIGNAL("textChanged(QString)"), self.update_text)
+        self.connect(self.widgets["Select File..."], QtCore.SIGNAL("clicked()"), self.get_filename)
+        
+        self.updateSignal = QtCore.SIGNAL("textChanged(QString)")
+        
+    def set_text(self, text):
+        self.widgets["Value"].setPlainText(text)
+        self.emit_update()
+        
+    def set_file_filter(self, fileFilter):
+        self.fileFilter = fileFilter
+        
+        
+    def get_filename(self):
+        print self.currentDirectory
+        ret = QtGui.QFileDialog.getOpenFileNameAndFilter(parent=self.widgets["Value"].window(), caption="Open an Image...", directory=self.currentDirectory, filter=self.fileFilter) 
+        if str(ret[0]) <> '':
+            self.currentDirectory = os.path.split(str(ret[0]))[0]
+            self.value = str(ret[0])
+            self.widgets["Value"].setText(self.value)
+            #self.emit_update()
+
+    
+    def update_text(self, text):
+        self.value = QtCore.QString(text)
+        self.emit_update()
+        
+    def set_value(self, value):
+        print value
+        if type(value) == QtCore.QVariant:
+            self.value = value.toString()
+        else:
+            self.value = QtCore.QString(value)
+        self.widgets["Value"].setText(self.value)
         self.emit_update()
         
 class LabelDoubleProperty(LabelItemProperty):
@@ -331,8 +396,9 @@ class LabelBooleanProperty(LabelItemProperty):
         if value == None:
             self.value = False
         else:
-            self.value = True
+            self.value = value
         
+        self.widgetOrder.append("Value")
         self.widgets["Value"] = QtGui.QCheckBox("")
         self.widgets["Value"].setChecked(self.value)
         self.connect(self.widgets["Value"], QtCore.SIGNAL("toggled(bool)"), self.update_checked)
@@ -342,7 +408,10 @@ class LabelBooleanProperty(LabelItemProperty):
         self.emit_update()
         
     def set_value(self, value):
-        self.value = bool(value)
+        if type(value) == QtCore.QVariant:
+            self.value = value.toBool()
+        else:
+            self.value = bool(value)
         self.widgets["Value"].setChecked(self.value)
         self.emit_update()
         

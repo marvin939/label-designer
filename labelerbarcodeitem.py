@@ -3,6 +3,7 @@ from labeleritemmixin import LabelerItemMixin, LabelProp
 import barcode
 
 class LabelerBarcodeItem(QtGui.QGraphicsPixmapItem, LabelerItemMixin):
+    propLoadOrder = ["Data","X Coord","Y Coord","Barcode Type","X Scale","Y Scale"]
     def __init__(self, name, *args, **kwargs):
         
         super(LabelerBarcodeItem, self).__init__( *args, **kwargs)
@@ -10,8 +11,8 @@ class LabelerBarcodeItem(QtGui.QGraphicsPixmapItem, LabelerItemMixin):
         LabelerItemMixin.__init__(self, name)#properties, propOrder)
         self.objectType = "Barcode"
         
-        self.barcodeTypes = {'Code39':barcode.bar_3of9, 'Interlaced 2of5':barcode.bar_I2of5, 'Code128':barcode.bar_Code128}
-        self.barcodeOrder  = ['Code128', 'Code39', 'Interlaced 2of5']
+        self.barcodeTypes = {'Code39':barcode.bar_3of9, 'Interlaced 2of5':barcode.bar_I2of5, 'Code128':barcode.bar_Code128, 'QRCode':barcode.bar_qrcode}
+        self.barcodeOrder  = ['Code128', 'Code39', 'Interlaced 2of5', 'QRCode']
         self.currentBarcode = self.barcodeTypes[self.barcodeOrder[0]]
         
         
@@ -45,13 +46,13 @@ class LabelerBarcodeItem(QtGui.QGraphicsPixmapItem, LabelerItemMixin):
         self.setFlags(self.ItemIsSelectable|self.ItemIsMovable|self.ItemIsFocusable|self.ItemSendsGeometryChanges)
         
         #self.scale(0.2,1.0)
-        self.scale(0.2,1.0)
+        #self.scale(0.2,1.0)
         
         self.currentScale = [1.0, 1.0]
         self.originalPixmap = None
         
     def scale_x(self, val):
-        self.currentScale[0] = val
+        self.currentScale[0] = val#max(val, 1.0)
         self.update_scale()
         
     def scale_y(self, val):
@@ -132,7 +133,8 @@ class LabelerBarcodeItem(QtGui.QGraphicsPixmapItem, LabelerItemMixin):
                     message = "Record %d: Barcode data invalid. (\"%s\")" % (QtCore.QCoreApplication.instance().currentRecordNumber, data)
                 QtCore.QCoreApplication.instance().log_message(message, "error")
                 self.setPixmap(QtGui.QPixmap())
-            
+        else:
+            self.setPixmap(QtGui.QPixmap())
         
     def start_merge(self):
         self.mergeText = self.propNames['Data'].get_value()
@@ -145,11 +147,13 @@ class LabelerBarcodeItem(QtGui.QGraphicsPixmapItem, LabelerItemMixin):
         
         
     def merge_row(self, row):
-        text = str(self.mergeText)
-        matches = self.headerRE.findall(text)
-        matches = set(matches)
-        for i in matches:
-            field = i.replace("{", "").replace("}","")
-            text = text.replace(i, row[field])
+        #text = str(self.mergeText)
+        #matches = self.headerRE.findall(text)
+        #matches = set(matches)
+        #for i in matches:
+        #    field = i.replace("{", "").replace("}","")
+        #    text = text.replace(i, row[field])
+            
+        text = self.generate_merge_text(row)
         
         self.propNames['Data'].set_text(text)

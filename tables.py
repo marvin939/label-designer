@@ -1,6 +1,7 @@
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import String, Column, Integer, Sequence, DateTime, Boolean, Text, ForeignKey, UniqueConstraint
-
+from sqlalchemy.orm import relationship
+import datetime
 Base = declarative_base()
 
 class Layout(Base):
@@ -13,6 +14,7 @@ class Layout(Base):
     returnEnable = Column(Boolean)
     pageWidth = Column(Integer)
     pageHeight = Column(Integer)
+    lastPrinted = Column(DateTime)
     
     def __init__(self, name, permit, returnAddress, permitEnable, returnEnable, pageWidth, pageHeight):
         self.name = name
@@ -22,6 +24,10 @@ class Layout(Base):
         self.returnEnable = returnEnable
         self.pageWidth = pageWidth
         self.pageHeight = pageHeight
+        self.lastPrinted = datetime.datetime.now()
+        
+    def printed(self):
+        self.lastPrinted = datetime.datetime.now()
         
 class LayoutObject(Base):
     __tablename__ = "layoutobject"
@@ -29,6 +35,8 @@ class LayoutObject(Base):
     layoutId = Column(Integer, ForeignKey('layout.id', ondelete="CASCADE"), nullable=False)
     name = Column(String(255))
     objType = Column(String(255))
+    
+    layout = relationship("Layout", cascade='all, delete')
     
     __table_args__ = (UniqueConstraint('name', 'layoutId'),)
     
@@ -43,6 +51,8 @@ class ObjectProperty(Base):
     layoutObjectId = Column(Integer, ForeignKey('layoutobject.id', ondelete="CASCADE"), nullable=False)
     propType = Column(String(255))
     propVal = Column(Text())
+    
+    layoutObj = relationship("LayoutObject", cascade='all, delete') 
     
     def __init__(self, layoutObjectId, propType, propVal):
         self.layoutObjectId = layoutObjectId
