@@ -1,1 +1,1 @@
-py -2 core.py
+py -2 core.py "Y:\Development\Mihir Test\Labeler Test\Test DAta .csv" "Y:\Development\Mihir Test\Labeler Test"

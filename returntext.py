@@ -1,7 +1,8 @@
-from PyQt4 import QtCore, QtGui
+from PyQt5 import QtCore, QtGui
+from PyQt5.QtWidgets import QGraphicsTextItem
 from constants import *
 
-class ReturnText(QtGui.QGraphicsTextItem):
+class ReturnText(QGraphicsTextItem):
     # Bottom-aligned Return Address text
 
 
@@ -45,7 +46,7 @@ class ReturnText(QtGui.QGraphicsTextItem):
         # print 'ReturnText height: %d' % self.boundingRect().height()
         
         # Spaghetti code :-(
-        print 'From returntext.py: %d' % self.parent.pageSize_mm_height
+        print('From returntext.py: %d' % self.parent.pageSize_mm_height)
         # print 'recyclablePackagingText_visible: ' + self.parent.recyclablePackagingText_visible()
         #print 'Parent recyclablePackagingText: ' + self.parent.recyclablePackagingText
 
