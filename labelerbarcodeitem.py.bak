@@ -122,7 +122,7 @@ class LabelerBarcodeItem(QtGui.QGraphicsPixmapItem, LabelerItemMixin):
         #self.setPixmap(barcode.bar_I2of5(data))
         #self.setPixmap(barcode.bar_Code128(data))
         #self.setPixmap(barcode.bar_3of9(data))
-        if data != "":
+        if data <> "":
             try:
                 self.setPixmap(self.currentBarcode(data))
                 self.originalPixmap = self.pixmap()

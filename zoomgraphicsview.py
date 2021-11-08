@@ -1,11 +1,16 @@
-from PyQt4 import QtCore, QtGui
-from PyQt4.QtCore import QRectF
+
+
+
+from PyQt5 import QtCore, QtGui, QtWidgets
+from PyQt5.QtCore import QRectF
 from returntext import ReturnText
+
 from labelertextitem import LabelerTextItem
 
 from constants import *
 
 import barcode
+
 
 class ZoomGraphicsView(QtGui.QGraphicsView):
     def __init__(self, *args, **kwargs):
@@ -146,17 +151,17 @@ class ZoomGraphicsView(QtGui.QGraphicsView):
                 for i in self.scene().selectedItems():
                     QtGui.QApplication.instance().remove_object(i)
         elif event.key() == QtCore.Qt.Key_Control:
-            print "no"
-            return
+            print("no")
+            return # 8/11/2021: Why is this here?
             item = self.itemAt(self.mapFromGlobal(self.cursor().pos()))
-            if item <> None:
+            if item is not None:
                 item.keyPressEvent(event)
                 
     def keyReleaseEvent(self, event):
         super(ZoomGraphicsView, self).keyPressEvent(event)
         if event.key() == QtCore.Qt.Key_Control:
             item = self.itemAt(self.mapFromGlobal(self.cursor().pos()))
-            if item <> None:
+            if item is not None:
                 item.keyReleaseEvent(event)
                     
     def mousePressEvent(self, event):
@@ -166,7 +171,7 @@ class ZoomGraphicsView(QtGui.QGraphicsView):
                 adding = True
                 caller(event.pos())
                 item.toggle()
-                print "hi"
+                print("hi")
                 break
             
         if not adding:
@@ -277,3 +282,5 @@ class ZoomGraphicsView(QtGui.QGraphicsView):
                 self.zoom_by(-15)
             self.emit(self.zoomUpdate, self.zoomLevel*100)
                 
+
+

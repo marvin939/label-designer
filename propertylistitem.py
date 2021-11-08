@@ -1,3 +1,5 @@
+# Probably not used anymore?
+
 from PyQt4 import QtGui, QtCore
 
 class PropertyListItem(QtGui.QTreeWidgetItem):

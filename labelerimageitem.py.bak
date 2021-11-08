@@ -93,7 +93,7 @@ class LabelerImageItem(QtGui.QGraphicsPixmapItem, LabelerItemMixin):
         self.conditional = toggle
         
     def update_image(self, text):
-        print("setting")
+        print "setting"
         pixmap = QtGui.QPixmap(text)
         
         self.setPixmap(pixmap)
@@ -119,7 +119,7 @@ class LabelerImageItem(QtGui.QGraphicsPixmapItem, LabelerItemMixin):
         #pixmap = pixmap.scaled(newWidth, newHeight)
         #self.setPixmap(pixmap)
         newScale = [(1.0/self.oldScale[0]) * self.currentScale[0], (1.0/self.oldScale[1]) * self.currentScale[1]]
-        print(newScale, self.oldScale, self.currentScale)
+        print newScale, self.oldScale, self.currentScale
         self.oldScale = self.currentScale[:]
         self.scale(*newScale)
         
@@ -178,7 +178,7 @@ class LabelerImageItem(QtGui.QGraphicsPixmapItem, LabelerItemMixin):
                     left, right = self.condition.split("=")
                     left = self.get_merged_value(left, row)
                     right = self.get_merged_value(right, row)
-                    if left != right:
+                    if left <> right:
                         self.setVisible(False)
                         return
                     else:
@@ -187,7 +187,7 @@ class LabelerImageItem(QtGui.QGraphicsPixmapItem, LabelerItemMixin):
                     left, right = self.condition.split("<>")
                     left = self.get_merged_value(left, row)
                     right = self.get_merged_value(right, row)
-                    if left != right:
+                    if left <> right:
                         self.setVisible(True)
                     else:
                         self.setVisible(False)
@@ -196,7 +196,7 @@ class LabelerImageItem(QtGui.QGraphicsPixmapItem, LabelerItemMixin):
                     left, right = self.condition.split("!=")
                     left = self.get_merged_value(left, row)
                     right = self.get_merged_value(right, row)
-                    if left != right:
+                    if left <> right:
                         self.setVisible(True)
                     else:
                         self.setVisible(False)
@@ -209,7 +209,7 @@ class LabelerImageItem(QtGui.QGraphicsPixmapItem, LabelerItemMixin):
         
         text = self.generate_merge_text(row)
         
-        if text != self.mergeText:
+        if text <> self.mergeText:
             self.update_image(text)
             self.update_scale()
             

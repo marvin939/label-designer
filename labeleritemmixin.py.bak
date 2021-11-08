@@ -73,7 +73,7 @@ class LabelerItemMixin:
         pass
     
     def get_merged_value(self, value, row):
-        value = str(value)
+        value = unicode(value)
         text = value.replace("{ white-space: pre-wrap; }", "")
         matches = self.headerRE.findall(text)
         matches = set(matches)

@@ -8,7 +8,8 @@ class ReturnText(QGraphicsTextItem):
 
     def __init__(self, parent=None, y_offset=0, *args, **kwargs):
     
-        super(ReturnText, self).__init__(*args, **kwargs)
+        #super(ReturnText, self).__init__(*args, **kwargs)
+        super().__init__()
         self.alignment_ = QtCore.Qt.AlignCenter
         
         
@@ -41,7 +42,7 @@ class ReturnText(QGraphicsTextItem):
         # print 'Parent pageSize_mm_height: %s' % pageSize_mm_height
         # print '[ReturnText] bounding rect: %s' % self.boundingRect()
         self.setTextWidth(pageSize_mm_width * self.dpmm[0] * (1.0/self.scale()))
-        self.setPos(0, (pageSize_mm_height - RETURN_ADDRESS_BOTTOM) * self.dpmm[1] - (self.boundingRect().height() * self.scale()) - self.y_offset)
+        self.setPos(0, (pageSize_mm_height - RETURN_ADDRESS_BOTTOM) * self.dpmm[1] - self.sceneBoundingRect().height() - self.y_offset)
         
         # print 'ReturnText height: %d' % self.boundingRect().height()
         
@@ -63,3 +64,5 @@ class ReturnText(QGraphicsTextItem):
     #    cursor.mergeBlockFormat(blockformat)
     #    cursor.clearSelection()
     #    self.setTextCursor(cursor)
+    
+##ReturnText()

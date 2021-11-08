@@ -1,4 +1,4 @@
-from PyQt5 import QtCore, QtGui, QtWidgets
+from PyQt4 import QtCore, QtGui
 from labeleritemmixin import LabelerItemMixin, LabelProp
 import re
 brTagRE = re.compile(r"<BR\s*/?>", re.IGNORECASE)
@@ -112,7 +112,7 @@ class LabelerTextItem(QtGui.QGraphicsTextItem, LabelerItemMixin):
         
     def strip_html(self):
         """ This function takes the html for this text box, and strips out anything before/after what goes on the label, writing back to self.coreHtml """
-        html = str(self.toHtml(), 'latin-1')
+        html = unicode(self.toHtml(), 'latin-1')
         html = brTagRE.sub("<BR />\n", html)
         html.replace("{ white-space: pre-wrap; }", "")
         # This will strip out everything thats unecessary for the user to be looking at, e.g. header, body, html, etc.
@@ -155,7 +155,7 @@ class LabelerTextItem(QtGui.QGraphicsTextItem, LabelerItemMixin):
         if not self.merging:
             #return self.toPlainText()
             #return self.coreHtml
-            return str(self.propNames["Text"].get_value())
+            return unicode(self.propNames["Text"].get_value())
         else:
             return self.mergeText
         
@@ -196,7 +196,7 @@ class LabelerTextItem(QtGui.QGraphicsTextItem, LabelerItemMixin):
                     left, right = self.condition.split("=")
                     left = self.get_merged_value(left, row)
                     right = self.get_merged_value(right, row)
-                    if left != right:
+                    if left <> right:
                         self.setVisible(False)
                         return
                     else:
@@ -205,7 +205,7 @@ class LabelerTextItem(QtGui.QGraphicsTextItem, LabelerItemMixin):
                     left, right = self.condition.split("<>")
                     left = self.get_merged_value(left, row)
                     right = self.get_merged_value(right, row)
-                    if left != right:
+                    if left <> right:
                         self.setVisible(True)
                     else:
                         self.setVisible(False)
@@ -214,7 +214,7 @@ class LabelerTextItem(QtGui.QGraphicsTextItem, LabelerItemMixin):
                     left, right = self.condition.split("!=")
                     left = self.get_merged_value(left, row)
                     right = self.get_merged_value(right, row)
-                    if left != right:
+                    if left <> right:
                         self.setVisible(True)
                     else:
                         self.setVisible(False)
@@ -236,7 +236,7 @@ class LabelerTextItem(QtGui.QGraphicsTextItem, LabelerItemMixin):
         #print "TEST"
         #if True:
             for line in text.split("\n"):
-                if line.strip() != "":
+                if line.strip() <> "":
                     finalText += line +"\n"
             finalText = finalText.rstrip("\n")
         else:
@@ -252,7 +252,7 @@ class LabelerTextItem(QtGui.QGraphicsTextItem, LabelerItemMixin):
         self._setTextFromUpdate = True
         #if string <> self.toPlainText():
         #    self.setPlainText(string)
-        if string != self.coreHtml:
+        if string <> self.coreHtml:
             self.setHtml(string)
         self._setTextFromUpdate = False
             
@@ -313,7 +313,7 @@ class LabelerTextItem(QtGui.QGraphicsTextItem, LabelerItemMixin):
 #            self.setCursor(QtCore.Qt.ArrowCursor)
         
     def keyPressEvent(self, event):
-        print(event)
+        print event
         if event.key() == QtCore.Qt.Key_Control:
             self.setCursor(QtCore.Qt.SizeAllCursor)
             self.update()
@@ -329,7 +329,7 @@ class LabelerTextItem(QtGui.QGraphicsTextItem, LabelerItemMixin):
     def setFont(self, font):
         """ Overrided to add calc for leading/line spacing, and to correct QT bug with letter spacing under 16pt """
         #self.setScale(1)
-        self.setHtml(htmlFontRE.sub("<body style=\" font-family:'%s'; font-size:%d" % (font.family(), font.pointSizeF()), str(self.toHtml())))
+        self.setHtml(htmlFontRE.sub("<body style=\" font-family:'%s'; font-size:%d" % (font.family(), font.pointSizeF()), unicode(self.toHtml())))
         #super(LabelerTextItem, self).setFont(font)
         #width = float(self.document().size().height())
 
@@ -344,7 +344,7 @@ class LabelerTextItem(QtGui.QGraphicsTextItem, LabelerItemMixin):
         
         #height = metric.boundingRect(self.toHtml()).height()
         size = font.pointSizeF()
-        if size < 20.0 and str(self.toPlainText()) != "":
+        if size < 20.0 and unicode(self.toPlainText()) <> "":
             font.setPointSizeF(20.0)
             super(LabelerTextItem, self).setFont(font)
             metric = QtGui.QFontMetricsF(font)

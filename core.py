@@ -33,7 +33,7 @@ from labelertextitem import LabelerTextItem
 from labelerbarcodeitem import LabelerBarcodeItem
 from labelerimageitem import LabelerImageItem
 from PyQt4 import QtCore, QtGui
-from propertylistitem import PropertyListItem
+#from propertylistitem import PropertyListItem
 
 import tables
 

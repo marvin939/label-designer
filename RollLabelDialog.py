@@ -53,8 +53,8 @@ class Ui_Dialog(QDialog):
 #         QtCore.QMetaObject.connectSlotsByName(Dialog)
 
         # Marvin 7/11/2021: Just testing some...
-        self.buttonBox.accepted.connect(self.accept)
-        self.buttonBox.rejected.connect(self.reject)
+        self.buttonBox.accepted.connect(Dialog.accept)
+        self.buttonBox.rejected.connect(Dialog.reject)
 
     def retranslateUi(self, Dialog):
         #Dialog.setWindowTitle(QApplication.translate("Dialog", "Roll Labels", None, QApplication.UnicodeUTF8))
@@ -71,5 +71,10 @@ if __name__ == "__main__":
     ui = Ui_Dialog()
     ui.setupUi(Dialog)
     Dialog.show()
-    sys.exit(app.exec_())
+    returned = app.exec_()
+#     print(ui.jobName.text())
+    sys.exit(returned)
+    
+    
+    
 
