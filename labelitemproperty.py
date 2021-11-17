@@ -1,9 +1,10 @@
-from PyQt4 import QtGui, QtCore
+from PyQt5 import QtGui, QtCore, QtWidgets
 from collections import namedtuple
 import os.path
 import defaults
 
 LabelProp = namedtuple("LabelProp", ("propName", "propType", "propValue"))
+
 
 class LabelItemProperty(QtCore.QObject):
     def __init__(self, name):
@@ -17,7 +18,7 @@ class LabelItemProperty(QtCore.QObject):
         self.type = None
         
     def clean_up(self):
-        for widget in self.widgets.values():
+        for widget in list(self.widgets.values()):
             widget.setParent(None)
         
     def override_value(self, value):
@@ -34,13 +35,13 @@ class LabelItemProperty(QtCore.QObject):
     
     def set_value(self, value):
         """ This must be overridden to set the value, based on a value coming from QSettings """
-        print "ERRRRRR"
+        print("ERRRRRR")
         
     def emit_update(self):
         """ Convenience Method, This will call the properties' self.updateSignal, with a copy of self.value, using self.type to create, as its only argument """
         if not self._updateEnabled:
             return
-        if self.updateSignal <> None and self.value <> None:
+        if self.updateSignal != None and self.value != None:
             self.emit(self.updateSignal, self.type(self.value))
         else:
             raise ValueError("updateSignal or value not set")
@@ -51,7 +52,7 @@ class LabelFontProperty(LabelItemProperty):
         super(LabelFontProperty, self).__init__(name)
         
         self.type = QtGui.QFont
-        if font <> None:
+        if font != None:
             self.value = QtGui.QFont(font)
         else:
             self.value = QtGui.QFont("Arial", 9, QtGui.QFont.Normal, False)
@@ -59,26 +60,30 @@ class LabelFontProperty(LabelItemProperty):
             self.widgetOrder.append(i)
         #self.widgets = {}
         
-        self.widgets["Family"] = QtGui.QFontComboBox()
+        self.widgets["Family"] = QtWidgets.QFontComboBox()
         self.widgets["Family"].setCurrentFont(self.value)
-        self.connect(self.widgets["Family"], QtCore.SIGNAL("currentFontChanged(QFont)"), self.update_font_family)
+        # self.connect(self.widgets["Family"], QtCore.SIGNAL("currentFontChanged(QFont)"), self.update_font_family)
+        self.widgets["Family"].currentFontChanged.connect(self.update_font_family)
         
-        self.widgets["Point Size"] = QtGui.QDoubleSpinBox()
+        self.widgets["Point Size"] = QtWidgets.QDoubleSpinBox()
         self.widgets["Point Size"].setValue(self.value.pointSizeF())
         self.widgets["Point Size"].setMinimum(1.0)
         self.widgets["Point Size"].setMaximum(1000.0)
         self.widgets["Point Size"].setKeyboardTracking(False)
-        self.connect(self.widgets["Point Size"], QtCore.SIGNAL("valueChanged(double)"), self.update_font_point_size)
+        #self.connect(self.widgets["Point Size"], QtCore.SIGNAL("valueChanged(double)"), self.update_font_point_size)
+        self.widgets["Point Size"].valueChanged.connect(self.update_font_point_size)
         
-        self.widgets["Bold"] = QtGui.QCheckBox("")
+        self.widgets["Bold"] = QtWidgets.QCheckBox("")
         self.widgets["Bold"].setChecked(self.value.bold())
-        self.connect(self.widgets["Bold"], QtCore.SIGNAL("toggled(bool)"), self.update_font_bold)
+        #self.connect(self.widgets["Bold"], QtCore.SIGNAL("toggled(bool)"), self.update_font_bold)
+        self.widgets["Bold"].toggled.connect(self.update_font_bold)
         
-        self.widgets["Italic"] = QtGui.QCheckBox("")
+        self.widgets["Italic"] = QtWidgets.QCheckBox("")
         self.widgets["Italic"].setChecked(self.value.italic())
-        self.connect(self.widgets["Italic"], QtCore.SIGNAL("toggled(bool)"), self.update_font_italic)
+        #self.connect(self.widgets["Italic"], QtCore.SIGNAL("toggled(bool)"), self.update_font_italic)
+        self.widgets["Italic"].toggled.connect(self.update_font_italic)
         
-        #self.widgets["Spacing"] = QtGui.QDoubleSpinBox()
+        #self.widgets["Spacing"] = QtWidgets.QDoubleSpinBox()
         #self.widgets["Spacing"].setValue(self.value.pointSizeF())
         #self.widgets["Spacing"].setMinimum(1.0)
         #self.widgets["Spacing"].setMaximum(1000.0)
@@ -126,16 +131,17 @@ class LabelTextAreaProperty(LabelItemProperty):
     def __init__(self, name, text=None):
         
         super(LabelTextAreaProperty, self).__init__(name)
-        if text <> None:
+        if text != None:
             self.value = QtCore.QString(text)
         else:
             self.value = QtCore.QString()
         self.type = QtCore.QString
             
         self.widgetOrder.append("Value")
-        self.widgets["Value"] = QtGui.QTextEdit()
+        self.widgets["Value"] = QtWidgets.QTextEdit()
         self.widgets["Value"].setPlainText(self.value)
-        self.connect(self.widgets["Value"], QtCore.SIGNAL("textChanged()"), self.update_text)
+        #self.connect(self.widgets["Value"], QtCore.SIGNAL("textChanged()"), self.update_text)
+        self.widgets["Value"].textChanged.connect(self.update_text)
         
         self.updateSignal = QtCore.SIGNAL("textChanged(QString)")
         
@@ -163,7 +169,7 @@ class LabelTextLineProperty(LabelItemProperty):
     def __init__(self, name, text=None):
         
         super(LabelTextLineProperty, self).__init__(name)
-        if text <> None:
+        if text != None:
             self.value = QtCore.QString(text)
         else:
             self.value = QtCore.QString()
@@ -171,9 +177,10 @@ class LabelTextLineProperty(LabelItemProperty):
         self.type = QtCore.QString
             
         self.widgetOrder.append("Value")
-        self.widgets["Value"] = QtGui.QLineEdit()
+        self.widgets["Value"] = QtWidgets.QLineEdit()
         self.widgets["Value"].setPlainText(self.value)
-        self.connect(self.widgets["Value"], QtCore.SIGNAL("textChanged(QString)"), self.update_text)
+        #self.connect(self.widgets["Value"], QtCore.SIGNAL("textChanged(QString)"), self.update_text)
+        self.widgets["Value"].textChanged(QString).connect(self.update_text)
         self.updateSignal = QtCore.SIGNAL("textChanged(QString)")
         
     def set_text(self, text):
@@ -195,10 +202,10 @@ class LabelFilenameProperty(LabelItemProperty):
         super(LabelFilenameProperty, self).__init__(name)
         
         self.fileFilter = ""
-        self.fileDialog = QtGui.QFileDialog()
+        self.fileDialog = QtWidgets.QFileDialog()
         self.fileDialog.setFileMode(self.fileDialog.ExistingFile)
         self.filterUsed = ""
-        if text <> None and text <> '':
+        if text != None and text != '':
             self.currentDirectory = os.path.split(text)[0]
             if self.currentDirectory == '':
                 self.currentDirectory = defaults.properties.imageDirectory
@@ -214,11 +221,13 @@ class LabelFilenameProperty(LabelItemProperty):
             
         self.widgetOrder.append("Value")
         self.widgetOrder.append("Select File...")
-        self.widgets["Value"] = QtGui.QLineEdit()
-        self.widgets["Select File..."] = QtGui.QPushButton("Select File...")
+        self.widgets["Value"] = QtWidgets.QLineEdit()
+        self.widgets["Select File..."] = QtWidgets.QPushButton("Select File...")
         self.widgets["Value"].setText(self.value)
-        self.connect(self.widgets["Value"], QtCore.SIGNAL("textChanged(QString)"), self.update_text)
-        self.connect(self.widgets["Select File..."], QtCore.SIGNAL("clicked()"), self.get_filename)
+        #self.connect(self.widgets["Value"], QtCore.SIGNAL("textChanged(QString)"), self.update_text)
+        self.widgets["Value"].textChanged.connect(self.update_text)
+        #self.connect(self.widgets["Select File..."], QtCore.SIGNAL("clicked()"), self.get_filename)
+        self.widgets["Select File..."].clicked.connect(self.get_filename)
         
         self.updateSignal = QtCore.SIGNAL("textChanged(QString)")
         
@@ -231,9 +240,9 @@ class LabelFilenameProperty(LabelItemProperty):
         
         
     def get_filename(self):
-        print self.currentDirectory
-        ret = QtGui.QFileDialog.getOpenFileNameAndFilter(parent=self.widgets["Value"].window(), caption="Open an Image...", directory=self.currentDirectory, filter=self.fileFilter) 
-        if str(ret[0]) <> '':
+        print((self.currentDirectory))
+        ret = QtWidgets.QFileDialog.getOpenFileNameAndFilter(parent=self.widgets["Value"].window(), caption="Open an Image...", directory=self.currentDirectory, filter=self.fileFilter) 
+        if str(ret[0]) != '':
             self.currentDirectory = os.path.split(str(ret[0]))[0]
             self.value = str(ret[0])
             self.widgets["Value"].setText(self.value)
@@ -245,7 +254,7 @@ class LabelFilenameProperty(LabelItemProperty):
         self.emit_update()
         
     def set_value(self, value):
-        print value
+        print(value)
         if type(value) == QtCore.QVariant:
             self.value = value.toString()
         else:
@@ -257,20 +266,21 @@ class LabelDoubleProperty(LabelItemProperty):
     def __init__(self, name, value=None):
         super(LabelDoubleProperty, self).__init__(name)
         self.type = float
-        if value <> None:
+        if value != None:
             self.value = float(value)
         else:
             self.value = 0.0
             
         
         self.widgetOrder.append("Value")
-        self.widgets["Value"] = QtGui.QDoubleSpinBox()
+        self.widgets["Value"] = QtWidgets.QDoubleSpinBox()
         self.widgets["Value"].setMinimum(0.0)
         self.widgets["Value"].setMaximum(1000.0)
         self.widgets["Value"].setKeyboardTracking(False)
         
         self.widgets["Value"].setValue(self.value)
-        self.connect(self.widgets["Value"], QtCore.SIGNAL("valueChanged(double)"), self.update_double)
+        #self.connect(self.widgets["Value"], QtCore.SIGNAL("valueChanged(double)"), self.update_double)
+        self.widgets["Value"].valueChanged.connect(self.update_double)
         
         self.updateSignal = QtCore.SIGNAL("valueChanged(double)")
         
@@ -307,18 +317,19 @@ class LabelIntegerProperty(LabelItemProperty):
     def __init__(self, name, value=None):
         super(LabelIntegerProperty, self).__init__(name)
         self.type = int
-        if value <> None:
+        if value != None:
             self.value = int(value)
         else:
             self.value = 0
             
         self.widgetOrder.append("Value")
-        self.widgets["Value"] = QtGui.QSpinBox()
+        self.widgets["Value"] = QtWidgets.QSpinBox()
         self.widgets["Value"].setMinimum(0)
         self.widgets["Value"].setMaximum(10000)
         self.widgets["Value"].setValue(self.value)
         self.widgets["Value"].setKeyboardTracking(False)
-        self.connect(self.widgets["Value"], QtCore.SIGNAL("valueChanged(int)"), self.update_integer)
+        #self.connect(self.widgets["Value"], QtCore.SIGNAL("valueChanged(int)"), self.update_integer)
+        self.widgets["Value"].valueChanged.connect(self.update_integer)
         
         
         self.updateSignal = QtCore.SIGNAL("valueChanged(int)")
@@ -354,18 +365,19 @@ class LabelListProperty(LabelItemProperty):
             self.value = QtCore.QString(value[1])
         
         self.widgetOrder.append("Value")
-        self.widgets["Value"] = QtGui.QComboBox()
+        self.widgets["Value"] = QtWidgets.QComboBox()
         self.widgets["Value"].addItems(value[0])
         
-        if value[1] <> None:
+        if value[1] != None:
             index = self.widgets["Value"].findData(QtCore.QString(self.value))
-            if index <> -1:
+            if index != -1:
                 self.widgets["Value"].setCurrentIndex(index)
             else:
                 
                 raise ValueError("'%s', value not in list" % str(self.value))
             
-        self.connect(self.widgets["Value"], QtCore.SIGNAL("currentIndexChanged(QString)"), self.update_selection)
+        #self.connect(self.widgets["Value"], QtCore.SIGNAL("currentIndexChanged(QString)"), self.update_selection)
+        self.widgets["Value"].currentIndexChanged.connect(self.update_selection)
         
     def update_selection(self, value):
         self.value = QtCore.QString(value)
@@ -377,7 +389,7 @@ class LabelListProperty(LabelItemProperty):
         except TypeError:
             self.value = value.toString()
         index = self.widgets["Value"].findText(str(self.value))
-        if index <> -1:
+        if index != -1:
             self.widgets["Value"].setCurrentIndex(index)
         else:
             raise ValueError("'%s', value not in list" % str(self.value))
@@ -399,9 +411,10 @@ class LabelBooleanProperty(LabelItemProperty):
             self.value = value
         
         self.widgetOrder.append("Value")
-        self.widgets["Value"] = QtGui.QCheckBox("")
+        self.widgets["Value"] = QtWidgets.QCheckBox("")
         self.widgets["Value"].setChecked(self.value)
-        self.connect(self.widgets["Value"], QtCore.SIGNAL("toggled(bool)"), self.update_checked)
+        # self.connect(self.widgets["Value"], QtCore.SIGNAL("toggled(bool)"), self.update_checked)
+        self.widgets["Value"].toggled.connect(self.update_checked)
         
     def update_checked(self, toggle):
         self.value = bool(toggle)

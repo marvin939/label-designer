@@ -19,7 +19,7 @@ class LabelItem(object):
         return self.parentItem
     
     def row(self):
-        if self.parentItem != None:
+        if self.parentItem <> None:
             return self.parentItem.childItems.index(self)
         else:
             return None

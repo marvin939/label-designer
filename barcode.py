@@ -473,12 +473,12 @@ def bar_3of9(data, checksum=False):
     datatext = "*%s*" % datatext
     for char in datatext:
         codeList.append(_3of9[char])
-        if char <> "*":
+        if char != "*":
             checksumValue += _3of9check[char]
             
     if checksum:
         checksumValue = checksumValue % 43
-        for i, v in _3of9check.items():
+        for i, v in list(_3of9check.items()):
             if v == checksumValue:
                 checksumChar = i
                 break

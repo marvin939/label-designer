@@ -7,10 +7,10 @@ class PropertyListItem(QtGui.QTreeWidgetItem):
         super(PropertyListItem, self).setText(column, text)
         self.emitDataChanged()
         
-        print("v")
+        print "v"
         
     def setData(self, col, role, value):
         super(PropertyListItem, self).setData(col, role, value)
         if role == QtCore.Qt.EditRole:
-            print("GGGGG")
+            print "GGGGG"
             self.emitDataChanged()

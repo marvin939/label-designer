@@ -119,7 +119,7 @@ class LabelerImageItem(QtGui.QGraphicsPixmapItem, LabelerItemMixin):
         #pixmap = pixmap.scaled(newWidth, newHeight)
         #self.setPixmap(pixmap)
         newScale = [(1.0/self.oldScale[0]) * self.currentScale[0], (1.0/self.oldScale[1]) * self.currentScale[1]]
-        print(newScale, self.oldScale, self.currentScale)
+        print((newScale, self.oldScale, self.currentScale))
         self.oldScale = self.currentScale[:]
         self.scale(*newScale)
         

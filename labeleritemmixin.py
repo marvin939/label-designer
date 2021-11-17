@@ -1,4 +1,4 @@
-from PyQt4 import QtGui, QtCore
+from PyQt5 import QtGui, QtCore, QtWidgets
 import re
 from labelitemproperty import *
 
@@ -52,8 +52,8 @@ class LabelerItemMixin:
         self.merging = False
         
         
-        self.dpi = QtCore.QCoreApplication.instance().dpi
-        self.dpmm = QtCore.QCoreApplication.instance().dpmm
+        self.dpi = QtWidgets.QCoreApplication.instance().dpi
+        self.dpmm = QtWidgets.QCoreApplication.instance().dpmm
         
     def clean_up_widgets(self):
         for i in self.propItems:

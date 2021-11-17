@@ -54,9 +54,7 @@ random.seed()
 
 # Add ability to save settings
 
-#fontDB = QtGui.QFontDatabase()
-fontDB = None
-# Instantiation moved to Labeler class constructor.
+fontDB = QtGui.QFontDatabase()
 
 propertyTypes = {'string': (QtGui.QLineEdit, QtCore.SIGNAL('textChanged(QString)')),
                  'text': (QtGui.QTextEdit, QtCore.SIGNAL('textChanged()')),
@@ -120,7 +118,7 @@ class UTF8Recoder:
     def __iter__(self):
         return self
 
-    def __next__(self):
+    def next(self):
         return self.reader.next().encode("utf-8")
 
 
@@ -134,9 +132,9 @@ class UnicodeReader:
         f = UTF8Recoder(f, encoding)
         self.reader = csv.reader(f, dialect=dialect, **kwds)
 
-    def __next__(self):
-        row = next(self.reader)
-        return [str(s, "utf-8") for s in row]
+    def next(self):
+        row = self.reader.next()
+        return [unicode(s, "utf-8") for s in row]
 
     def __iter__(self):
         return self
@@ -177,9 +175,6 @@ class Labeler(QtGui.QApplication):
         self.merging = False
         self.currentRecordNumber = None
         self.objectGarbage = []
-        
-        global fontDB
-        fontDB = QFontDatabase()
 
         self.sortByDate = False
 
@@ -236,7 +231,7 @@ class Labeler(QtGui.QApplication):
         DPMM.append(self.dpi[1]/25.4)
 
         self.ui.setupUi(self.MainWindow)
-        print((self.dpi, self.dpmm))
+        print(self.dpi, self.dpmm)
 
         self.statusBar = self.MainWindow.statusBar()
         self.dataSetCount = QtGui.QLabel(self.MainWindow)
@@ -412,7 +407,7 @@ class Labeler(QtGui.QApplication):
                     self.currentFile = files[0]
         if len(sys.argv) > 2:
             self.currentDirectory = sys.argv[2]
-        elif self.currentFile != None:
+        elif self.currentFile <> None:
             self.currentDirectory = os.path.split(self.currentFile)[0]
 
         self.ui.splitByRollAmount.setValue(3950)
@@ -444,7 +439,7 @@ class Labeler(QtGui.QApplication):
     def refresh_printer_selection(self):
         printers = QtGui.QPrinterInfo.availablePrinters()
 
-        printerType = str(
+        printerType = unicode(
             self.ui.printerSelectGroup.checkedButton().text()).lower()
         if printerType == 'zebra':
             printerType = '110xi4'
@@ -452,7 +447,7 @@ class Labeler(QtGui.QApplication):
         defaultPrinter = None
         for i in printers:
             name = i.printerName()
-            if printerType in str(name).lower():
+            if printerType in unicode(name).lower():
                 defaultPrinter = name
 
         if not defaultPrinter:
@@ -494,18 +489,18 @@ class Labeler(QtGui.QApplication):
 
             for i in range(cartons):
                 row = []
-                row.append(str(total))
+                row.append(unicode(total))
 
-                if i+1 != cartons:
-                    row.append(str(cartonQuantity))
+                if i+1 <> cartons:
+                    row.append(unicode(cartonQuantity))
                 else:
                     val = total % cartonQuantity
                     if val:
-                        row.append(str(val))
+                        row.append(unicode(val))
                     else:
-                        row.append(str(cartonQuantity))
-                row.append(str(i+1))
-                row.append(str(cartons))
+                        row.append(unicode(cartonQuantity))
+                row.append(unicode(i+1))
+                row.append(unicode(cartons))
 
                 data.append(row)
             self.rawData = data
@@ -560,14 +555,14 @@ class Labeler(QtGui.QApplication):
 
     def remove_layout(self):
         layoutItem = self.ui.layoutList.currentItem()
-        if layoutItem != None:
+        if layoutItem <> None:
             ret = QtGui.QMessageBox.warning(self.MainWindow, 'Remove Layout',
-                                            'Are you sure you would like to remove the \'%s\' layout?' % str(
+                                            'Are you sure you would like to remove the \'%s\' layout?' % unicode(
                                                 layoutItem.data(QtCore.Qt.UserRole).toString()),
                                             QtGui.QMessageBox.Yes | QtGui.QMessageBox.No, QtGui.QMessageBox.No)
             if ret == QtGui.QMessageBox.Yes:
                 session = self.sessionMaker()
-                q = session.query(tables.Layout).filter_by(name=str(
+                q = session.query(tables.Layout).filter_by(name=unicode(
                     layoutItem.data(QtCore.Qt.UserRole).toString())).first()
                 if q:
 
@@ -615,7 +610,7 @@ class Labeler(QtGui.QApplication):
         session.add(newLayout)
         session.commit()
         for objName, objType, props in layout.objectList:
-            obj = tables.LayoutObject(newLayout.id, str(objName), objType)
+            obj = tables.LayoutObject(newLayout.id, unicode(objName), objType)
             session.add(obj)
             session.commit()
 
@@ -631,12 +626,12 @@ class Labeler(QtGui.QApplication):
                                        "Error, there is no layout selected, please select one first!")
             return
 
-        oldName = str(selected[0].data(QtCore.Qt.UserRole).toString())
+        oldName = unicode(selected[0].data(QtCore.Qt.UserRole).toString())
 
         newName, useName = QtGui.QInputDialog.getText(
             self.MainWindow, "Enter in new name", "Please enter in the new label name", text=oldName)
 
-        newName = str(newName)
+        newName = unicode(newName)
         if useName:
             session = self.sessionMaker()
             res = session.query(tables.Layout).filter_by(name=newName).first()
@@ -665,14 +660,14 @@ class Labeler(QtGui.QApplication):
             itemText = None
         text = ""
         question = "Enter the name of the layout"
-        while str(text).strip() == "":
+        while unicode(text).strip() == "":
             text, ok = QtGui.QInputDialog.getText(
                 self.MainWindow, "Name of Layout", question, QtGui.QLineEdit.Normal, current)
-            if ok and str(text).strip() != "":
-                layoutName = str(text).strip()
+            if ok and unicode(text).strip() <> "":
+                layoutName = unicode(text).strip()
                 # OK, Valid Name
-                permit = str(self.ui.permitEntry.text())
-                returnAddress = str(self.ui.returnAddress.toPlainText())
+                permit = unicode(self.ui.permitEntry.text())
+                returnAddress = unicode(self.ui.returnAddress.toPlainText())
                 permitEnabled = self.ui.permitCheck.isChecked()
                 returnEnabled = self.ui.returnCheck.isChecked()
                 pageWidth = self.currentPageSize[0]
@@ -686,10 +681,10 @@ class Labeler(QtGui.QApplication):
                     props = []
 
                     #self.settings.setValue("name", obj.name)
-                    for name, prop in list(obj.propNames.items()):
+                    for name, prop in obj.propNames.items():
 
                         props.append(
-                            (name, str(QtCore.QVariant(prop.get_value()).toString())))
+                            (name, unicode(QtCore.QVariant(prop.get_value()).toString())))
                     objects.append((objName, objType, props))
                 layout = LabelLayout(layoutName, permit, returnAddress,
                                      permitEnabled, returnEnabled, pageWidth, pageHeight, objects)
@@ -702,7 +697,7 @@ class Labeler(QtGui.QApplication):
                     item = self.ui.layoutList.findItems(
                         itemText, QtCore.Qt.MatchExactly)[0]
                     self.ui.layoutList.setCurrentItem(item)
-            elif ok and str(text).strip() == "":
+            elif ok and unicode(text).strip() == "":
                 # OK, Invalid name, try again
                 question = "Value was blank, please enter in a non-blank name"
             else:
@@ -749,8 +744,8 @@ class Labeler(QtGui.QApplication):
             layouts = [(x.name, x.lastPrinted) for x in session.query(
                 tables.Layout).order_by(tables.Layout.name).all()]
         filtered = []
-        filterText = str(self.ui.filterEdit.text()).lower()
-        if filterText != "":
+        filterText = unicode(self.ui.filterEdit.text()).lower()
+        if filterText <> "":
             for layout in layouts:
                 if filterText in layout[0].lower():
                     filtered.append(layout)
@@ -787,8 +782,8 @@ class Labeler(QtGui.QApplication):
         self.settings.beginGroup('mainapp')
         keys = []
         for x in self.settings.allKeys():
-            keys.append(str(x))
-        for key, value in list(self.defaultSettings.items()):
+            keys.append(unicode(x))
+        for key, value in self.defaultSettings.items():
             if key not in keys:
                 self.settings.setValue(key, value)
         self.settings.sync()
@@ -832,7 +827,7 @@ class Labeler(QtGui.QApplication):
             self.ui.previewCheck.setChecked(False)
         if not item:
             item = self.ui.layoutList.currentItem()
-        if item != None:
+        if item <> None:
             # self.set_layout(item)
             # self.load_layout_from_conf(item)
             layout = self.load_layout_from_db(item)
@@ -850,7 +845,7 @@ class Labeler(QtGui.QApplication):
         """ Creates a layout from the db connection """
         session = self.sessionMaker()
 
-        name = str(item.data(QtCore.Qt.UserRole).toString())
+        name = unicode(item.data(QtCore.Qt.UserRole).toString())
 
         statement = session.query(tables.Layout, tables.LayoutObject,
                                   tables.ObjectProperty).filter(tables.Layout.id == tables.LayoutObject.layoutId,
@@ -886,12 +881,12 @@ class Labeler(QtGui.QApplication):
                 pageWidth = layout.pageWidth
                 pageHeight = layout.pageHeight
 
-            if layoutobject != None:
-                if objName != layoutobject.name:
+            if layoutobject <> None:
+                if objName <> layoutobject.name:
                     # objAdded.append(objName)
-                    if objName != None:
-                        if props != None:
-                            props.sort(key=lambda x: self.objectTypes[str(
+                    if objName <> None:
+                        if props <> None:
+                            props.sort(key=lambda x: self.objectTypes[unicode(
                                 objType)].propLoadOrder.index(x[0]))
 
                         objects.append((objName, objType, props))
@@ -899,11 +894,11 @@ class Labeler(QtGui.QApplication):
                     objType = layoutobject.objType
                     props = []
 
-            if objectproperty != None:
+            if objectproperty <> None:
                 props.append((objectproperty.propType, objectproperty.propVal))
 
-        if name != None:
-            if objName != None:
+        if name <> None:
+            if objName <> None:
                 objects.append((objName, objType, props))
             layoutObj = LabelLayout(
                 name, permit, returnAddress, permitEnabled, returnEnabled, pageWidth, pageHeight, objects)
@@ -932,11 +927,11 @@ class Labeler(QtGui.QApplication):
         for objectName in self.settings.childGroups():
             self.settings.beginGroup(objectName)
 
-            objType = str(self.settings.value("type").toString())
+            objType = unicode(self.settings.value("type").toString())
 
             props = []
             for propName in self.settings.childKeys():
-                if str(propName) == "type":
+                if unicode(propName) == "type":
                     continue
                 propVal = self.settings.value(propName)
                 props.append((propName, propVal))
@@ -958,7 +953,7 @@ class Labeler(QtGui.QApplication):
 
         self.ui.permitEntry.setText(layout.permit)
         self.ui.permitCheck.setChecked(layout.permitEnabled)
-        if "<html>" in str(layout.returnAddress).lower():
+        if "<html>" in unicode(layout.returnAddress).lower():
             self.ui.returnAddress.setHtml(layout.returnAddress)
         else:
             self.ui.returnAddress.setPlainText(layout.returnAddress)
@@ -967,13 +962,13 @@ class Labeler(QtGui.QApplication):
         self.ui.returnCheck.setChecked(layout.returnEnabled)
         for objectName, objType, props in layout.objectList:
 
-            obj = self.objectTypes[str(objType)](objectName)
+            obj = self.objectTypes[unicode(objType)](objectName)
 
             self.add_object(obj)
             for propName, propVal in props:
-                if str(propName) == "type":
+                if unicode(propName) == "type":
                     continue
-                obj.propNames[str(propName)].set_value(
+                obj.propNames[unicode(propName)].set_value(
                     QtCore.QVariant(propVal))
 
         self.currentPageSize = (layout.pageWidth, layout.pageHeight)
@@ -1101,7 +1096,7 @@ class Labeler(QtGui.QApplication):
 
     def permit_number_changed(self, text):
         """ Called when the permit number is updated in the text field """
-        self.labelView.set_permit_number(str(text))
+        self.labelView.set_permit_number(unicode(text))
 
     def return_address_changed(self):
         """ Called to update the return address """
@@ -1115,9 +1110,9 @@ class Labeler(QtGui.QApplication):
 
     def open_file(self):
         """ Shows an open file dialog, then proceeds to load the file as data """
-        filename = str(QtGui.QFileDialog.getOpenFileName(
+        filename = unicode(QtGui.QFileDialog.getOpenFileName(
             self.MainWindow, "Select File", self.currentDirectory))
-        if filename != "":
+        if filename <> "":
             # Preserve preview state
             previewState = self.ui.previewCheck.isChecked()
             # Now disable it
@@ -1252,7 +1247,7 @@ class Labeler(QtGui.QApplication):
             self.ui.copyField.clear()
             # Populate the combo box for selecting the field which contains the amount of copies
             for i in self.headers:
-                record = str(
+                record = unicode(
                     self.dataSet[self.ui.previewRecord.value()-1][i])
                 item = QtGui.QTableWidgetItem(record)
                 self.ui.headerList.setItem(row, 1, item)
@@ -1273,12 +1268,12 @@ class Labeler(QtGui.QApplication):
             obj = currentItem.data(0, QtCore.Qt.UserRole).toPyObject()
             if obj.objectType == "Text":
                 obj.propNames["Text"].insert_text(
-                    "{%s}<BR \>\n" % str(headerItem.text()))
+                    "{%s}<BR \>\n" % unicode(headerItem.text()))
             elif obj.objectType == "Barcode":
                 x = []
                 for i in range(self.ui.headerList.rowCount()):
                     x.append(
-                        "{" + str(self.ui.headerList.item(i, 0).text()) + "}")
+                        "{" + unicode(self.ui.headerList.item(i, 0).text()) + "}")
                 obj.propNames["Data"].insert_text(",".join(x))
         # if len(itemSelection) == 1:
         #    itemSelection[0].textCursor().insertText("{%s}" % unicode(item.text()))
@@ -1299,7 +1294,7 @@ class Labeler(QtGui.QApplication):
                                                   "Which sheet would you like to use?",
                                                   sheets, editable=False)
         if result == True:
-            sheetname = str(name)
+            sheetname = unicode(name)
             sheet = xlfile.sheet_by_name(sheetname)
             data = []
             for i in range(sheet.nrows):
@@ -1323,9 +1318,9 @@ class Labeler(QtGui.QApplication):
                         # cell is a number type
                         val = int(cell.value)
                         if val == cell.value:
-                            newrow.append(str(int(cell.value)))
+                            newrow.append(unicode(int(cell.value)))
                         else:
-                            newrow.append(str(cell.value))
+                            newrow.append(unicode(cell.value))
                     else:
                         # cell is probably a text/string value
                         newrow.append(cell.value)
@@ -1414,7 +1409,7 @@ class Labeler(QtGui.QApplication):
     def item_name_changed(self, item, col):
 
         obj = item.data(col, QtCore.Qt.UserRole).toPyObject()
-        if obj != None:
+        if obj <> None:
             newName = item.text(col)
             oldName = obj.name
             if newName not in self.itemNames:
@@ -1422,7 +1417,7 @@ class Labeler(QtGui.QApplication):
                     self.itemNames.remove(oldName)
                 obj.name = newName
                 self.itemNames.append(newName)
-            elif newName != oldName:
+            elif newName <> oldName:
                 self.log_message(
                     "An item already exists with the name %s" % newName, "error")
                 self.beep()
@@ -1486,7 +1481,7 @@ class Labeler(QtGui.QApplication):
             obj.merge_row(row)
 
     def merge_value(self, value, row):
-        text = str(value)
+        text = unicode(value)
         matches = self.headerRE.findall(text)
 
         matches = set(matches)
@@ -1521,7 +1516,7 @@ class Labeler(QtGui.QApplication):
             widgetItem = self.ui.objectProperties.takeAt(0)
             # This check is made due to a bug with the formlayout incorrectly
             # keeping track of how many items it has
-            if widgetItem != None:
+            if widgetItem <> None:
                 widget = widgetItem.widget()
                 widget.setVisible(False)
             else:
@@ -1530,7 +1525,7 @@ class Labeler(QtGui.QApplication):
     def item_selected(self, currentItem, previousItem):
         """ Selects the currentItem on the label view, and populates its properties """
         self.ui.objectPropertyArea.setUpdatesEnabled(False)
-        if currentItem != None:
+        if currentItem <> None:
             # print self.ui.objectProperties.rowCount()
             # for i in range(self.ui.objectProperties.rowCount()):
             self.clear_object_properties()
@@ -1615,12 +1610,12 @@ class Labeler(QtGui.QApplication):
             obj.setSelected(False)
 
             # Test text for any merge fields, then test that against the header listing
-            text = str(obj.get_merge_text())
+            text = unicode(obj.get_merge_text())
             matches = self.headerRE.findall(text)
             matches = sorted(set(matches))
             for field, substring in matches:
                 x = field.replace("{", "").replace("}", "")
-                if substring != "":
+                if substring <> "":
                     vals = substring.replace(
                         "[", "").replace("]", "").split(":")
 
@@ -1631,7 +1626,7 @@ class Labeler(QtGui.QApplication):
                             headersMatched = False
                     else:
                         for i in vals:
-                            if not i.strip().isdigit() and i.strip() != "":
+                            if not i.strip().isdigit() and i.strip() <> "":
                                 if not obj.suppress_address_errors:
                                     # Was unable to find a match for this substring, so issue a warning
                                     substringMessage += " %s," % x
@@ -1708,7 +1703,7 @@ class Labeler(QtGui.QApplication):
 
         if not self.ui.individualPdfs.isChecked():
             # Not set to individualise PDFs, create one file
-            if self.currentFile != None:
+            if self.currentFile <> None:
 
                 outputName = os.path.splitext(self.currentFile)[
                     0] + '_labels.pdf'
@@ -1798,7 +1793,7 @@ class Labeler(QtGui.QApplication):
             copies = 1
             if self.ui.copyUseField.isChecked():
                 # use field in the database if asked to
-                copies = int(row[str(self.ui.copyField.currentText())])
+                copies = int(row[unicode(self.ui.copyField.currentText())])
             # Repeat for as many copies as needed
             for _ in range(copies):
                 # If this is not the first time looping, make sure to call "newPage" on the printer

@@ -57,7 +57,7 @@ def load():
                 s.commit()
                 #print i, h, propName
             settings.endGroup()    
-            print layoutName, objType, objType, props
+            print(layoutName, objType, objType, props)
         settings.endGroup()
     settings.endGroup()
 
