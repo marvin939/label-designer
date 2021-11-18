@@ -1291,6 +1291,7 @@ class Labeler(QtGui.QApplication):
 
     def load_xls(self, filename):
         """ loads both xls and xlsx, providing that xlrd 0.9+ is used """
+        """ Marvin 18/11/2021: We mostly use CSV... this function is deprecated. """
         xlfile = xlrd.open_workbook(filename)
         sheets = xlfile.sheet_names()
         # Ask the user which sheet to use

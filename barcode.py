@@ -1,7 +1,7 @@
-from PyQt4 import QtGui, QtCore
+from PyQt5 import QtGui, QtCore, QtWidgets
 import math
 #import qrcode
-from jpype import *
+#from jpype import *
 
 #MultiFormatWriter = JClass("com.google.zxing.MultiFormatWriter")
 #BarcodeFormat = JClass("com.google.zxing.BarcodeFormat")

@@ -3,7 +3,10 @@ import re
 from labelitemproperty import *
 
 class LabelerItemMixin:
-    fontDB = QtGui.QFontDatabase()
+    #fontDB = None
+    #fontDB = QtGui.QFontDatabase()
+    # Marvin 18/11/2021: fontDB not used at all?
+    
 #    propertyTypes = {'string':(QtGui.QLineEdit, QtCore.SIGNAL('textChanged(QString)')),
 #                 'text':(QtGui.QTextEdit, QtCore.SIGNAL('textChanged()')), 
 #                 'integer':(QtGui.QSpinBox, QtCore.SIGNAL('valueChanged(int)')), 
@@ -54,6 +57,8 @@ class LabelerItemMixin:
         
         self.dpi = QtWidgets.QCoreApplication.instance().dpi
         self.dpmm = QtWidgets.QCoreApplication.instance().dpmm
+        
+        
         
     def clean_up_widgets(self):
         for i in self.propItems:

@@ -5,7 +5,7 @@ brTagRE = re.compile(r"<BR\s*/?>", re.IGNORECASE)
 htmlFontRE = re.compile(r"<body style=\" font-family:'.*?';")
 spanRemoveRE = re.compile(r"<span style.*?>")
 
-class LabelerTextItem(QtGui.QGraphicsTextItem, LabelerItemMixin):
+class LabelerTextItem(QtWidgets.QGraphicsTextItem, LabelerItemMixin):
     propLoadOrder = ["Skip Blanks","Line Spacing","Is Conditional","Condition","Wrap Text","Width","Rotation","X Coord","Y Coord","Text","Font"]
     
     def __init__(self, name, *args, **kwargs):

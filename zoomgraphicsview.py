@@ -12,7 +12,7 @@ from constants import *
 import barcode
 
 
-class ZoomGraphicsView(QtGui.QGraphicsView):
+class ZoomGraphicsView(QtWidgets.QGraphicsView):
     def __init__(self, *args, **kwargs):
         super(ZoomGraphicsView, self).__init__(*args, **kwargs)
         self.dpi = QtCore.QCoreApplication.instance().dpi
