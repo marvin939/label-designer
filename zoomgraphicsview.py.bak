@@ -1,0 +1,292 @@
+
+
+
+from PyQt5 import QtCore, QtGui, QtWidgets
+from PyQt5.QtCore import QRectF
+from returntext import ReturnText
+
+from labelertextitem import LabelerTextItem
+
+from constants import *
+
+import barcode
+
+
+class ZoomGraphicsView(QtWidgets.QGraphicsView):
+    def __init__(self, *args, **kwargs):
+        super(ZoomGraphicsView, self).__init__(*args, **kwargs)
+        self.dpi = QtCore.QCoreApplication.instance().dpi
+        #self.dpi = (203, 203)
+        self.dpmm = QtCore.QCoreApplication.instance().dpmm
+        self.setBackgroundBrush(QtGui.QBrush(QtCore.Qt.lightGray))
+        self.setDragMode(QtWidgets.QGraphicsView.RubberBandDrag)
+        self.setScene(QtWidgets.QGraphicsScene(0, 0, 0, 0))
+        self.setRenderHint(QtGui.QPainter.HighQualityAntialiasing, True)
+        self.setResizeAnchor(QtWidgets.QGraphicsView.AnchorUnderMouse)
+        self.setTransformationAnchor(QtWidgets.QGraphicsView.AnchorUnderMouse)
+        #self.permitImage.setPos(self.dpmm[0]*44, self.dpmm[1]*3)
+        #self.scene().update()
+        
+        self.pageSize_mm_height = 0
+        self.pageSize_mm_width = 0
+        self.pageSizeRects = []
+        
+        if "pagesize" in kwargs:
+            self.setPageSize(kwargs["pagesize"])
+        
+        pix = QtGui.QPixmap("PermitPost.png")
+        #self.permitImage = self.scene().addPixmap(pix.scaledToWidth(self.dpmm[0]*43))
+        # setup permit image
+        
+        
+        self.permitImage = self.scene().addPixmap(pix)
+        self.permitImage.setTransformationMode(QtCore.Qt.SmoothTransformation)
+        print("permitImage type: " + str(type(self.permitImage)))
+        print("permitImage boundingRect: " + str(self.permitImage.boundingRect()))
+#         self.permitImage.scale(
+#             (self.dpmm[0]*43)/self.permitImage.boundingRect().width(),
+#             (self.dpmm[1]*10)/self.permitImage.boundingRect().height())
+        self.permitImage.setScale((self.dpmm[0]*43)/self.permitImage.boundingRect().width())
+        self.permitImage.setPos(self.dpmm[0]*46, self.dpmm[1] * 3)  # Modify this for position of Permit Image
+        self.permitText = self.scene().addText("")
+        #self.permitText = LabelerTextItem()
+        #self.scene().addItem(self.permitText)
+        font = QtGui.QFont("Arial Narrow")
+        font.setPointSize(16)
+        font.setBold(True)
+        self.permitText.setFont(font)
+        self.permitText.setScale(.5)
+        self.permitText.setTextWidth(self.dpmm[0]*48)
+        self.permitText.setPos(self.dpmm[0]*46.2, self.dpmm[1]*4) # Modify this for position of Permit text
+        #self.zoomUpdate = QtCore.SIGNAL("zoomUpdated(PyQt_PyObject)")
+        self.zoomUpdated = QtCore.pyqtSignal(QtCore.QObject)
+        
+        self.permitImage.setSelected(True)
+        self.scaleFactor = 1.15
+        self.zoomLevel = 1
+        
+        self.addItemList = None
+        
+        # RECYCLABLE PACKAGING TEXT
+        # -------------------------
+        self.returnAddress = ReturnText(parent=self)
+        self.returnAddress.setPos(45*self.dpmm[0], 41*self.dpmm[1]) # Modify this for position of Return address
+        self.scene().addItem(self.returnAddress)
+        
+        # RECYCLABLE PACKAGING TEXT
+        # --------------------------
+        self.recyclablePackagingText = self.scene().addText("")
+        self.recyclablePackagingText.setHtml(RECYCLABLE_PACKAGING_TEXT_STRING)
+        rptFont = QtGui.QFont("Arial")
+        rptFont.setPointSize(RECYCLABLE_PACKAGING_TEXT_BOTTOM_FONT_SIZE)
+        self.recyclablePackagingText.setScale(0.3)
+        self.recyclablePackagingText.setFont(rptFont)
+        # self.recyclablePackagingText.setPos(0, (pageSize_mm_height - RETURN_ADDRESS_BOTTOM) * self.dpmm[1] - (self.boundingRect().height() * self.scale()))
+        self.recyclablePackagingText.visibleChanged.connect(self.recyclablePackagingText_visibleChanged)
+        # print "self.document(): %s" % self.document()
+        
+        self.update()
+    
+    # def recyclablePackagingText_visible(self):
+        # # return "permitText visible: %s" % self.permitText.isVisible()
+        # return self.recyclablePackagingText.isVisible()
+    
+    def set_add_item_list(self, itemList):
+        self.addItemList = itemList
+        
+    def set_permit_number(self, val):
+        """ sets the permit label to val """
+        if unicode(val).isdigit():
+            self.permitNo = unicode(val)
+        else:
+            self.permitNo = ""
+            
+        self.permitPlainText = "New Zealand\nPermit No.  %s" % self.permitNo
+        self.permitText.setPlainText(self.permitPlainText)
+        
+    def set_return_address(self, text):
+        #self.returnAddress.setPlainText(text)
+        self.returnAddress.setHtml("<center>" + text + "</center>")
+        
+        
+    def start_merge(self, preview):
+        if not preview:
+            self.hide_bg()
+        
+    def end_merge(self):
+        self.show_bg()
+        
+    
+    def refresh_preview(self):
+        pass
+        
+        
+    def hide_bg(self):
+        for i in self.pageSizeRects:
+            i.setVisible(False)
+            
+            
+    def show_bg(self):
+        for i in self.pageSizeRects:
+            i.setVisible(True)
+        
+        
+    def toggle_permit(self, toggle):
+        self.permitImage.setVisible(toggle)
+        self.permitText.setVisible(toggle)
+        
+    def toggle_return_address(self, toggle):
+        self.returnAddress.setVisible(toggle)
+        
+    def toggle_recyclabl_packaging_text(self, toggle):
+        self.recyclablePackagingText.setVisible(toggle)
+        
+        
+    def keyPressEvent(self, event):
+        super(ZoomGraphicsView, self).keyPressEvent(event)
+        if event.key() == QtCore.Qt.Key_Delete:
+            dontDelete = False
+            for i in self.scene().selectedItems():
+                try:
+                    if QtCore.Qt.TextEditorInteraction == i.textInteractionFlags():
+                        dontDelete = True
+                        break
+                except AttributeError:
+                    pass
+            if not dontDelete:
+                for i in self.scene().selectedItems():
+                    QtGui.QApplication.instance().remove_object(i)
+        elif event.key() == QtCore.Qt.Key_Control:
+            print("no")
+            return # 8/11/2021: Why is this here?
+            item = self.itemAt(self.mapFromGlobal(self.cursor().pos()))
+            if item is not None:
+                item.keyPressEvent(event)
+                
+    def keyReleaseEvent(self, event):
+        super(ZoomGraphicsView, self).keyPressEvent(event)
+        if event.key() == QtCore.Qt.Key_Control:
+            item = self.itemAt(self.mapFromGlobal(self.cursor().pos()))
+            if item is not None:
+                item.keyReleaseEvent(event)
+                    
+    def mousePressEvent(self, event):
+        adding = False
+        for item, caller in self.addItemList:
+            if item.isChecked():
+                adding = True
+                caller(event.pos())
+                item.toggle()
+                print("hi")
+                break
+            
+        if not adding:
+            super(ZoomGraphicsView, self).mousePressEvent(event)
+                
+        
+    def scale(self, x, y):
+        """ Overridden to keep count of what magnification we're at """
+        assert x == y
+        oldzoom = self.zoomLevel
+        
+        self.zoomLevel *= x
+        if self.zoomLevel > 16:
+            self.zoomLevel = 16.0
+            x = y = 16.0 / oldzoom
+            
+        super(ZoomGraphicsView, self).scale(x, y)
+        
+    def zoom_by(self, percentage):
+        """ Increments the zoom level of the view by percentage """
+        z = self.zoomLevel + (percentage/100.0)
+        zoom = z / self.zoomLevel
+        self.scale(zoom, zoom) 
+        
+    def zoom_to(self, percentage):
+        """ Sets the zoom level of the view to percentage """
+        zoom = (percentage/100.0)/ self.zoomLevel
+        self.scale(zoom, zoom) 
+        
+    def getPageSize(self):
+        return self.pageSize
+        
+    def setPageSize(self, pagesize):
+        """ sets up the page border, setting current pagesize to pagesize """
+        self.pageSize = pagesize
+        self.pageSize_mm_width = pagesize[0] / self.dpmm[0]
+        self.pageSize_mm_height = pagesize[1] / self.dpmm[1]
+        
+        for i in self.pageSizeRects:
+            self.scene().removeItem(i)
+            del i
+        self.pageSizeRects = []
+        
+        pageRect = QtCore.QRectF(0, 0, self.pageSize[0], self.pageSize[1])
+
+        blackBoxRect = QtCore.QRectF(3, 3, self.pageSize[0], self.pageSize[1])
+        greyBorderRect = QtCore.QRectF(-1, -1, self.pageSize[0] + 2, self.pageSize[1] + 2)
+        self.scene().setSceneRect(pageRect)
+        self.pageSizeRects.append(self.scene().addRect(blackBoxRect, QtGui.QPen(QtCore.Qt.black), QtGui.QBrush(QtCore.Qt.black, QtCore.Qt.SolidPattern)))
+        
+        self.pageSizeRects.append(self.scene().addRect(greyBorderRect, QtGui.QPen(QtCore.Qt.gray), QtGui.QBrush(QtCore.Qt.gray, QtCore.Qt.SolidPattern)))
+        self.pageSizeRects.append(self.scene().addRect(pageRect, QtGui.QPen(QtCore.Qt.white), QtGui.QBrush(QtCore.Qt.white, QtCore.Qt.SolidPattern)))
+        
+        for i in self.pageSizeRects:
+            i.setZValue(-1)
+        
+        self.readjustArtworkPos(pagesize)
+       
+    def readjustArtworkPos(self, pagesize):
+        pageSize_mm_width = self.pageSize_mm_width
+        pageSize_mm_height = self.pageSize_mm_height
+        
+        permitImagePos = (pageSize_mm_width - PERMIT_IMAGE_RIGHT_MM, PERMIT_IMAGE_TOP_MM)
+        self.permitImage.setPos(self.dpmm[0] * permitImagePos[0], self.dpmm[1] * permitImagePos[1])
+        
+        permitTextPos = (pageSize_mm_width - PERMIT_TEXT_RIGHT, PERMIT_TEXT_TOP)
+        self.permitText.setPos(self.dpmm[0] * permitTextPos[0], self.dpmm[1] * permitTextPos[1])
+                
+        # Bottom align the recyclable packging text
+        # -----------------------------------------
+        rpt = self.recyclablePackagingText
+        rptRect = rpt.boundingRect()
+        rptPos = (
+            (self.pageSize[0] - rptRect.width() * rpt.scale()) / 2, 
+            (pageSize_mm_height - RECYCLABLE_PACKAGING_TEXT_BOTTOM) * self.dpmm[1] - rptRect.height() * rpt.scale()
+        )
+        self.recyclablePackagingText.setPos(rptPos[0], rptPos[1])
+        
+        # Re-adjust return address position
+        # ---------------------------------
+        self.readjust_return_address_y_offset()
+        
+    
+    def readjust_return_address_y_offset(self):
+        # Function for when the return address gets hidden.
+    
+        rpt = self.recyclablePackagingText
+        rptRect = rpt.boundingRect()
+    
+        if self.recyclablePackagingText.isVisible():
+            self.returnAddress.y_offset = rptRect.height() * rpt.scale()
+        else:
+            self.returnAddress.y_offset = 0
+        self.returnAddress.updateGeometry() # Tell ReturnText obj to update with new values of pageSize (mm).
+    
+    
+    def recyclablePackagingText_visibleChanged(self):
+        self.readjust_return_address_y_offset()
+    
+    def wheelEvent(self, event):
+        """ Overridden to allow for zooming when holding down ctrl """
+        if event.modifiers() == QtCore.Qt.ControlModifier:
+        
+            
+            if event.delta() > 0:
+                self.zoom_by(15)
+            else:
+                self.zoom_by(-15)
+            self.emit(self.zoomUpdate, self.zoomLevel*100)
+                
+
+
