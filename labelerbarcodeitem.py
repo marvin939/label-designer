@@ -1,8 +1,9 @@
-from PyQt4 import QtCore, QtGui
+from PyQt5 import QtCore, QtGui, QtWidgets
 from labeleritemmixin import LabelerItemMixin, LabelProp
 import barcode
 
-class LabelerBarcodeItem(QtGui.QGraphicsPixmapItem, LabelerItemMixin):
+#class LabelerBarcodeItem(QtGui.QGraphicsPixmapItem, LabelerItemMixin):
+class LabelerBarcodeItem(QtWidgets.QGraphicsPixmapItem, LabelerItemMixin):
     propLoadOrder = ["Data","X Coord","Y Coord","Barcode Type","X Scale","Y Scale"]
     def __init__(self, name, *args, **kwargs):
         
@@ -91,7 +92,7 @@ class LabelerBarcodeItem(QtGui.QGraphicsPixmapItem, LabelerItemMixin):
         """ Overrided to stop editing after losing selection """
         super(LabelerBarcodeItem,self).itemChange(change, value)
         
-        if change == QtGui.QGraphicsItem.ItemPositionHasChanged:
+        if change == QtWidgets.QGraphicsItem.ItemPositionHasChanged:
             #self.propWidgets['X Coord'].setValue(self.x())
             #self.propWidgets['Y Coord'].setValue(self.y())
             self.propNames['X Coord'].update_double(self.x())

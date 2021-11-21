@@ -1,4 +1,5 @@
 from PyQt5 import QtGui, QtCore, QtWidgets
+from PyQt5.QtCore import pyqtSignal
 from collections import namedtuple
 import os.path
 import defaults
@@ -42,11 +43,14 @@ class LabelItemProperty(QtCore.QObject):
         if not self._updateEnabled:
             return
         if self.updateSignal != None and self.value != None:
-            self.emit(self.updateSignal, self.type(self.value))
+#             self.emit(self.updateSignal, self.type(self.value))
+            self.updateSignal.emit(self.type(self.value))
         else:
             raise ValueError("updateSignal or value not set")
         
 class LabelFontProperty(LabelItemProperty):
+    fontChanged = pyqtSignal(QtGui.QFont)
+    
     def __init__(self, name, font=None):
         """ Accepts a QFont, or QVariant as the property """
         super(LabelFontProperty, self).__init__(name)
@@ -90,7 +94,8 @@ class LabelFontProperty(LabelItemProperty):
         #self.connect(self.widgets["Spacing"], QtCore.SIGNAL("valueChanged(double)"), self.update_font_spacing)
         
         
-        self.updateSignal = QtCore.SIGNAL("fontChanged(QFont)")
+        #self.updateSignal = QtCore.SIGNAL("fontChanged(QFont)")
+        self.updateSignal = self.fontChanged
         
         
     def update_font_family(self, font):
@@ -128,14 +133,17 @@ class LabelFontProperty(LabelItemProperty):
         
         
 class LabelTextAreaProperty(LabelItemProperty):
+    textChanged = pyqtSignal(str)
+    
     def __init__(self, name, text=None):
         
         super(LabelTextAreaProperty, self).__init__(name)
-        if text != None:
-            self.value = QtCore.QString(text)
-        else:
-            self.value = QtCore.QString()
-        self.type = QtCore.QString
+#         if text != None:
+#             self.value = QtCore.QString(text)
+#         else:
+#             self.value = QtCore.QString()
+        self.text = "" or text
+        self.type = str
             
         self.widgetOrder.append("Value")
         self.widgets["Value"] = QtWidgets.QTextEdit()
@@ -143,7 +151,8 @@ class LabelTextAreaProperty(LabelItemProperty):
         #self.connect(self.widgets["Value"], QtCore.SIGNAL("textChanged()"), self.update_text)
         self.widgets["Value"].textChanged.connect(self.update_text)
         
-        self.updateSignal = QtCore.SIGNAL("textChanged(QString)")
+#         self.updateSignal = QtCore.SIGNAL("textChanged(QString)")
+        self.updateSignal = self.textChanged
         
     def set_text(self, text):
         self.widgets["Value"].setPlainText(text)
@@ -158,30 +167,37 @@ class LabelTextAreaProperty(LabelItemProperty):
         self.widgets["Value"].textCursor().insertText(text)
         
     def set_value(self, value):
-        try:
-            self.value = QtCore.QString(value.toString())
-        except:
-            self.value = QtCore.QString(value)
+#         try:
+#             self.value = QtCore.QString(value.toString())
+#         except:
+#             self.value = QtCore.QString(value)
+        self.value = str(value)
         self.widgets["Value"].setPlainText(self.value)
         self.emit_update()
         
 class LabelTextLineProperty(LabelItemProperty):
+    textChanged = pyqtSignal(str)
+    
     def __init__(self, name, text=None):
         
         super(LabelTextLineProperty, self).__init__(name)
-        if text != None:
-            self.value = QtCore.QString(text)
-        else:
-            self.value = QtCore.QString()
+#         if text != None:
+#             self.value = QtCore.QString(text)
+#         else:
+#             self.value = QtCore.QString()
+        self.value = text or ""
             
-        self.type = QtCore.QString
+        #self.type = QtCore.QString
+        self.type = str
             
         self.widgetOrder.append("Value")
         self.widgets["Value"] = QtWidgets.QLineEdit()
         self.widgets["Value"].setPlainText(self.value)
         #self.connect(self.widgets["Value"], QtCore.SIGNAL("textChanged(QString)"), self.update_text)
-        self.widgets["Value"].textChanged(QString).connect(self.update_text)
-        self.updateSignal = QtCore.SIGNAL("textChanged(QString)")
+#         self.widgets["Value"].textChanged(QString).connect(self.update_text)
+        self.widgets["Value"].textChanged.connect(self.update_text)
+        #self.updateSignal = QtCore.SIGNAL("textChanged(QString)")
+        self.updateSignal = self.textChanged
         
     def set_text(self, text):
         self.widgets["Value"].setPlainText(text)
@@ -197,6 +213,8 @@ class LabelTextLineProperty(LabelItemProperty):
         self.emit_update()
         
 class LabelFilenameProperty(LabelItemProperty):
+    textChanged = pyqtSignal(str)
+    
     def __init__(self, name, text=None):
         
         super(LabelFilenameProperty, self).__init__(name)
@@ -229,7 +247,9 @@ class LabelFilenameProperty(LabelItemProperty):
         #self.connect(self.widgets["Select File..."], QtCore.SIGNAL("clicked()"), self.get_filename)
         self.widgets["Select File..."].clicked.connect(self.get_filename)
         
-        self.updateSignal = QtCore.SIGNAL("textChanged(QString)")
+        #self.updateSignal = QtCore.SIGNAL("textChanged(QString)")
+        # replaced with pyqtSignal just above __init__.
+        self.updateSignal = self.textChanged
         
     def set_text(self, text):
         self.widgets["Value"].setPlainText(text)
@@ -263,6 +283,8 @@ class LabelFilenameProperty(LabelItemProperty):
         self.emit_update()
         
 class LabelDoubleProperty(LabelItemProperty):
+    valueChanged = pyqtSignal(float)
+    
     def __init__(self, name, value=None):
         super(LabelDoubleProperty, self).__init__(name)
         self.type = float
@@ -282,7 +304,8 @@ class LabelDoubleProperty(LabelItemProperty):
         #self.connect(self.widgets["Value"], QtCore.SIGNAL("valueChanged(double)"), self.update_double)
         self.widgets["Value"].valueChanged.connect(self.update_double)
         
-        self.updateSignal = QtCore.SIGNAL("valueChanged(double)")
+        #self.updateSignal = QtCore.SIGNAL("valueChanged(double)")
+        self.updateSignal = self.valueChanged
         
     
     def set_min(self, minimum):
@@ -314,6 +337,8 @@ class LabelDoubleProperty(LabelItemProperty):
         self.emit_update()
         
 class LabelIntegerProperty(LabelItemProperty):
+    valueChanged = pyqtSignal(int)
+    
     def __init__(self, name, value=None):
         super(LabelIntegerProperty, self).__init__(name)
         self.type = int
@@ -332,7 +357,9 @@ class LabelIntegerProperty(LabelItemProperty):
         self.widgets["Value"].valueChanged.connect(self.update_integer)
         
         
-        self.updateSignal = QtCore.SIGNAL("valueChanged(int)")
+        #self.updateSignal = QtCore.SIGNAL("valueChanged(int)")
+        self.updateSignal = self.valueChanged
+        
         
     def update_integer(self, value):
         self.value = int(value)
@@ -354,15 +381,21 @@ class LabelIntegerProperty(LabelItemProperty):
         self.emit_update()
         
 class LabelListProperty(LabelItemProperty):
+    selectionChanged = pyqtSignal(QtCore.QObject)
+    
     def __init__(self, name, value=None):
         super(LabelListProperty, self).__init__(name)
         
-        self.type = QtCore.QString
-        self.updateSignal = QtCore.SIGNAL("selectionChanged(PyQt_PyObject)")
+        self.type = str
+        #self.updateSignal = QtCore.SIGNAL("selectionChanged(PyQt_PyObject)")
+        self.updateSignal = self.selectionChanged
+        
         if value[1] == None:
-            self.value = QtCore.QString(value[0][0])
+            #self.value = QtCore.QString(value[0][0])
+            self.value = str(value[0][0])
         else:
-            self.value = QtCore.QString(value[1])
+            #self.value = QtCore.QString(value[1])
+            self.value = str(value[1])
         
         self.widgetOrder.append("Value")
         self.widgets["Value"] = QtWidgets.QComboBox()
@@ -401,9 +434,13 @@ class LabelListProperty(LabelItemProperty):
         
 
 class LabelBooleanProperty(LabelItemProperty):
+    toggled = pyqtSignal(bool)
+    
     def __init__(self, name, value=None):
         super(LabelBooleanProperty, self).__init__(name)
-        self.updateSignal = QtCore.SIGNAL("toggled(bool)")
+        #self.updateSignal = QtCore.SIGNAL("toggled(bool)")
+        self.updateSignal = self.toggled
+        
         self.type = bool
         if value == None:
             self.value = False

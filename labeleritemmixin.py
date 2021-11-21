@@ -55,8 +55,8 @@ class LabelerItemMixin:
         self.merging = False
         
         
-        self.dpi = QtWidgets.QCoreApplication.instance().dpi
-        self.dpmm = QtWidgets.QCoreApplication.instance().dpmm
+        self.dpi = QtCore.QCoreApplication.instance().dpi
+        self.dpmm = QtCore.QCoreApplication.instance().dpmm
         
         
         
@@ -68,9 +68,13 @@ class LabelerItemMixin:
     def load_properties(self, properties):
         """ This method takes a dictionary object with  """
         #for key, value in properties.items():
+        #print('load_properties properties var: ' + str(properties))
         for prop in properties:
             propItem = self.propertyTypes[prop.propType](prop.propName, prop.propValue)
-            propItem.connect(propItem, propItem.updateSignal, self.propCallbacks[prop.propName])
+#             print(propItem)
+            propItem.updateSignal.connect(self.propCallbacks[prop.propName])
+            # Python 2 version:
+#             propItem.connect(propItem, propItem.updateSignal, self.propCallbacks[prop.propName])
             self.properties.append(propItem)
             self.propNames[prop.propName] = propItem
             

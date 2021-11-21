@@ -1,4 +1,5 @@
-from PyQt4 import QtCore, QtGui
+from PyQt5 import QtCore, QtGui, QtWidgets
+#from PyQt4 import QtCore, QtGui
 from labeleritemmixin import LabelerItemMixin, LabelProp
 import re
 import defaults
@@ -7,7 +8,7 @@ brTagRE = re.compile(r"<BR\s*/?>", re.IGNORECASE)
 htmlFontRE = re.compile(r"<body style=\" font-family:'.*?';")
 spanRemoveRE = re.compile(r"<span style.*?>")
 
-class LabelerImageItem(QtGui.QGraphicsPixmapItem, LabelerItemMixin):
+class LabelerImageItem(QtWidgets.QGraphicsPixmapItem, LabelerItemMixin):
     propLoadOrder = ["Image Location","X Coord","Y Coord","Is Conditional","Condition","X Scale","Y Scale"]
     def __init__(self, name, *args, **kwargs):
         

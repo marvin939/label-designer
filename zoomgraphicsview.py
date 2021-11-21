@@ -2,7 +2,7 @@
 
 
 from PyQt5 import QtCore, QtGui, QtWidgets
-from PyQt5.QtCore import QRectF
+from PyQt5.QtCore import QRectF, pyqtSignal
 from returntext import ReturnText
 
 from labelertextitem import LabelerTextItem
@@ -13,17 +13,20 @@ import barcode
 
 
 class ZoomGraphicsView(QtWidgets.QGraphicsView):
+    zoomUpdated = QtCore.pyqtSignal(int)
+    
+    
     def __init__(self, *args, **kwargs):
         super(ZoomGraphicsView, self).__init__(*args, **kwargs)
         self.dpi = QtCore.QCoreApplication.instance().dpi
         #self.dpi = (203, 203)
         self.dpmm = QtCore.QCoreApplication.instance().dpmm
         self.setBackgroundBrush(QtGui.QBrush(QtCore.Qt.lightGray))
-        self.setDragMode(QtGui.QGraphicsView.RubberBandDrag)
-        self.setScene(QtGui.QGraphicsScene(0, 0, 0, 0))
+        self.setDragMode(QtWidgets.QGraphicsView.RubberBandDrag)
+        self.setScene(QtWidgets.QGraphicsScene(0, 0, 0, 0))
         self.setRenderHint(QtGui.QPainter.HighQualityAntialiasing, True)
-        self.setResizeAnchor(QtGui.QGraphicsView.AnchorUnderMouse)
-        self.setTransformationAnchor(QtGui.QGraphicsView.AnchorUnderMouse)
+        self.setResizeAnchor(QtWidgets.QGraphicsView.AnchorUnderMouse)
+        self.setTransformationAnchor(QtWidgets.QGraphicsView.AnchorUnderMouse)
         #self.permitImage.setPos(self.dpmm[0]*44, self.dpmm[1]*3)
         #self.scene().update()
         
@@ -41,7 +44,12 @@ class ZoomGraphicsView(QtWidgets.QGraphicsView):
         
         self.permitImage = self.scene().addPixmap(pix)
         self.permitImage.setTransformationMode(QtCore.Qt.SmoothTransformation)
-        self.permitImage.scale((self.dpmm[0]*43)/self.permitImage.boundingRect().width(), (self.dpmm[1]*10)/self.permitImage.boundingRect().height())
+        print(("permitImage type: " + str(type(self.permitImage))))
+        print(("permitImage boundingRect: " + str(self.permitImage.boundingRect())))
+#         self.permitImage.scale(
+#             (self.dpmm[0]*43)/self.permitImage.boundingRect().width(),
+#             (self.dpmm[1]*10)/self.permitImage.boundingRect().height())
+        self.permitImage.setScale((self.dpmm[0]*43)/self.permitImage.boundingRect().width())
         self.permitImage.setPos(self.dpmm[0]*46, self.dpmm[1] * 3)  # Modify this for position of Permit Image
         self.permitText = self.scene().addText("")
         #self.permitText = LabelerTextItem()
@@ -53,7 +61,8 @@ class ZoomGraphicsView(QtWidgets.QGraphicsView):
         self.permitText.setScale(.5)
         self.permitText.setTextWidth(self.dpmm[0]*48)
         self.permitText.setPos(self.dpmm[0]*46.2, self.dpmm[1]*4) # Modify this for position of Permit text
-        self.zoomUpdate = QtCore.SIGNAL("zoomUpdated(PyQt_PyObject)")
+        #self.zoomUpdate = QtCore.SIGNAL("zoomUpdated(PyQt_PyObject)")
+#         self.zoomUpdated = QtCore.pyqtSignal(int)
         
         self.permitImage.setSelected(True)
         self.scaleFactor = 1.15
@@ -90,8 +99,8 @@ class ZoomGraphicsView(QtWidgets.QGraphicsView):
         
     def set_permit_number(self, val):
         """ sets the permit label to val """
-        if unicode(val).isdigit():
-            self.permitNo = unicode(val)
+        if str(val).isdigit():
+            self.permitNo = str(val)
         else:
             self.permitNo = ""
             

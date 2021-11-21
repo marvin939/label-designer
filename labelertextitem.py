@@ -19,7 +19,7 @@ class LabelerTextItem(QtWidgets.QGraphicsTextItem, LabelerItemMixin):
         self.merging = False
         self._setTextFromUpdate = False
         self.coreHtml = ""
-        super(LabelerTextItem, self).__init__(*args, **kwargs)
+        super(LabelerTextItem, self).__init__(name=name, *args, **kwargs)
         LabelerItemMixin.__init__(self, name)
         textOpt = self.document().defaultTextOption()
         textOpt.setUseDesignMetrics(True)
@@ -112,13 +112,28 @@ class LabelerTextItem(QtWidgets.QGraphicsTextItem, LabelerItemMixin):
         
     def strip_html(self):
         """ This function takes the html for this text box, and strips out anything before/after what goes on the label, writing back to self.coreHtml """
-        html = str(self.toHtml(), 'latin-1')
+#         html = str(self.toHtml(), 'latin-1')
+        # Marvin 21/11/2021 - Not sure why the 'latin-1'. Will not use this encoding for now??
+        #print("self.toHtml(): " + str(self.toHtml()))
+        #html = str(self.toHtml().decode('latin-1'))
+        html = str(self.toHtml())
         html = brTagRE.sub("<BR />\n", html)
         html.replace("{ white-space: pre-wrap; }", "")
         # This will strip out everything thats unecessary for the user to be looking at, e.g. header, body, html, etc.
         #try:
+        print("\nhtmlLabelStart:")
+        print(self.htmlLabelStart)
+        
+        print("\nhtmlLabelEnd:")
+        print(self.htmlLabelEnd)
+        
+        print("\nString to replace:")
+        print("<p style=\"-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\">")
+        
+        print("\nhtml before replace:\n", html, sep="")
         html = html.replace("<p style=\"-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\">", self.htmlLabelStart)
-        core = html[html.index(self.htmlLabelStart)+len(self.htmlLabelStart):html.index(self.htmlLabelEnd)]
+        print("\nhtml after replace:\n", html, sep="")
+        core = html[html.index(self.htmlLabelStart)+len(self.htmlLabelStart) : html.index(self.htmlLabelEnd)]
         #except ValueError:
         #    core = html
         
@@ -413,11 +428,11 @@ class LabelerTextItem(QtWidgets.QGraphicsTextItem, LabelerItemMixin):
     def itemChange(self, change, value):
         """ Overrided to stop editing after losing selection """
         super(LabelerTextItem,self).itemChange(change, value)
-        if change == QtGui.QGraphicsItem.ItemSelectedChange:
+        if change == QtWidgets.QGraphicsItem.ItemSelectedChange:
             if value == False:
                 self.end_edit()
                 self.clearFocus()
-        elif change == QtGui.QGraphicsItem.ItemPositionHasChanged:
+        elif change == QtWidgets.QGraphicsItem.ItemPositionHasChanged:
             #self.propWidgets['X Coord'].setValue(self.x())
             #self.propWidgets['Y Coord'].setValue(self.y())
             self.propNames['X Coord'].update_double(self.x())

@@ -420,12 +420,12 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
         sizePolicy.setHeightForWidth(self.graphicsView.sizePolicy().hasHeightForWidth())
         self.graphicsView.setSizePolicy(sizePolicy)
         self.graphicsView.setMinimumSize(QtCore.QSize(0, 290))
-        self.graphicsView.viewport().setProperty('cursor', QtWidgets.QCursor(QtCore.Qt.ArrowCursor))
+        self.graphicsView.viewport().setProperty('cursor', QtGui.QCursor(QtCore.Qt.ArrowCursor))
         self.graphicsView.setObjectName(_fromUtf8('graphicsView'))
         self.verticalLayoutWidget = QtWidgets.QWidget(self.splitter_2)
         self.verticalLayoutWidget.setObjectName(_fromUtf8('verticalLayoutWidget'))
         self.verticalLayout_7 = QtWidgets.QVBoxLayout(self.verticalLayoutWidget)
-        self.verticalLayout_7.setMargin(0)
+        #self.verticalLayout_7.setMargin(0)
         self.verticalLayout_7.setObjectName(_fromUtf8('verticalLayout_7'))
         self.splitter = QtWidgets.QSplitter(self.verticalLayoutWidget)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred)
@@ -457,7 +457,7 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
         self.detailsTab.setObjectName(_fromUtf8('detailsTab'))
         self.verticalLayout = QtWidgets.QVBoxLayout(self.detailsTab)
         self.verticalLayout.setSpacing(0)
-        self.verticalLayout.setMargin(0)
+        #self.verticalLayout.setMargin(0)
         self.verticalLayout.setObjectName(_fromUtf8('verticalLayout'))
         self.objectPropertyArea = QtWidgets.QScrollArea(self.detailsTab)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred)
@@ -566,7 +566,6 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
 from zoomgraphicsview import ZoomGraphicsView
 
 if __name__ == '__main__':
-    print("asd")
     import sys
     app = QtWidgets.QApplication(sys.argv)
     MainWindow = QtWidgets.QMainWindow()

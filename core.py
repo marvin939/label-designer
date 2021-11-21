@@ -3,7 +3,11 @@ import sys
 import os
 import csv
 
-SERVER_LOCATION = os.environ["dataserv"]
+
+import constants
+
+# SERVER_LOCATION = os.environ["dataserv"]
+# Marvin 21/11/2021 - Not used it seems.
 
 
 import LabelDesigner
@@ -32,7 +36,9 @@ import zipfile
 from labelertextitem import LabelerTextItem
 from labelerbarcodeitem import LabelerBarcodeItem
 from labelerimageitem import LabelerImageItem
-from PyQt4 import QtCore, QtGui
+#from PyQt4 import QtCore, QtGui
+from PyQt5 import QtCore, QtGui, QtWidgets, QtPrintSupport
+
 #from propertylistitem import PropertyListItem
 
 import tables
@@ -56,30 +62,39 @@ random.seed()
 
 #fontDB = QtGui.QFontDatabase()
 fontDB = None
-# Instantiation moved to Labeler class constructor.
+# Instantiation moved to Labeler class constructor. This variable doesn't look like it's being used.
 
-propertyTypes = {'string': (QtGui.QLineEdit, QtCore.SIGNAL('textChanged(QString)')),
-                 'text': (QtGui.QTextEdit, QtCore.SIGNAL('textChanged()')),
-                 'integer': (QtGui.QSpinBox, QtCore.SIGNAL('valueChanged(int)')),
-                 'float': (QtGui.QDoubleSpinBox, QtCore.SIGNAL('valueChanged(double)')),
-                 'list': (QtGui.QComboBox, QtCore.SIGNAL('currentIndexChanged(int)')),
-                 'boolean': (QtGui.QCheckBox, QtCore.SIGNAL('toggled(bool)')),
-                 'font': (QtGui.QFontComboBox, QtCore.SIGNAL('currentFontChanged(QFont)'))}
+# propertyTypes = {'string': (QtGui.QLineEdit, QtCore.SIGNAL('textChanged(QString)')),
+#                  'text': (QtGui.QTextEdit, QtCore.SIGNAL('textChanged()')),
+#                  'integer': (QtGui.QSpinBox, QtCore.SIGNAL('valueChanged(int)')),
+#                  'float': (QtGui.QDoubleSpinBox, QtCore.SIGNAL('valueChanged(double)')),
+#                  'list': (QtGui.QComboBox, QtCore.SIGNAL('currentIndexChanged(int)')),
+#                  'boolean': (QtGui.QCheckBox, QtCore.SIGNAL('toggled(bool)')),
+#                  'font': (QtGui.QFontComboBox, QtCore.SIGNAL('currentFontChanged(QFont)'))}
+
+# propertyTypes = {'string': (QtWidgets.QLineEdit, QtCore.SIGNAL('textChanged(QString)')),
+#                  'text': (QtWidgets.QTextEdit, QtCore.SIGNAL('textChanged()')),
+#                  'integer': (QtWidgets.QSpinBox, QtCore.SIGNAL('valueChanged(int)')),
+#                  'float': (QtWidgets.QDoubleSpinBox, QtCore.SIGNAL('valueChanged(double)')),
+#                  'list': (QtWidgets.QComboBox, QtCore.SIGNAL('currentIndexChanged(int)')),
+#                  'boolean': (QtWidgets.QCheckBox, QtCore.SIGNAL('toggled(bool)')),
+#                  'font': (QtWidgets.QFontComboBox, QtCore.SIGNAL('currentFontChanged(QFont)'))}
+# ^^ Not used?
 
 
-class LayoutDelegate(QtGui.QAbstractItemDelegate):
+class LayoutDelegate(QtWidgets.QAbstractItemDelegate):
     def __init__(self, *args, **kwargs):
-        super(QtGui.QAbstractItemDelegate, self).__init__(*args, **kwargs)
+        super(QtWidgets.QAbstractItemDelegate, self).__init__(*args, **kwargs)
 
     def paint(self, painter, option, index):
         rect = option.rect
         pen = QtGui.QPen(self.parent().ui.layoutList.palette().color(
             QtGui.QPalette.Text), 1, QtCore.Qt.SolidLine)
-        if option.state & QtGui.QStyle.State_MouseOver:
+        if option.state & QtWidgets.QStyle.State_MouseOver:
 
             painter.fillRect(rect, self.parent().ui.layoutList.palette().color(
                 QtGui.QPalette.Highlight).lighter())
-        elif option.state & QtGui.QStyle.State_Selected:
+        elif option.state & QtWidgets.QStyle.State_Selected:
 
             painter.fillRect(rect, self.parent().ui.layoutList.palette().color(
                 QtGui.QPalette.Highlight).lighter())
@@ -88,8 +103,8 @@ class LayoutDelegate(QtGui.QAbstractItemDelegate):
             painter.fillRect(
                 rect, self.parent().ui.layoutList.palette().color(QtGui.QPalette.Base))
         painter.setPen(pen)
-        name = index.data(QtCore.Qt.UserRole).toString()
-        date = index.data(QtCore.Qt.DisplayRole).toString()
+        name = index.data(QtCore.Qt.UserRole) #.toString()
+        date = index.data(QtCore.Qt.DisplayRole) #.toString()
 
         r = rect.adjusted(5, 0, -80, 0)
         painter.setFont(QtGui.QFont("Arial", 9, QtGui.QFont.Normal))
@@ -142,7 +157,7 @@ class UnicodeReader:
         return self
 
 
-class LabelMainWindow(QtGui.QMainWindow):
+class LabelMainWindow(QtWidgets.QMainWindow):
     def closeEvent(self, event):
         #        quitBox = QtGui.QMessageBox(QtGui.QMessageBox.Warning, "Quit?", "Would you like to quit?", QtGui.QMessageBox.Yes|QtGui.QMessageBox.No|QtGui.QMessageBox.Cancel)
         #        result = quitBox.exec_()
@@ -166,12 +181,22 @@ class LabelLayout(object):
         self.recyclablePackagingEnabled = recyclablePackagingEnabled
 
 
-class Labeler(QtGui.QApplication):
+class Labeler(QtWidgets.QApplication):
     def __init__(self, *args, **kwargs):
+        #self.dpi  = (self.MainWindow.logicalDpiX(), self.MainWindow.logicalDpiY())
+        self.dpi = (96, 96)
+        self.dpmm = (self.dpi[0]/25.4, self.dpi[1]/25.4)
+        DPMM.append(self.dpi[0]/25.4)
+        DPMM.append(self.dpi[1]/25.4)
+        
         super(Labeler, self).__init__(*args, **kwargs)
         self.objectCollection = []
         self.objectTypes = {"Text": LabelerTextItem,
                             "Barcode": LabelerBarcodeItem, "Image": LabelerImageItem}
+        
+        # Set DPMM(dots per mm) based on QT's DPI
+        
+        
         self.ui = LabelDesigner.Ui_MainWindow()
         self.MainWindow = LabelMainWindow()
         self.merging = False
@@ -179,7 +204,7 @@ class Labeler(QtGui.QApplication):
         self.objectGarbage = []
         
         global fontDB
-        fontDB = QFontDatabase()
+        fontDB = QtGui.QFontDatabase()
 
         self.sortByDate = False
 
@@ -227,22 +252,16 @@ class Labeler(QtGui.QApplication):
         self.fileLoaders[".xls"] = self.load_xls
         self.fileLoaders[".xlsx"] = self.load_xls
 
-        # Set DPMM(dots per mm) based on QT's DPI
-
-        #self.dpi  = (self.MainWindow.logicalDpiX(), self.MainWindow.logicalDpiY())
-        self.dpi = (96, 96)
-        self.dpmm = (self.dpi[0]/25.4, self.dpi[1]/25.4)
-        DPMM.append(self.dpi[0]/25.4)
-        DPMM.append(self.dpi[1]/25.4)
+        
 
         self.ui.setupUi(self.MainWindow)
         print((self.dpi, self.dpmm))
 
         self.statusBar = self.MainWindow.statusBar()
-        self.dataSetCount = QtGui.QLabel(self.MainWindow)
+        self.dataSetCount = QtWidgets.QLabel(self.MainWindow)
         self.statusBar.addPermanentWidget(self.dataSetCount)
 
-        self.filenameStatus = QtGui.QLabel('')
+        self.filenameStatus = QtWidgets.QLabel('')
         self.filenameStatus.setAlignment(QtCore.Qt.AlignLeft)
         self.statusBar.addWidget(self.filenameStatus, 1)
 
@@ -275,112 +294,151 @@ class Labeler(QtGui.QApplication):
         self.ui.subsetTop.setKeyboardTracking(False)
 
         # Set up printer
-        self.printer = QtGui.QPrinter()
+        self.printer = QtPrintSupport.QPrinter()
         self.refresh_printer_selection()
 
         self.pageSetupUi = PageSetup.Ui_Dialog()
-        self.pageProperties = QtGui.QDialog(self.MainWindow)
+        self.pageProperties = QtWidgets.QDialog(self.MainWindow)
         self.pageSetupUi.setupUi(self.pageProperties)
         pageSize = self.currentPageSize
         self.pageSetupUi.pageWidth.setValue(pageSize[0])
         self.pageSetupUi.pageHeight.setValue(pageSize[1])
 
-        self.connect(self.pageProperties, QtCore.SIGNAL(
-            'accepted()'), self.set_page_size)
-        self.connect(self.pageProperties, QtCore.SIGNAL(
-            'rejected()'), self.reset_page_properties)
+#         self.connect(self.pageProperties, QtCore.SIGNAL(
+#             'accepted()'), self.set_page_size)
+        self.pageProperties.accepted.connect(self.set_page_size)
+#         self.connect(self.pageProperties, QtCore.SIGNAL(
+#             'rejected()'), self.reset_page_properties)
+        self.pageProperties.rejected.connect(self.reset_page_properties)
 
         # set up roll label dialog
-        self.rollLabelDialog = QtGui.QDialog(self.MainWindow)
+        self.rollLabelDialog = QtWidgets.QDialog(self.MainWindow)
         self.rollLabelUi = RollLabelDialog.Ui_Dialog()
         self.rollLabelUi.setupUi(self.rollLabelDialog)
 
         # Set up carton label dialog
-        self.cartonDialog = QtGui.QDialog(self.MainWindow)
+        self.cartonDialog = QtWidgets.QDialog(self.MainWindow)
         self.cartonUi = CartonLabel.Ui_Dialog()
         self.cartonUi.setupUi(self.cartonDialog)
 
-        self.connect(self.ui.createCartonLabels, QtCore.SIGNAL(
-            'clicked()'), self.show_carton_dialog)
+#         self.connect(self.ui.createCartonLabels, QtCore.SIGNAL(
+#             'clicked()'), self.show_carton_dialog)
+        self.ui.createCartonLabels.clicked.connect(self.show_carton_dialog)
 
-        self.connect(self.cartonDialog, QtCore.SIGNAL(
-            'finished(int)'), self.create_carton_labels)
+#         self.connect(self.cartonDialog, QtCore.SIGNAL(
+#             'finished(int)'), self.create_carton_labels)
+        self.cartonDialog.finished.connect(self.create_carton_labels)
+
 
         #self.pageProperties = QtGui.QPageSetupDialog(self.printer, self.MainWindow)
 
-        self.connect(self.ui.loadData, QtCore.SIGNAL(
-            'clicked()'), self.open_file)
-        self.connect(self.ui.clearData, QtCore.SIGNAL(
-            'clicked()'), self.clear_dataset)
-        #self.connect(self.ui.addTextBtn, QtCore.SIGNAL('clicked()'), self.add_text_dialog)
-        self.connect(self.ui.zoomLevel, QtCore.SIGNAL(
-            'valueChanged(double)'), self.zoom_spin_changed)
-        self.connect(self.labelView, QtCore.SIGNAL(
-            "zoomUpdated(PyQt_PyObject)"), self.zoom_from_mouse)
-        self.connect(self.labelView.scene(), QtCore.SIGNAL(
-            "selectionChanged()"), self.scene_selection_changed)
-        self.connect(self.ui.itemList, QtCore.SIGNAL(
-            'currentItemChanged(QTreeWidgetItem*,QTreeWidgetItem*)'), self.item_selected)
-        self.connect(self.ui.headersCheck, QtCore.SIGNAL(
-            'toggled(bool)'), self.header_check)
-        self.connect(self.ui.permitCheck, QtCore.SIGNAL(
-            'toggled(bool)'), self.toggle_permit)
-        self.connect(self.ui.permitEntry, QtCore.SIGNAL(
-            'textChanged(QString)'), self.permit_number_changed)
-        self.connect(self.ui.returnCheck, QtCore.SIGNAL(
-            'toggled(bool)'), self.toggle_return_address)
-        self.connect(self.ui.returnAddress, QtCore.SIGNAL(
-            'textChanged()'), self.return_address_changed)
-        self.connect(self.ui.headerList, QtCore.SIGNAL(
-            'itemDoubleClicked(QTableWidgetItem*)'), self.add_header_text)
+#         self.connect(self.ui.loadData, QtCore.SIGNAL(
+#             'clicked()'), self.open_file)
+        self.ui.loadData.clicked.connect(self.open_file)
+#         self.connect(self.ui.clearData, QtCore.SIGNAL(
+#             'clicked()'), self.clear_dataset)
+        self.ui.clearData.clicked.connect(self.clear_dataset)
 
+        #self.connect(self.ui.addTextBtn, QtCore.SIGNAL('clicked()'), self.add_text_dialog)
+#         self.connect(self.ui.zoomLevel, QtCore.SIGNAL(
+#             'valueChanged(double)'), self.zoom_spin_changed)
+        self.ui.zoomLevel.valueChanged.connect(self.zoom_spin_changed)
+
+#         self.connect(self.labelView, QtCore.SIGNAL(
+#             "zoomUpdated(PyQt_PyObject)"), self.zoom_from_mouse)
+        self.labelView.zoomUpdated.connect(self.zoom_from_mouse)
+#         self.connect(self.labelView.scene(), QtCore.SIGNAL(
+#             "selectionChanged()"), self.scene_selection_changed)
+        self.labelView.scene().selectionChanged.connect(self.scene_selection_changed)
+#         self.connect(self.ui.itemList, QtCore.SIGNAL(
+#             'currentItemChanged(QTreeWidgetItem*,QTreeWidgetItem*)'), self.item_selected)
+        self.ui.itemList.currentItemChanged.connect(self.item_selected)
+#         self.connect(self.ui.headersCheck, QtCore.SIGNAL(
+#             'toggled(bool)'), self.header_check)
+        self.ui.headersCheck.toggled.connect(self.header_check)
+#         self.connect(self.ui.permitCheck, QtCore.SIGNAL(
+#             'toggled(bool)'), self.toggle_permit)
+        self.ui.permitCheck.toggled.connect(self.toggle_permit)
+#         self.connect(self.ui.permitEntry, QtCore.SIGNAL(
+#             'textChanged(QString)'), self.permit_number_changed)
+        self.ui.permitEntry.textChanged.connect(self.permit_number_changed)
+#         self.connect(self.ui.returnCheck, QtCore.SIGNAL(
+#             'toggled(bool)'), self.toggle_return_address)
+        self.ui.returnCheck.toggled.connect(self.toggle_return_address)
+#         self.connect(self.ui.returnAddress, QtCore.SIGNAL(
+#             'textChanged()'), self.return_address_changed)
+        self.ui.returnAddress.textChanged.connect(self.return_address_changed)
+#         self.connect(self.ui.headerList, QtCore.SIGNAL(
+#             'itemDoubleClicked(QTableWidgetItem*)'), self.add_header_text)
+        self.ui.headerList.itemDoubleClicked.connect(self.add_header_text)
         self.ui.recyclablePackagingCheck.stateChanged.connect(self.recyclablePackagingCheck_stateChanged)
 
-        self.connect(self.ui.subsetBottom, QtCore.SIGNAL(
-            'valueChanged(int)'), self.update_subset_bottom)
-        self.connect(self.ui.subsetTop, QtCore.SIGNAL(
-            'valueChanged(int)'), self.update_subset_top)
-        self.connect(self.ui.previewRecord, QtCore.SIGNAL(
-            'valueChanged(int)'), self.update_preview_record)
-        self.connect(self.ui.previewCheck, QtCore.SIGNAL(
-            'toggled(bool)'), self.toggle_preview)
-        self.connect(self.ui.layoutList, QtCore.SIGNAL(
-            'itemDoubleClicked(QListWidgetItem*)'), self.load_layout)
+#         self.connect(self.ui.subsetBottom, QtCore.SIGNAL(
+#             'valueChanged(int)'), self.update_subset_bottom)
+        self.ui.subsetBottom.valueChanged.connect(self.update_subset_bottom)
+#         self.connect(self.ui.subsetTop, QtCore.SIGNAL(
+#             'valueChanged(int)'), self.update_subset_top)
+        self.ui.subsetTop.valueChanged.connect(self.update_subset_top)
+#         self.connect(self.ui.previewRecord, QtCore.SIGNAL(
+#             'valueChanged(int)'), self.update_preview_record)
+        self.ui.previewRecord.valueChanged.connect(self.update_preview_record)
+#         self.connect(self.ui.previewCheck, QtCore.SIGNAL(
+#             'toggled(bool)'), self.toggle_preview)
+        self.ui.previewCheck.toggled.connect(self.toggle_preview)
+#         self.connect(self.ui.layoutList, QtCore.SIGNAL(
+#             'itemDoubleClicked(QListWidgetItem*)'), self.load_layout)
+        self.ui.layoutList.itemDoubleClicked.connect(self.load_layout)
 
-        self.connect(self.ui.itemList, QtCore.SIGNAL(
-            'itemChanged(QTreeWidgetItem*, int)'), self.item_name_changed)
+#         self.connect(self.ui.itemList, QtCore.SIGNAL(
+#             'itemChanged(QTreeWidgetItem*, int)'), self.item_name_changed)
+        self.ui.itemList.itemChanged.connect(self.item_name_changed)
 
         # Layout management
-        self.connect(self.ui.saveLayout, QtCore.SIGNAL(
-            'clicked()'), self.save_layout)
-        self.connect(self.ui.loadLayout, QtCore.SIGNAL(
-            'clicked()'), self.load_layout)
-        self.connect(self.ui.removeLayout, QtCore.SIGNAL(
-            'clicked()'), self.remove_layout)
-        self.connect(self.ui.renameLayout, QtCore.SIGNAL(
-            'clicked()'), self.rename_layout)
-        self.connect(self.ui.refreshLayoutList, QtCore.SIGNAL(
-            'clicked()'), self.refresh_layout_list)
-        self.connect(self.ui.filterEdit, QtCore.SIGNAL(
-            'textChanged(QString)'), self.refresh_layout_list)
-        self.connect(self.ui.clearFilter, QtCore.SIGNAL(
-            'clicked()'), self.ui.filterEdit.clear)
+        # -----------------
+#         self.connect(self.ui.saveLayout, QtCore.SIGNAL(
+#             'clicked()'), self.save_layout)
+        self.ui.saveLayout.clicked.connect(self.save_layout)
+#         self.connect(self.ui.loadLayout, QtCore.SIGNAL(
+#             'clicked()'), self.load_layout)
+        self.ui.loadLayout.clicked.connect(self.load_layout)
+#         self.connect(self.ui.removeLayout, QtCore.SIGNAL(
+#             'clicked()'), self.remove_layout)
+        self.ui.removeLayout.clicked.connect(self.remove_layout)
+#         self.connect(self.ui.renameLayout, QtCore.SIGNAL(
+#             'clicked()'), self.rename_layout)
+        self.ui.renameLayout.clicked.connect(self.rename_layout)
+#         self.connect(self.ui.refreshLayoutList, QtCore.SIGNAL(
+#             'clicked()'), self.refresh_layout_list)
+        self.ui.refreshLayoutList.clicked.connect(self.refresh_layout_list)
+#         self.connect(self.ui.filterEdit, QtCore.SIGNAL(
+#             'textChanged(QString)'), self.refresh_layout_list)
+        self.ui.filterEdit.textChanged.connect(self.refresh_layout_list)
+#         self.connect(self.ui.clearFilter, QtCore.SIGNAL(
+#             'clicked()'), self.ui.filterEdit.clear)
+        self.ui.clearFilter.clicked.connect(self.ui.filterEdit.clear)
 
         # Printer related signals
-        self.connect(self.ui.pageSetup, QtCore.SIGNAL(
-            'clicked()'), self.show_page_setup)
-        self.connect(self.ui.printButton, QtCore.SIGNAL('clicked()'),
-                     self.show_printer_properties)  # self.print_labels)
+        # -----------------------
+#         self.connect(self.ui.pageSetup, QtCore.SIGNAL(
+#             'clicked()'), self.show_page_setup)
+        self.ui.pageSetup.clicked.connect(self.show_page_setup)
+#         self.connect(self.ui.printButton, QtCore.SIGNAL('clicked()'),
+#                      self.show_printer_properties)  # self.print_labels)
+        self.ui.printButton.clicked.connect(self.show_printer_properties)
 
-        self.connect(self.ui.createPdfBtn, QtCore.SIGNAL(
-            'clicked()'), self.create_pdf)
-        self.connect(self.ui.averyRadio, QtCore.SIGNAL(
-            'clicked()'), self.refresh_printer_selection)
-        self.connect(self.ui.zebraRadio, QtCore.SIGNAL(
-            'clicked()'), self.refresh_printer_selection)
+#         self.connect(self.ui.createPdfBtn, QtCore.SIGNAL(
+#             'clicked()'), self.create_pdf)
+        self.ui.createPdfBtn.clicked.connect(self.create_pdf)
+#         self.connect(self.ui.averyRadio, QtCore.SIGNAL(
+#             'clicked()'), self.refresh_printer_selection)
+        self.ui.averyRadio.clicked.connect(self.refresh_printer_selection)
+#         self.connect(self.ui.zebraRadio, QtCore.SIGNAL(
+#             'clicked()'), self.refresh_printer_selection)
+        self.ui.zebraRadio.clicked.connect(self.refresh_printer_selection)
 
-        self.connect(self.ui.dateSort, QtCore.SIGNAL(
-            'toggled(bool)'), self.sort_by_date)
+#         self.connect(self.ui.dateSort, QtCore.SIGNAL(
+#             'toggled(bool)'), self.sort_by_date)
+        self.ui.dateSort.toggled.connect(self.sort_by_date)
 
         # Setup a base progress window
 
@@ -442,7 +500,8 @@ class Labeler(QtGui.QApplication):
         self.cartonUi.jobNo.setFocus()
 
     def refresh_printer_selection(self):
-        printers = QtGui.QPrinterInfo.availablePrinters()
+        #printers = QtGui.QPrinterInfo.availablePrinters()
+        printers = QtPrintSupport.QPrinterInfo.availablePrinters()
 
         printerType = str(
             self.ui.printerSelectGroup.checkedButton().text()).lower()
@@ -456,9 +515,10 @@ class Labeler(QtGui.QApplication):
                 defaultPrinter = name
 
         if not defaultPrinter:
-            defaultPrinter = QtGui.QPrinterInfo.defaultPrinter().printerName()
+            defaultPrinter = QtPrintSupport.QPrinterInfo.defaultPrinter().printerName()
 
-        self.printer = QtGui.QPrinter()
+        #self.printer = QtGui.QPrinter()
+        self.print = QtPrintSupport.QPrinter()
         self.printer.setPrinterName(defaultPrinter)
 
     def create_carton_labels(self, accepted):
@@ -561,11 +621,11 @@ class Labeler(QtGui.QApplication):
     def remove_layout(self):
         layoutItem = self.ui.layoutList.currentItem()
         if layoutItem != None:
-            ret = QtGui.QMessageBox.warning(self.MainWindow, 'Remove Layout',
+            ret = QtWidgets.QMessageBox.warning(self.MainWindow, 'Remove Layout',
                                             'Are you sure you would like to remove the \'%s\' layout?' % str(
                                                 layoutItem.data(QtCore.Qt.UserRole).toString()),
-                                            QtGui.QMessageBox.Yes | QtGui.QMessageBox.No, QtGui.QMessageBox.No)
-            if ret == QtGui.QMessageBox.Yes:
+                                            QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No, QtWidgets.QMessageBox.No)
+            if ret == QtWidgets.QMessageBox.Yes:
                 session = self.sessionMaker()
                 q = session.query(tables.Layout).filter_by(name=str(
                     layoutItem.data(QtCore.Qt.UserRole).toString())).first()
@@ -627,13 +687,13 @@ class Labeler(QtGui.QApplication):
     def rename_layout(self):
         selected = self.ui.layoutList.selectedItems()
         if len(selected) == 0:
-            QtGui.QMessageBox.critical(self.MainWindow, "Error, no layout selected.",
+            QtWidgets.QMessageBox.critical(self.MainWindow, "Error, no layout selected.",
                                        "Error, there is no layout selected, please select one first!")
             return
 
         oldName = str(selected[0].data(QtCore.Qt.UserRole).toString())
 
-        newName, useName = QtGui.QInputDialog.getText(
+        newName, useName = QtWidgets.QInputDialog.getText(
             self.MainWindow, "Enter in new name", "Please enter in the new label name", text=oldName)
 
         newName = str(newName)
@@ -641,7 +701,7 @@ class Labeler(QtGui.QApplication):
             session = self.sessionMaker()
             res = session.query(tables.Layout).filter_by(name=newName).first()
             if res:
-                QtGui.QMessageBox.critical(self.MainWindow, "Error, name is in use.",
+                QtWidgets.QMessageBox.critical(self.MainWindow, "Error, name is in use.",
                                            "Error, the layout name is already in use, try again!")
                 return
             else:
@@ -652,7 +712,7 @@ class Labeler(QtGui.QApplication):
                     session.commit()
                     self.refresh_layout_list()
                 else:
-                    QtGui.QMessageBox.critical(self.MainWindow, "Error!.",
+                    QtWidgets.QMessageBox.critical(self.MainWindow, "Error!.",
                                                "There was an error renaming '%s', it could not be found!" % oldName)
 
     def save_layout(self):
@@ -666,8 +726,8 @@ class Labeler(QtGui.QApplication):
         text = ""
         question = "Enter the name of the layout"
         while str(text).strip() == "":
-            text, ok = QtGui.QInputDialog.getText(
-                self.MainWindow, "Name of Layout", question, QtGui.QLineEdit.Normal, current)
+            text, ok = QtWidgets.QInputDialog.getText(
+                self.MainWindow, "Name of Layout", question, QtWidgets.QLineEdit.Normal, current)
             if ok and str(text).strip() != "":
                 layoutName = str(text).strip()
                 # OK, Valid Name
@@ -768,7 +828,7 @@ class Labeler(QtGui.QApplication):
             x += 1
             date = date.strftime("%Y-%m-%d")
             text = "%s  [%s]" % (name, date)
-            item = QtGui.QListWidgetItem(text)
+            item = QtWidgets.QListWidgetItem(text)
             #item = LayoutDelegate()
 
             item.setData(QtCore.Qt.UserRole, name)
@@ -795,14 +855,23 @@ class Labeler(QtGui.QApplication):
 
         self.refresh_layout_list()
 
-        self.ui.zoomLevel.setValue(self.settings.value('zoom').toDouble()[0])
-        self.ui.permitEntry.setText(self.settings.value('permit').toString())
+        print("self.settings.value('zoom'): " + self.settings.value('zoom'))
+        #self.ui.zoomLevel.setValue(self.settings.value('zoom').toDouble()[0])
+        self.ui.zoomLevel.setValue(float(self.settings.value('zoom')))
+        self.ui.permitEntry.setText(self.settings.value('permit'))
+#         self.ui.permitCheck.setChecked(
+#             self.settings.value('usepermit').toBool())
+        print("self.settings.value('usepermit'): " + str(self.settings.value('usepermit')))
         self.ui.permitCheck.setChecked(
-            self.settings.value('usepermit').toBool())
+            bool(self.settings.value('usepermit')))
+#         self.ui.returnAddress.setPlainText(
+#             self.settings.value('return').toString())
         self.ui.returnAddress.setPlainText(
-            self.settings.value('return').toString())
+            self.settings.value('return'))
+#         self.ui.returnCheck.setChecked(
+#             self.settings.value('usereturn').toBool())
         self.ui.returnCheck.setChecked(
-            self.settings.value('usereturn').toBool())
+            bool(self.settings.value('usereturn')))
         # self.ui.copyCount.setValue(self.settings.value('copies').toInt()[0])
 
         self.settings.endGroup()
@@ -850,7 +919,7 @@ class Labeler(QtGui.QApplication):
         """ Creates a layout from the db connection """
         session = self.sessionMaker()
 
-        name = str(item.data(QtCore.Qt.UserRole).toString())
+        name = str(item.data(QtCore.Qt.UserRole))
 
         statement = session.query(tables.Layout, tables.LayoutObject,
                                   tables.ObjectProperty).filter(tables.Layout.id == tables.LayoutObject.layoutId,
@@ -1061,7 +1130,7 @@ class Labeler(QtGui.QApplication):
         row = 0
         self.currentRecordNumber = val
         for i in self.headers:
-            item = QtGui.QTableWidgetItem(self.dataSet[val-1][i])
+            item = QtWidgets.QTableWidgetItem(self.dataSet[val-1][i])
             self.ui.headerList.setItem(row, 1, item)
             row += 1
         self.ui.headerList.setUpdatesEnabled(True)
@@ -1115,7 +1184,7 @@ class Labeler(QtGui.QApplication):
 
     def open_file(self):
         """ Shows an open file dialog, then proceeds to load the file as data """
-        filename = str(QtGui.QFileDialog.getOpenFileName(
+        filename = str(QtWidgets.QFileDialog.getOpenFileName(
             self.MainWindow, "Select File", self.currentDirectory))
         if filename != "":
             # Preserve preview state
@@ -1212,7 +1281,7 @@ class Labeler(QtGui.QApplication):
                 emptyFieldCount += 1
                 self.headers[row] = "Field%d" % emptyFieldCount
             headEnum.append((row, self.headers[row]))
-            item = QtGui.QTableWidgetItem(self.headers[row])
+            item = QtWidgets.QTableWidgetItem(self.headers[row])
             self.ui.headerList.setItem(row, 0, item)
 
         # Loop through the data, convert each row to a dict, and add it to the set
@@ -1254,7 +1323,7 @@ class Labeler(QtGui.QApplication):
             for i in self.headers:
                 record = str(
                     self.dataSet[self.ui.previewRecord.value()-1][i])
-                item = QtGui.QTableWidgetItem(record)
+                item = QtWidgets.QTableWidgetItem(record)
                 self.ui.headerList.setItem(row, 1, item)
                 self.ui.copyField.addItem(i)
                 row += 1
@@ -1295,7 +1364,7 @@ class Labeler(QtGui.QApplication):
         xlfile = xlrd.open_workbook(filename)
         sheets = xlfile.sheet_names()
         # Ask the user which sheet to use
-        name, result = QtGui.QInputDialog.getItem(self.MainWindow,
+        name, result = QtWidgets.QInputDialog.getItem(self.MainWindow,
                                                   "Select which sheet you would like to use",
                                                   "Which sheet would you like to use?",
                                                   sheets, editable=False)
@@ -1403,7 +1472,7 @@ class Labeler(QtGui.QApplication):
         #item = PropertyListItem(self.ui.itemList)
 
         self.itemNames.append(obj.name)
-        item = QtGui.QTreeWidgetItem(self.ui.itemList)
+        item = QtWidgets.QTreeWidgetItem(self.ui.itemList)
 
         item.setFlags(item.flags() | QtCore.Qt.ItemIsEditable)
         item.setText(0, obj.name)
@@ -1430,7 +1499,8 @@ class Labeler(QtGui.QApplication):
                 item.setText(col, oldName)
 
     def show_printer_properties(self):
-        self.printProperties = QtGui.QPrintDialog(
+#         self.printProperties = QtWidgets.QPrintDialog(
+        self.printProperties = QtPrintSupport.QPrintDialog(
             self.printer, self.MainWindow)
         self.connect(self.printProperties, QtCore.SIGNAL(
             'accepted()'), self.print_labels)
@@ -1565,7 +1635,7 @@ class Labeler(QtGui.QApplication):
     def start_progress_bar(self, minimum, maximum):
         """ Opens the progress window, setting the current number of stages the
             progress will go through, this is usually used when merging """
-        self.progressWindow = QtGui.QProgressDialog(self.MainWindow)
+        self.progressWindow = QtWidgets.QProgressDialog(self.MainWindow)
         self.progressWindow.setWindowTitle("PDF Generation Progress...")
         self.progressWindow.setMinimumWidth(300)
         self.connect(self.progressWindow, QtCore.SIGNAL(
@@ -1666,9 +1736,9 @@ class Labeler(QtGui.QApplication):
         if method == "PRINT":
             result = self.rollLabelDialog.exec_()
             if not result:
-                res = QtGui.QMessageBox.question(
-                    self.MainWindow, "Cancel labels", "Did you want to cancel the labels?", QtGui.QMessageBox.Yes | QtGui.QMessageBox.No)
-                if res == QtGui.QMessageBox.Yes:
+                res = QtWidgets.QMessageBox.question(
+                    self.MainWindow, "Cancel labels", "Did you want to cancel the labels?", QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No)
+                if res == QtWidgets.QMessageBox.Yes:
                     return
                 rollLabels = False
             else:
@@ -1694,7 +1764,7 @@ class Labeler(QtGui.QApplication):
             # Due to something to do with the Avery printer, we need to set the
             # dimensions to be 2x their normal width and height
             self.printer.setPaperSize(QtCore.QSizeF(
-                self.currentPageSize[0], self.currentPageSize[1]), QtGui.QPrinter.Millimeter)
+                self.currentPageSize[0], self.currentPageSize[1]), QtPrintSupport.QPrinter.Millimeter)
             self.printer.setFullPage(True)
             self.printer.setColorMode(self.printer.GrayScale)
 
@@ -1713,12 +1783,12 @@ class Labeler(QtGui.QApplication):
 
                 outputName = os.path.splitext(self.currentFile)[
                     0] + '_labels.pdf'
-            pdfPrint = QtGui.QPrinter()
+            pdfPrint = QtPrintSupport.QPrinter()
             pdfPrint.setOutputFileName(outputName)
             pdfPrint.setOrientation(pdfPrint.Portrait)
 
             pdfPrint.setPaperSize(QtCore.QSizeF(
-                self.currentPageSize[0], self.currentPageSize[1]), QtGui.QPrinter.Millimeter)
+                self.currentPageSize[0], self.currentPageSize[1]), QtPrintSupport.QPrinter.Millimeter)
             pdfPrint.setFullPage(True)
             pdfPrint.setColorMode(pdfPrint.GrayScale)
             pdfPainter = QtGui.QPainter()
@@ -1742,7 +1812,7 @@ class Labeler(QtGui.QApplication):
         labelFont.setBold(True)
         labelFont.setPointSize(20)
         labelCount = int(math.ceil(len(self.dataSet) / float(splitCount)))
-        endLabel = QtGui.QLabel("")
+        endLabel = QtWidgets.QLabel("")
         endLabel.setStyleSheet(
             'QLabel {background-color : white; color : black;}')
         endLabel.setFont(labelFont)
@@ -1763,12 +1833,12 @@ class Labeler(QtGui.QApplication):
                 outputName = os.path.split(self.currentFile)[
                     0] + "\\" + self.merge_value(self.ui.pdfNameFormat.text(), row)
 
-                pdfPrint = QtGui.QPrinter()
+                pdfPrint = QtPrintSupport.QPrinter()
                 pdfPrint.setOutputFileName(outputName)
                 pdfPrint.setOrientation(pdfPrint.Portrait)
 
                 pdfPrint.setPaperSize(QtCore.QSizeF(
-                    self.currentPageSize[0], self.currentPageSize[1]), QtGui.QPrinter.Millimeter)
+                    self.currentPageSize[0], self.currentPageSize[1]), QtPrintSupport.QPrinter.Millimeter)
                 pdfPrint.setFullPage(True)
                 pdfPrint.setColorMode(pdfPrint.GrayScale)
                 pdfPainter = QtGui.QPainter()
@@ -1785,7 +1855,7 @@ class Labeler(QtGui.QApplication):
                     painter.end()
 
                 if count != len(self.dataSet)-1:
-                    QtGui.QMessageBox.information(self.MainWindow, "Roll %d Complete" % currentRoll,
+                    QtWidgets.QMessageBox.information(self.MainWindow, "Roll %d Complete" % currentRoll,
                                                   "Roll %d has finished sending to the printer, press OK to continue print" % currentRoll)
                 currentRoll += 1
                 painter = QtGui.QPainter()
