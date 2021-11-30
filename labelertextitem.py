@@ -131,9 +131,20 @@ class LabelerTextItem(QtWidgets.QGraphicsTextItem, LabelerItemMixin):
         print("<p style=\"-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\">")
         
         print("\nhtml before replace:\n", html, sep="")
-        html = html.replace("<p style=\"-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\">", self.htmlLabelStart)
+        #html = html.replace("<p style=\"-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\">", self.htmlLabelStart)
         print("\nhtml after replace:\n", html, sep="")
-        core = html[html.index(self.htmlLabelStart)+len(self.htmlLabelStart) : html.index(self.htmlLabelEnd)]
+        #core = html[html.index(self.htmlLabelStart)+len(self.htmlLabelStart) : html.index(self.htmlLabelEnd)]
+        # ^ Doesn't appear to work in Python 3... Substring not found
+        
+        core = re.sub(r"[\s\S]*<p[\s\S]*?>", "", html)
+        # [\s\S] = Any character that not space or is = basically any character
+        # +? = Match least number of characters (lazy quantifier). i.e. Match only the beginning "<p" up to first ">".
+        
+        core = core.replace(self.htmlLabelEnd, "")
+        
+        print("\nself.coreHtml:")
+        print(core)
+        
         #except ValueError:
         #    core = html
         

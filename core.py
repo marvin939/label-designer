@@ -1483,7 +1483,7 @@ class Labeler(QtWidgets.QApplication):
 
     def item_name_changed(self, item, col):
 
-        obj = item.data(col, QtCore.Qt.UserRole).toPyObject()
+        obj = item.data(col, QtCore.Qt.UserRole) #.toPyObject()
         if obj != None:
             newName = item.text(col)
             oldName = obj.name
