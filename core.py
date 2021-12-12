@@ -992,8 +992,8 @@ class Labeler(QtWidgets.QApplication):
 
         permit = self.settings.value("permit").toString()
         returnAddress = self.settings.value("return").toString()
-        permitEnabled = self.settings.value("usepermit").toBool()
-        returnEnabled = self.settings.value("useReturn").toBool()
+        permitEnabled = bool(self.settings.value("usepermit")) #.toBool()
+        returnEnabled = bool(self.settings.value("useReturn")) #.toBool()
         pageWidth = 90
         pageHeight = 45
 
@@ -1606,7 +1606,7 @@ class Labeler(QtWidgets.QApplication):
             # for i in range(self.ui.objectProperties.rowCount()):
             self.clear_object_properties()
             # Get a reference to the object
-            obj = currentItem.data(0, QtCore.Qt.UserRole).toPyObject()
+            obj = currentItem.data(0, QtCore.Qt.UserRole) #.toPyObject()
             if self.labelView.isInteractive():
                 # The label view is currently in edit mode
                 if not obj.isSelected():

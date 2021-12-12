@@ -22,8 +22,8 @@ def load():
         settings.beginGroup(layoutName)
         permit = str(settings.value("permit").toString())
         returnAddress = str(settings.value("return").toString())
-        permitEnabled = settings.value("usepermit").toBool()
-        returnEnabled = settings.value("useReturn").toBool()
+        permitEnabled = bool(settings.value("usepermit")) #.toBool()
+        returnEnabled = bool(settings.value("useReturn")) #.toBool()
         pageWidth = 90
         pageHeight = 45
         

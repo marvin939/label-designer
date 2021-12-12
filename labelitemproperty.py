@@ -329,11 +329,18 @@ class LabelDoubleProperty(LabelItemProperty):
         self.emit_update()
         
     def set_value(self, value):
+        # print("[LabelDoubleProperty] set_value value:", value)
+        # from pprint import pprint
+        # print("dir(value): ")
+        # pprint(dir(value))
+        # print("[LabelDoubleProperty] set_value value value():", value.value())
+    
         try:
+            #self.value = value.toFloat()[0]
             self.value = value.toFloat()[0]
         except:
-            self.value = value
-        self.widgets["Value"].setValue(self.value)
+            self.value = value.value()
+        self.widgets["Value"].setValue(float(self.value))
         self.emit_update()
         
 class LabelIntegerProperty(LabelItemProperty):
@@ -459,7 +466,7 @@ class LabelBooleanProperty(LabelItemProperty):
         
     def set_value(self, value):
         if type(value) == QtCore.QVariant:
-            self.value = value.toBool()
+            self.value = bool(value) #.toBool()
         else:
             self.value = bool(value)
         self.widgets["Value"].setChecked(self.value)

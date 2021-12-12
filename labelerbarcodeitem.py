@@ -7,7 +7,7 @@ class LabelerBarcodeItem(QtWidgets.QGraphicsPixmapItem, LabelerItemMixin):
     propLoadOrder = ["Data","X Coord","Y Coord","Barcode Type","X Scale","Y Scale"]
     def __init__(self, name, *args, **kwargs):
         
-        super(LabelerBarcodeItem, self).__init__( *args, **kwargs)
+        super(LabelerBarcodeItem, self).__init__(name=name, *args, **kwargs)
         
         LabelerItemMixin.__init__(self, name)#properties, propOrder)
         self.objectType = "Barcode"
