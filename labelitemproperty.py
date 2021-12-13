@@ -171,7 +171,7 @@ class LabelTextAreaProperty(LabelItemProperty):
 #             self.value = QtCore.QString(value.toString())
 #         except:
 #             self.value = QtCore.QString(value)
-        self.value = str(value)
+        self.value = str(value.value())
         self.widgets["Value"].setPlainText(self.value)
         self.emit_update()
         
@@ -204,11 +204,13 @@ class LabelTextLineProperty(LabelItemProperty):
         self.emit_update()
         
     def update_text(self, text):
-        self.value = QtCore.QString(text)
+        #self.value = QtCore.QString(text)
+        self.value = str(text)
         self.emit_update()
         
     def set_value(self, value):
-        self.value = QtCore.QString(value)
+        #self.value = QtCore.QString(value)
+        self.value = str(value)
         self.widgets["Value"].setPlainText(self.value)
         self.emit_update()
         
@@ -230,12 +232,14 @@ class LabelFilenameProperty(LabelItemProperty):
             self.value = QtCore.QString(text)
         else:
             self.currentDirectory = defaults.properties.imageDirectory
-            self.value = QtCore.QString(defaults.properties.imageDirectory)
+            #self.value = QtCore.QString(defaults.properties.imageDirectory)
+            self.value = defaults.properties.imageDirectory
         
         self.fileDialog.setDirectory(self.currentDirectory)
             
         
-        self.type = QtCore.QString
+        #self.type = QtCore.QString
+        self.type = str
             
         self.widgetOrder.append("Value")
         self.widgetOrder.append("Select File...")
@@ -270,13 +274,15 @@ class LabelFilenameProperty(LabelItemProperty):
 
     
     def update_text(self, text):
-        self.value = QtCore.QString(text)
+        #self.value = QtCore.QString(text)
+        self.value = str(text)
         self.emit_update()
         
     def set_value(self, value):
         print(value)
         if type(value) == QtCore.QVariant:
-            self.value = value.toString()
+            #self.value = value.toString()
+            self.value = str(value.value())
         else:
             self.value = QtCore.QString(value)
         self.widgets["Value"].setText(self.value)
@@ -409,7 +415,8 @@ class LabelListProperty(LabelItemProperty):
         self.widgets["Value"].addItems(value[0])
         
         if value[1] != None:
-            index = self.widgets["Value"].findData(QtCore.QString(self.value))
+            #index = self.widgets["Value"].findData(QtCore.QString(self.value))
+            index = self.widgets["Value"].findData(str(self.value))
             if index != -1:
                 self.widgets["Value"].setCurrentIndex(index)
             else:
@@ -420,12 +427,14 @@ class LabelListProperty(LabelItemProperty):
         self.widgets["Value"].currentIndexChanged.connect(self.update_selection)
         
     def update_selection(self, value):
-        self.value = QtCore.QString(value)
+        #self.value = QtCore.QString(value)
+        value = str(value)
         self.emit_update()
         
     def set_value(self, value):
         try:
-            self.value = QtCore.QString(value)
+            #self.value = QtCore.QString(value)
+            self.value = str(value)
         except TypeError:
             self.value = value.toString()
         index = self.widgets["Value"].findText(str(self.value))
@@ -466,7 +475,7 @@ class LabelBooleanProperty(LabelItemProperty):
         
     def set_value(self, value):
         if type(value) == QtCore.QVariant:
-            self.value = bool(value) #.toBool()
+            self.value = bool(value.value()) #.toBool()
         else:
             self.value = bool(value)
         self.widgets["Value"].setChecked(self.value)

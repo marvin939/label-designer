@@ -55,6 +55,7 @@ class ZoomGraphicsView(QtWidgets.QGraphicsView):
         #self.permitText = LabelerTextItem()
         #self.scene().addItem(self.permitText)
         font = QtGui.QFont("Arial Narrow")
+        #font = QtGui.QFont("Liberation Sans Narrow")   # Marvin: For testing; I don't have Arial Narrow font.
         font.setPointSize(16)
         font.setBold(True)
         self.permitText.setFont(font)

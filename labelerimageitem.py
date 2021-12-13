@@ -16,7 +16,7 @@ class LabelerImageItem(QtWidgets.QGraphicsPixmapItem, LabelerItemMixin):
         
         self.merging = False
         
-        super(LabelerImageItem, self).__init__(*args, **kwargs)
+        super(LabelerImageItem, self).__init__(name=name, *args, **kwargs)
         
         LabelerItemMixin.__init__(self, name)
         
@@ -122,7 +122,8 @@ class LabelerImageItem(QtWidgets.QGraphicsPixmapItem, LabelerItemMixin):
         newScale = [(1.0/self.oldScale[0]) * self.currentScale[0], (1.0/self.oldScale[1]) * self.currentScale[1]]
         print((newScale, self.oldScale, self.currentScale))
         self.oldScale = self.currentScale[:]
-        self.scale(*newScale)
+        #self.scale(*newScale)
+        self.setScale(newScale[0])
         
     def setOffset(self, *args, **kwargs):
         
