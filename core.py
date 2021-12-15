@@ -1,4 +1,4 @@
-#!python2.6
+#!python3
 import sys
 import os
 import csv

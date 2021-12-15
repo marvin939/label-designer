@@ -42,8 +42,13 @@ class LabelItemProperty(QtCore.QObject):
         """ Convenience Method, This will call the properties' self.updateSignal, with a copy of self.value, using self.type to create, as its only argument """
         if not self._updateEnabled:
             return
+            
         if self.updateSignal != None and self.value != None:
 #             self.emit(self.updateSignal, self.type(self.value))
+            print("emit_update self.type:", self.type)
+            print("emit_update self.value:", self.value)
+            # print("to be emitted:", self.type(self.value))
+            # print("dir(self.updateSignal.emit):", dir(self.updateSignal.emit))
             self.updateSignal.emit(self.type(self.value))
         else:
             raise ValueError("updateSignal or value not set")
@@ -394,7 +399,10 @@ class LabelIntegerProperty(LabelItemProperty):
         self.emit_update()
         
 class LabelListProperty(LabelItemProperty):
-    selectionChanged = pyqtSignal(QtCore.QObject)
+    #selectionChanged = pyqtSignal(QtCore.QObject)
+    # Marvin 15/12/2021: Maybe use python's "object" class instead?
+    # It works :D No more error involving extra unexpected arguments passed!
+    selectionChanged = pyqtSignal(object)
     
     def __init__(self, name, value=None):
         super(LabelListProperty, self).__init__(name)
@@ -427,16 +435,31 @@ class LabelListProperty(LabelItemProperty):
         self.widgets["Value"].currentIndexChanged.connect(self.update_selection)
         
     def update_selection(self, value):
-        #self.value = QtCore.QString(value)
-        value = str(value)
+        #self.value = QtCore.QString(value) # <-- Original.
+        
+        #self.value = str(value)
+        
+        # Marvin 15/12/2021 - Maybe this should work?
+        if isinstance(value, QtCore.QVariant):
+            self.value = str(value.value())
+        else:
+            self.value = str(value)
+            
         self.emit_update()
         
     def set_value(self, value):
+        # try:
+            # #self.value = QtCore.QString(value)
+            # self.value = str(value.value())
+        # except TypeError:
+            # self.value = value.toString()
+            
         try:
-            #self.value = QtCore.QString(value)
-            self.value = str(value)
+            self.value = str(value.value())
         except TypeError:
-            self.value = value.toString()
+            #self.value = value.toString()
+            self.value = str(value)
+            
         index = self.widgets["Value"].findText(str(self.value))
         if index != -1:
             self.widgets["Value"].setCurrentIndex(index)
