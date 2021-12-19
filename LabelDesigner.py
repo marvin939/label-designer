@@ -13,10 +13,14 @@ except AttributeError:
 
 class Ui_MainWindow(QtWidgets.QMainWindow):
 
-    def __init__(self):
-        super().__init__()
-        self.setupUi(self)
-        self.show()
+    # Marvin 19/12/2021: Using following __init__ code will create a non-functional duplicate 
+    # window of this class. This class wasn't designed to have an __init__ as it was generated
+    # using QtDesigner.
+    
+    # def __init__(self):
+        # super().__init__()
+        # self.setupUi(self)
+        # self.show()
 
     def setupUi(self, MainWindow):
         MainWindow.setObjectName(_fromUtf8('MainWindow'))
@@ -571,6 +575,7 @@ if __name__ == '__main__':
     MainWindow = QtWidgets.QMainWindow()
     ui = Ui_MainWindow()
 ##    ui.setupUi(MainWindow)
+    ui.setupUi(MainWindow)
     MainWindow.show()
     sys.exit(app.exec_())
 # okay decompiling LabelDesigner.pyc

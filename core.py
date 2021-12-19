@@ -1184,19 +1184,21 @@ class Labeler(QtWidgets.QApplication):
 
     def open_file(self):
         """ Shows an open file dialog, then proceeds to load the file as data """
-        filename = str(QtWidgets.QFileDialog.getOpenFileName(
-            self.MainWindow, "Select File", self.currentDirectory))
-        if filename != "":
+        filename = QtWidgets.QFileDialog.getOpenFileName(self.MainWindow, "Select File", self.currentDirectory)
+        filepath = filename[0]
+        print("File selected:", filepath)
+        
+        if filepath != "":
             # Preserve preview state
             previewState = self.ui.previewCheck.isChecked()
             # Now disable it
             self.ui.previewCheck.setChecked(False)
 
             # Set the current file directory and filename
-            self.currentDirectory = os.path.split(filename)[0]
-            self.currentFile = filename
+            self.currentDirectory = os.path.split(filepath)[0]
+            self.currentFile = filepath
             # Set up the data
-            self.load_dataset(filename)
+            self.load_dataset(filepath)
             # Now restore the preview state
             self.ui.previewCheck.setChecked(previewState)
 
