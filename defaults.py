@@ -7,7 +7,7 @@ class properties:
     
 
 if "dataserv" not in os.environ.keys():
-    imageDirectory = r"..\misc\images"  # dataserv is somewhere in the Y: drive.
+    imageDirectory = r"..\dataserv_test\misc\images"  # dataserv is somewhere in the Y: drive.
 else:
     imageDirectory = os.environ["dataserv"] + "\\misc\\images"  # for testing.
 

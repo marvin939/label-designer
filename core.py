@@ -468,10 +468,15 @@ class Labeler(QtWidgets.QApplication):
                     self.load_dataset(files[0])
                     #self.currentDirectory = os.path.split(files[0])[0]
                     self.currentFile = files[0]
+        
         if len(sys.argv) > 2:
             self.currentDirectory = sys.argv[2]
         elif self.currentFile != None:
             self.currentDirectory = os.path.split(self.currentFile)[0]
+            
+        else:
+            if constants.DEBUG_LOCAL_MACHINE_ONLY:
+                self.currentDirectory = ""
 
         self.ui.splitByRollAmount.setValue(3950)
 
@@ -1358,7 +1363,14 @@ class Labeler(QtWidgets.QApplication):
         #    itemSelection[0].setFocus(True)
 
     def load_csv(self, filename):
-        return [row for row in UnicodeReader(open(filename, "rb"), encoding='cp1252')]
+        #return [row for row in UnicodeReader(open(filename, "rb"), encoding='cp1252')]
+        rows = []
+        
+        with open(filename, "r") as fh:
+            csvr = csv.reader(fh)
+            rows = [row for row in csvr]
+        
+        return rows
 
     def load_xls(self, filename):
         """ loads both xls and xlsx, providing that xlrd 0.9+ is used """
