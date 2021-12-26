@@ -1652,8 +1652,8 @@ class Labeler(QtWidgets.QApplication):
         self.progressWindow = QtWidgets.QProgressDialog(self.MainWindow)
         self.progressWindow.setWindowTitle("PDF Generation Progress...")
         self.progressWindow.setMinimumWidth(300)
-        self.connect(self.progressWindow, QtCore.SIGNAL(
-            'canceled()'), self.cancel_label)
+        #self.connect(self.progressWindow, QtCore.SIGNAL('canceled()'), self.cancel_label)
+        self.progressWindow.canceled.connect(self.cancel_label)
         self.progressWindow.setRange(minimum, maximum)
         newValue = 1
         progressText = "Generating Page %d of %d" % (
@@ -1831,8 +1831,8 @@ class Labeler(QtWidgets.QApplication):
             'QLabel {background-color : white; color : black;}')
         endLabel.setFont(labelFont)
         endLabel.setAlignment(QtCore.Qt.AlignCenter)
-        endLabel.setSizePolicy(QtGui.QSizePolicy.Fixed,
-                               QtGui.QSizePolicy.Fixed)
+        endLabel.setSizePolicy(QtWidgets.QSizePolicy.Fixed,
+                               QtWidgets.QSizePolicy.Fixed)
         endLabel.setMinimumHeight(self.currentPageSize[1]*self.dpmm[1])
         endLabel.setMaximumHeight(self.currentPageSize[1]*self.dpmm[1])
         endLabel.setMinimumWidth(self.currentPageSize[0]*self.dpmm[0])

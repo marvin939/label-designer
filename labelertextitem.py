@@ -247,9 +247,10 @@ class LabelerTextItem(QtWidgets.QGraphicsTextItem, LabelerItemMixin):
                         return
                 else:
                     raise ValueError("No operator found for comparrison in conditional")
-            except ValueError:
-                QtCore.QCoreApplication.instance().log_message("Incorrectly written condition on %s." % self.name, "error")
-                QtCore.QCoreApplication.instance().cancel_label()
+            except ValueError as e:                       
+                if len(self.condition.strip()) > 0 and "no operator" in e.message.lower():
+                    QtCore.QCoreApplication.instance().log_message("Incorrectly written condition on %s: %s" % (self.name, e.message), "error")
+                    QtCore.QCoreApplication.instance().cancel_label()
         
         text = self.generate_merge_text(row)
                     
